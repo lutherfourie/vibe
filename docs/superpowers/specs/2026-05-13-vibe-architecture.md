@@ -1,11 +1,12 @@
 # Vibe — top-level architecture and sequencing
 
-**Status:** Design v3. Top-level only — per-subsystem specs come in later sessions.
+**Status:** Design v4. Top-level only — per-subsystem specs come in later sessions.
 **Date:** 2026-05-13
 **Owner:** Luther
 **Working title (previously):** Hive
 **v1 → v2 delta:** folded in (a) hybrid deterministic + LLM-guided framing, (b) conversation files as valid Vibe sources, (c) `vibe init` → `.vibe/` Obsidian vault as the entry point, (d) AgentOps as prior art, (e) collapsed the standalone Vibe IDE subsystem — Obsidian is the v0 IDE.
 **v2 → v3 delta:** providers gain a **mode** dimension — `api` (HTTPS) **and `cli`** (local subprocess: `claude`, `codex`, `gemini`, `grok`). CLI-mode is first-class because most consumer subscriptions (Claude.ai, ChatGPT, Google One AI Premium, SuperGrok) grant CLI access without API credits. Per-CLI lifecycle is configurable (long-lived subprocess vs one-shot per call).
+**v3 → v4 delta:** added a **thin VS Code extension at v0** as a Phase 1 deliverable. VS Code is the authoring surface (syntax highlighting, diagnostics, command palette, hover-based LLM resolver preview); Obsidian remains the navigation/exploration surface for `.vibe/`. They complement, neither replaces the other. Extension lives at `vibe/packages/vscode-extension/` inside this repo.
 
 ---
 
@@ -134,16 +135,24 @@ A **Python network service** for living memory: append-only event log, knowledge
 
 **Defers to per-subsystem spec (Phase 4):** Spineflow's full architecture (graph model, decay semantics, consolidation workers, persistence layer choice, confidence model).
 
-### 2.4 `.vibe/` Obsidian vault (the authoring + reading surface)
+### 2.4 Author + read surfaces — VS Code extension + Obsidian on `.vibe/`
 
-Not a software subsystem in the same sense as the others — it's a **convention + generation target**. Every Vibe-initialized project gets a `.vibe/` directory that's:
+The shared substrate is the **`.vibe/` directory**: a valid Obsidian vault (`.obsidian/` config, markdown files, `[[wikilinks]]`) with numbered top-level folders for natural sort — `00-state`, `10-projects`, `20-agents`, `30-decisions`, `40-plans`, `50-timeline`, `60-hotspots`, `70-glossary`, `80-conversations`, `90-research`. Append-only on the human side: anything a human writes is honored on next `vibe sync`. Regenerable on the machine side: deterministic-extracted notes regenerate from source repo state; LLM-extracted notes record provenance (resolver, model, temperature, timestamp).
 
-- A valid Obsidian vault (`.obsidian/` config, markdown files, `[[wikilinks]]`)
-- Numbered top-level folders for natural sort: `00-state`, `10-projects`, `20-agents`, `30-decisions`, `40-plans`, `50-timeline`, `60-hotspots`, `70-glossary`, `80-conversations`, `90-research`
-- Append-only on the human side: anything a human writes in the vault is honored on next `vibe sync`
-- Regenerable on the machine side: deterministic-extracted notes can be regenerated from source repo state; LLM-extracted notes show provenance
+Two surfaces consume it. They complement, neither replaces the other:
 
-This is **the IDE for v0**. Obsidian gives graph view, backlinks, search, plugins (Dataview, Tasks) for free. The custom Vibe IDE (formerly §2.3 in v1) is deferred until Obsidian's seams reveal real pain.
+**VS Code extension (authoring).** Lives at `vibe/packages/vscode-extension/`. v0 deliverable for Phase 1. Thin scope:
+
+- TextMate grammar for `.vibe` syntax highlighting
+- `.vibe/` tree view in the sidebar surfacing the numbered folders
+- Diagnostics sourced from `vibe build` — red squiggles for parse and resolver errors
+- Command palette: `Vibe: Init Project`, `Vibe: Build`, `Vibe: Sync`, `Vibe: Open Vault in Obsidian`
+- **Hover-based LLM resolver preview** — hover over a prose region, popup shows resolver output + variance metadata (`resolver: cerebras.glm-4.7, t: 0.3, at: ...`). No automatic in-document overlay at v0.
+- Full LSP (autocomplete, go-to-definition, hover docs) deferred to a later phase once the language stabilizes.
+
+**Obsidian on `.vibe/` (navigation).** No code change — Obsidian opens the vault directly. Gives graph view, backlinks, search, plugins (Dataview, Tasks) for free. Used for: exploring project state, daily-notes workflow, knowledge-management.
+
+**Future surfaces** — AgentOps (RTS-style operator console, Phase 6 candidate), a possible custom standalone Vibe IDE (Phase 6+), mobile / watch (Phase 6). All deferred. The two-surface v0 (VS Code + Obsidian) is enough.
 
 ---
 
@@ -171,7 +180,7 @@ Phases gate on artifacts, not dates. Each phase produces a per-subsystem spec, t
 | Phase | Name | Output | Blocks |
 | ----- | ---- | ------ | ------ |
 | **0** | **Codex+Claude ecosystem deep research** ✅ done | [`research/2026-05-13-codex-claude-ecosystem-survey.md`](../research/2026-05-13-codex-claude-ecosystem-survey.md) | Phases 1, 2 |
-| **1** | **Vibe v0 language spec + init pipeline** | `specs/<date>-vibe-language-v0.md` + reference parser/interpreter + `vibe init` working on GameSpree | Phases 2, 3 |
+| **1** | **Vibe v0 language spec + init pipeline + VS Code extension** | `specs/<date>-vibe-language-v0.md` + reference parser/interpreter + `vibe init` working on GameSpree + thin `vibe-vscode` extension (highlighting, tree view, diagnostics, commands, hover resolver preview) | Phases 2, 3 |
 | **2** | **Vibe provider adapters v0** | `specs/<date>-vibe-providers-v0.md` + Codex + Claude + Cerebras adapters; `vibe build` emits AGENTS.md as primary | Phase 3 |
 | **3** | **Izsha v1** | `specs/<date>-izsha-v1.md` + runtime + asset-pipeline plugin + Claude Code shim — Pawfall pain solved | nothing |
 | **4** | **Spineflow v1 (formalized)** | `specs/<date>-spineflow-v1.md` with Izsha's actual usage as input | richer agent memory features |
@@ -282,7 +291,7 @@ Izsha hosts MCP over stdio. Plugin tools become namespaced MCP tools (`<plugin>.
 
 ## 6. Constraints & non-goals
 
-- **Obsidian is the v0 author/read surface.** No custom IDE in v1. `.vibe/` is a valid Obsidian vault. Custom IDE (and the AgentOps-as-IDE possibility) defers to Phase 6.
+- **Two-surface v0: VS Code extension (author) + Obsidian on `.vibe/` (navigate).** Thin VS Code extension at v0 — highlighting + tree view + diagnostics + commands + hover resolver preview. Full LSP and webview graph view defer to Phase 3+. Standalone Vibe IDE app and AgentOps-as-IDE defer to Phase 6.
 - **`AGENTS.md` is the canonical human-readable build artifact.** Per Phase 0 research R9 (60K-project adoption + Linux Foundation stewardship + GitHub native rendering). Provider-specific files (`.claude/`, `.codex/`, `.mcp.json`) are machine outputs derived from the same `.vibe` source.
 - **MCP is the canonical client protocol.** No proprietary protocols where MCP works.
 - **No JavaScript ecosystem invention.** Vibe uses npm for distributing TS-implementation packages; no parallel package manager at v1.
@@ -330,8 +339,11 @@ If any of those fail, the architecture as designed is wrong somewhere obvious.
 
 ```text
 github.com/lutherfourie/
-├── vibe          ← THIS REPO. Language + ecosystem + specs. Empty before this brainstorm.
-│   └── docs/superpowers/{specs,research}/
+├── vibe          ← THIS REPO. Language + ecosystem + specs + VS Code extension.
+│   ├── docs/superpowers/{specs,research}/
+│   └── packages/
+│       ├── language/         # parser, AST, evaluator, stdlib, FFI, LLM resolver, init pipeline
+│       └── vscode-extension/ # vibe-vscode: highlighting, tree view, diagnostics, commands
 ├── Hive          ← Previous working title. To be retired/redirected.
 ├── Izsha         ← Will become the reference agent's repo. Vibe-declared.
 └── spineflow     ← Python memory spine library. Stays.
