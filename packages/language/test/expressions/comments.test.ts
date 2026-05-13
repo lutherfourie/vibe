@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { isStringLiteral } from "../../src/generated/ast.js";
+import {
+  isListExpression,
+  isObjectExpression,
+  isReference,
+  isStringLiteral,
+} from "../../src/generated/ast.js";
 import { firstPersona } from "../ast-helpers.js";
 import { expectParses } from "../parse-helper.js";
 
@@ -85,6 +90,7 @@ describe("comments", () => {
     `);
     expect(project.declarations).toHaveLength(1);
     const persona = firstPersona(project);
+    expect(persona.$type).toBe("Persona");
     expect(persona.name).toBe("p");
     const field = persona.fields[0];
     expect(field.name).toBe("description");
@@ -108,6 +114,63 @@ describe("comments", () => {
     expect(isStringLiteral(field.value)).toBe(true);
     if (isStringLiteral(field.value)) {
       expect(field.value.value).toBe("x");
+    }
+  });
+
+  it("handles line and block comments intermixed", async () => {
+    // Both comment styles in the same file, including adjacency, to catch
+    // terminal-ordering regressions where one comment regex shadows another.
+    const project = await expectParses(`
+      // line comment
+      /* block comment */
+      persona p {
+        // field comment
+        description = /* inline */ "x"
+      }
+    `);
+    expect(project.declarations).toHaveLength(1);
+    const persona = firstPersona(project);
+    expect(persona.$type).toBe("Persona");
+    expect(persona.fields).toHaveLength(1);
+    const field = persona.fields[0];
+    expect(isStringLiteral(field.value)).toBe(true);
+    if (isStringLiteral(field.value)) {
+      expect(field.value.value).toBe("x");
+    }
+  });
+
+  it("ignores comments inside list and object literals", async () => {
+    // Hidden terminals must work inside collection grammar rules, not just
+    // top-level whitespace. This is the most common breakage point if the
+    // SL_COMMENT / ML_COMMENT terminals are reordered incorrectly.
+    const project = await expectParses(`
+      persona p {
+        uses = [/* head */ plugin.a, // line
+                plugin.b]
+        config = { /* prelude */ host = "x", /* mid */ port = 8080 }
+      }
+    `);
+    const persona = firstPersona(project);
+    const [usesField, configField] = persona.fields;
+
+    expect(usesField.name).toBe("uses");
+    expect(isListExpression(usesField.value)).toBe(true);
+    if (isListExpression(usesField.value)) {
+      expect(usesField.value.items).toHaveLength(2);
+      const [a, b] = usesField.value.items;
+      expect(isReference(a)).toBe(true);
+      if (isReference(a)) expect(a.segments).toEqual(["plugin", "a"]);
+      expect(isReference(b)).toBe(true);
+      if (isReference(b)) expect(b.segments).toEqual(["plugin", "b"]);
+    }
+
+    expect(configField.name).toBe("config");
+    expect(isObjectExpression(configField.value)).toBe(true);
+    if (isObjectExpression(configField.value)) {
+      expect(configField.value.entries).toHaveLength(2);
+      const [host, port] = configField.value.entries;
+      expect(host.key).toBe("host");
+      expect(port.key).toBe("port");
     }
   });
 });
