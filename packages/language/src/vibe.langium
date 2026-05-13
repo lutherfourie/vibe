@@ -11,7 +11,7 @@ Declaration:
     Agent | Route | Fallback | Persona | Provider | Memory | Harness | Plugin | Trigger;
 
 Agent:
-    'agent' name=ID '{' '}';
+    'agent' name=ID '{' fields+=Field* '}';
 
 Route:
     'route' from=ID '->' to=QualifiedName ('{' fields+=Field* '}')?;

@@ -1,4 +1,5 @@
 import {
+  isAgent,
   isFallback,
   isHarness,
   isMemory,
@@ -9,6 +10,7 @@ import {
   isTrigger,
 } from "../src/generated/ast.js";
 import type {
+  Agent,
   Fallback,
   Harness,
   Memory,
@@ -31,6 +33,10 @@ function first<T>(
     );
   }
   return decl;
+}
+
+export function firstAgent(project: { declarations: unknown[] }): Agent {
+  return first(project, isAgent, "Agent");
 }
 
 export function firstPersona(project: { declarations: unknown[] }): Persona {
