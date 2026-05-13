@@ -94,6 +94,35 @@ describe("structural keywords as Reference segments", () => {
     }
   });
 
+  it("accepts `harness` as a Reference first segment and as a Field name", async () => {
+    // The canonical agent shape from spec §2.9 is `harness = harness.asset_drain`
+    // — the field name `harness` and the leading Reference segment `harness`
+    // both collide with the declaration keyword. With `harness` appended to
+    // Name's alternatives this parses cleanly. Mirrors the `memory` two-axis
+    // coverage above.
+    const project = await expectParses(`
+      persona p {
+        harness = harness.asset_drain
+        scaffold : harness.Kind = "x"
+      }
+    `);
+    const persona = firstPersona(project);
+    expect(persona.fields).toHaveLength(2);
+    const [harnessField, scaffoldField] = persona.fields;
+    expect(harnessField.name).toBe("harness");
+    expect(isReference(harnessField.value)).toBe(true);
+    if (isReference(harnessField.value)) {
+      expect(harnessField.value.segments).toEqual(["harness", "asset_drain"]);
+    }
+    expect(scaffoldField.name).toBe("scaffold");
+    expect(scaffoldField.type?.$type).toBe("TypeReference");
+    expect(scaffoldField.type?.segments).toEqual(["harness", "Kind"]);
+    expect(isStringLiteral(scaffoldField.value)).toBe(true);
+    if (isStringLiteral(scaffoldField.value)) {
+      expect(scaffoldField.value.value).toBe("x");
+    }
+  });
+
   it("accepts `fallback` and `provider` as Reference first segments", async () => {
     // `fallback` and `provider` are both leading-keyword declarations; they
     // must work as identifiers in Reference positions too. This covers the

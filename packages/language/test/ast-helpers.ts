@@ -1,5 +1,6 @@
 import {
   isFallback,
+  isHarness,
   isMemory,
   isPersona,
   isProvider,
@@ -7,6 +8,7 @@ import {
 } from "../src/generated/ast.js";
 import type {
   Fallback,
+  Harness,
   Memory,
   Persona,
   Provider,
@@ -45,4 +47,8 @@ export function firstFallback(project: { declarations: unknown[] }): Fallback {
 
 export function firstMemory(project: { declarations: unknown[] }): Memory {
   return first(project, isMemory, "Memory");
+}
+
+export function firstHarness(project: { declarations: unknown[] }): Harness {
+  return first(project, isHarness, "Harness");
 }
