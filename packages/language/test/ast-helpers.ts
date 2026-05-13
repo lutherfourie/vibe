@@ -3,6 +3,7 @@ import {
   isHarness,
   isMemory,
   isPersona,
+  isPlugin,
   isProvider,
   isRoute,
 } from "../src/generated/ast.js";
@@ -11,6 +12,7 @@ import type {
   Harness,
   Memory,
   Persona,
+  Plugin,
   Provider,
   Route,
 } from "../src/generated/ast.js";
@@ -51,4 +53,8 @@ export function firstMemory(project: { declarations: unknown[] }): Memory {
 
 export function firstHarness(project: { declarations: unknown[] }): Harness {
   return first(project, isHarness, "Harness");
+}
+
+export function firstPlugin(project: { declarations: unknown[] }): Plugin {
+  return first(project, isPlugin, "Plugin");
 }

@@ -123,6 +123,49 @@ describe("structural keywords as Reference segments", () => {
     }
   });
 
+  it("accepts `plugin` as a Reference first segment and as a Field name", async () => {
+    // Task 12: `plugin` becomes a declaration keyword. The canonical agent
+    // shape from spec §2.9 is `uses = [plugin.asset_pipeline]`, and §2.3
+    // motivates `plugin.<name>.<tool>` as tool-reference paths. Both the
+    // leading Reference segment `plugin` and the field name `plugin` (e.g.,
+    // `plugin = plugin.asset_pipeline` for any plugin-binding field) must
+    // parse cleanly. Mirrors the harness/memory two-axis coverage above.
+    const project = await expectParses(`
+      persona p {
+        plugin = plugin.asset_pipeline
+        tool   = plugin.asset_pipeline.list_backlog
+        binding : plugin.Handle = "x"
+      }
+    `);
+    const persona = firstPersona(project);
+    expect(persona.fields).toHaveLength(3);
+    const [pluginField, toolField, bindingField] = persona.fields;
+    expect(pluginField.name).toBe("plugin");
+    expect(isReference(pluginField.value)).toBe(true);
+    if (isReference(pluginField.value)) {
+      expect(pluginField.value.segments).toEqual([
+        "plugin",
+        "asset_pipeline",
+      ]);
+    }
+    expect(toolField.name).toBe("tool");
+    expect(isReference(toolField.value)).toBe(true);
+    if (isReference(toolField.value)) {
+      expect(toolField.value.segments).toEqual([
+        "plugin",
+        "asset_pipeline",
+        "list_backlog",
+      ]);
+    }
+    expect(bindingField.name).toBe("binding");
+    expect(bindingField.type?.$type).toBe("TypeReference");
+    expect(bindingField.type?.segments).toEqual(["plugin", "Handle"]);
+    expect(isStringLiteral(bindingField.value)).toBe(true);
+    if (isStringLiteral(bindingField.value)) {
+      expect(bindingField.value.value).toBe("x");
+    }
+  });
+
   it("accepts `fallback` and `provider` as Reference first segments", async () => {
     // `fallback` and `provider` are both leading-keyword declarations; they
     // must work as identifiers in Reference positions too. This covers the
