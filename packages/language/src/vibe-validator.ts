@@ -1,5 +1,5 @@
 /**
- * Vibe v0 validators — Task 15: name policy.
+ * Vibe v0 validators — Task 15: name policy. Task 16: reserved route name.
  *
  * Concerns:
  *
@@ -7,6 +7,17 @@
  *     (or two `provider x.y`, two `route resolver -> ...`, etc.) leave the
  *     runtime with two competing definitions for the same logical handle,
  *     so we surface a diagnostic on every offending node.
+ *
+ *   - Missing required `resolver` route. Spec §2.2 reserves `resolver` as
+ *     the LLM-resolver sink and says "REQUIRED; build fails if absent" for
+ *     any project that has work to wire. v0 reads that as: a project that
+ *     declares at least one agent or at least one route MUST also declare a
+ *     `route resolver -> <provider>`. An empty .vibe file (purely whitespace
+ *     / comments, or that only carries provider/persona/memory/harness/plugin
+ *     declarations with no agent + no route at all) is exempt — there is
+ *     nothing to resolve from, so the missing-resolver diagnostic would be
+ *     noise. The moment the file grows an agent or a route, the requirement
+ *     kicks in.
  *
  * Non-concerns (intentional, see test file for the long form):
  *
@@ -162,6 +173,50 @@ export class VibeValidator {
       }
     }
   }
+
+  /**
+   * Spec §2.2: `route resolver -> X` is the reserved sink for the LLM
+   * resolver. Any project with actual work to do — at least one agent or at
+   * least one route — must declare it; without resolver, the runtime has no
+   * default route for prose / unmatched LLM calls and `vibe build` would
+   * fail downstream. We fail-fast here so the IDE marker shows up next to
+   * the source instead of buried in a build error.
+   *
+   * Exemption: a project that declares neither an agent nor a route (only
+   * providers/personas/memory/harness/plugin, or a literally empty file)
+   * has nothing to route, so the missing-resolver diagnostic would be noise.
+   * The duplicate-declarations tests rely on this exemption — they exercise
+   * persona/memory/harness/plugin duplicate detection in projects that
+   * legitimately don't declare any routes or agents.
+   *
+   * The diagnostic anchors on the Project root rather than a specific
+   * declaration because the offence is structural (absence of a node), not
+   * a property of any existing node. Editors render Project-level diagnostics
+   * at the document head, which is the natural place for "this file is
+   * missing a required top-level declaration".
+   */
+  checkResolverRoute(project: Project, accept: ValidationAcceptor): void {
+    let hasAgent = false;
+    let hasRoute = false;
+    let hasResolver = false;
+    for (const decl of project.declarations) {
+      if (decl.$type === "Agent") {
+        hasAgent = true;
+      } else if (decl.$type === "Route") {
+        hasRoute = true;
+        if (decl.from === "resolver") {
+          hasResolver = true;
+        }
+      }
+    }
+    if (!hasAgent && !hasRoute) return;
+    if (hasResolver) return;
+    accept(
+      "error",
+      "Missing required route `resolver`. Every Vibe project must declare `route resolver -> <provider>`.",
+      { node: project },
+    );
+  }
 }
 
 /**
@@ -172,7 +227,10 @@ export function registerValidationChecks(services: LangiumServices): void {
   const registry = services.validation.ValidationRegistry;
   const validator = new VibeValidator();
   const checks: ValidationChecks<VibeAstType> = {
-    Project: validator.checkDuplicateDeclarations.bind(validator),
+    Project: [
+      validator.checkDuplicateDeclarations.bind(validator),
+      validator.checkResolverRoute.bind(validator),
+    ],
   };
   registry.register(checks, validator);
 }
