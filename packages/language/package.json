@@ -11,16 +11,38 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./language-server": {
+      "import": "./dist/language-server.js"
     }
+  },
+  "bin": {
+    "vibe-language-server": "./dist/language-server.js"
   },
   "files": [
     "dist",
+    "src",
+    "syntaxes",
+    "language-configuration.json",
     "README.md"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "test": "echo 'no tests yet'",
-    "clean": "rimraf dist"
+    "langium:generate": "langium generate",
+    "build": "pnpm run langium:generate && tsc -p tsconfig.json",
+    "test": "echo \"no tests yet\"",
+    "clean": "rimraf dist src/generated"
+  },
+  "dependencies": {
+    "langium": "^4.2.4",
+    "vscode-languageserver": "^9.0.1",
+    "vscode-languageserver-textdocument": "^1.0.12",
+    "chevrotain": "^11.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "langium-cli": "^4.2.1",
+    "typescript": "^5.6.3",
+    "rimraf": "^6.0.1"
   },
   "engines": {
     "node": ">=22"

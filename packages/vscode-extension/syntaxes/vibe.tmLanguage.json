@@ -1,55 +1,45 @@
 {
-  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
-  "name": "Vibe",
+  "name": "vibe",
   "scopeName": "source.vibe",
-  "fileTypes": ["vibe"],
+  "fileTypes": [
+    ".vibe"
+  ],
   "patterns": [
-    { "include": "#comments" },
-    { "include": "#strings" },
-    { "include": "#keywords" },
-    { "include": "#numbers" }
+    {
+      "include": "#comments"
+    },
+    {
+      "name": "keyword.control.vibe",
+      "match": "\\b(agent|route)\\b"
+    }
   ],
   "repository": {
     "comments": {
       "patterns": [
         {
-          "name": "comment.line.double-slash.vibe",
-          "match": "//.*$"
+          "begin": "//",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.whitespace.comment.leading.vibe"
+            }
+          },
+          "end": "(?=$)",
+          "name": "comment.line.vibe"
         },
         {
           "name": "comment.block.vibe",
           "begin": "/\\*",
-          "end": "\\*/"
-        }
-      ]
-    },
-    "strings": {
-      "patterns": [
-        {
-          "name": "string.quoted.double.vibe",
-          "begin": "\"",
-          "end": "\""
-        },
-        {
-          "name": "string.quoted.backtick.vibe",
-          "begin": "`",
-          "end": "`"
-        }
-      ]
-    },
-    "keywords": {
-      "patterns": [
-        {
-          "name": "keyword.control.vibe",
-          "match": "\\b(agent|plugin|tool|resource|prompt|trigger|route|provider|persona|memory|harness|spec|plan|when|then|do|emit|on|fallback)\\b"
-        }
-      ]
-    },
-    "numbers": {
-      "patterns": [
-        {
-          "name": "constant.numeric.vibe",
-          "match": "\\b\\d+(\\.\\d+)?\\b"
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.vibe"
+            }
+          },
+          "end": "\\*/",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.vibe"
+            }
+          }
         }
       ]
     }

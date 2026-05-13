@@ -1,0 +1,9 @@
+// Vibe placeholder example.
+//
+// Demonstrates the minimal Phase-1 scaffold grammar: one `agent` block and
+// one `route` declaration. The real Vibe syntax is being designed in a
+// parallel brainstorm — this file will be rewritten once that lands.
+
+agent planner {}
+
+route planner -> worker

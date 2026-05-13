@@ -1,0 +1,14 @@
+{
+  "projectName": "Vibe",
+  "languages": [
+    {
+      "id": "vibe",
+      "grammar": "src/vibe.langium",
+      "fileExtensions": [".vibe"],
+      "textMate": {
+        "out": "../vscode-extension/syntaxes/vibe.tmLanguage.json"
+      }
+    }
+  ],
+  "out": "src/generated"
+}
