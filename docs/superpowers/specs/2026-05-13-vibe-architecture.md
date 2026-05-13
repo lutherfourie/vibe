@@ -1,16 +1,19 @@
 # Vibe — top-level architecture and sequencing
 
-**Status:** Design v2. Top-level only — per-subsystem specs come in later sessions.
+**Status:** Design v3. Top-level only — per-subsystem specs come in later sessions.
 **Date:** 2026-05-13
 **Owner:** Luther
 **Working title (previously):** Hive
 **v1 → v2 delta:** folded in (a) hybrid deterministic + LLM-guided framing, (b) conversation files as valid Vibe sources, (c) `vibe init` → `.vibe/` Obsidian vault as the entry point, (d) AgentOps as prior art, (e) collapsed the standalone Vibe IDE subsystem — Obsidian is the v0 IDE.
+**v2 → v3 delta:** providers gain a **mode** dimension — `api` (HTTPS) **and `cli`** (local subprocess: `claude`, `codex`, `gemini`, `grok`). CLI-mode is first-class because most consumer subscriptions (Claude.ai, ChatGPT, Google One AI Premium, SuperGrok) grant CLI access without API credits. Per-CLI lifecycle is configurable (long-lived subprocess vs one-shot per call).
 
 ---
 
 ## 1. Vision
 
 **Vibe is a hybrid specification language for vibecoded ecosystems.** A real interpreted language — parser, AST, runtime, standard library — but with one defining twist: the language is **deterministic where the source is structured** (declarations, types, routing, plugin manifests) **and LLM-guided where the source is prose** (intent, vibes, design goals, conversations). The LLM resolver defaults to **Cerebras-hosted GLM** (the latest available, currently `zai-glm-4.7`) and is provider-swappable.
+
+Providers in Vibe come in two modes. **API-mode** providers (Cerebras, OpenAI, Anthropic API, OpenRouter, LiteLLM, Google AI Studio) are called via HTTPS with an API key. **CLI-mode** providers (`claude`, `codex`, `gemini`, `grok`) are called via local subprocess — Vibe spawns the CLI, speaks its protocol, and uses **the developer's consumer subscription** for auth. CLI-mode is first-class because most vibe-coders pay for Claude.ai / ChatGPT / Google One / SuperGrok subscriptions, not API credits. Vibe routes work talks through whichever mode the developer prefers per task.
 
 This makes three things first-class in Vibe that no existing tool unifies:
 
@@ -105,7 +108,7 @@ Vibe combines five previously-separate concerns into a single subsystem because 
 
 - **Language core.** Lexer → parser → AST → evaluator → standard library. File extension `.vibe`. Three input shapes accepted: structured syntax, markdown with embedded blocks, conversation transcripts (role-tagged).
 - **LLM resolver.** Prose regions of source go through the resolver. Default: Cerebras + GLM (`zai-glm-4.7`). Swappable per route declaration. Resolutions are cached by content + model + temperature for incremental re-runs; cache invalidation is content-keyed.
-- **Provider adapters.** Codegen targets: `AGENTS.md` (primary human-readable), `.claude/agents/*.md` + `CLAUDE.md` + `.claude/settings.json` (Claude Code), `.codex/config.toml` + `.codex/agents/*.toml` (Codex), `.mcp.json` (MCP host config), `.cursorrules` / `.windsurfrules` (IDE rules), OpenAI-compatible client config (Cerebras / OpenRouter / LiteLLM).
+- **Provider adapters.** Two modes per provider: **api** (HTTPS, API key) and **cli** (local subprocess, consumer subscription auth). Codegen targets: `AGENTS.md` (primary human-readable), `.claude/agents/*.md` + `CLAUDE.md` + `.claude/settings.json` (Claude Code), `.codex/config.toml` + `.codex/agents/*.toml` (Codex), `.mcp.json` (MCP host config), `.cursorrules` / `.windsurfrules` (IDE rules), OpenAI-compatible client config (Cerebras / OpenRouter / LiteLLM / xAI / Google AI Studio). CLI adapters wrap `claude`, `codex`, `gemini`, `grok`.
 - **Init / sync / build pipeline.** `vibe init <repo>` walks the repo and emits a `.vibe/` Obsidian vault. `vibe sync` re-runs the analysis after the repo changes. `vibe build` compiles `.vibe` sources into provider artifacts (AGENTS.md, etc.).
 - **Embedding strategy.** v0 ships as a TypeScript package, interpreter embedded in the Izsha Node process. Long-term option to extract a standalone Rust or Go binary once language stabilizes.
 
@@ -225,18 +228,51 @@ write decision into spineflow when fog <= medium with provenance required
 
 ### 5.4 Vibe ↔ providers
 
-Codex, Claude Code, Cerebras, OpenAI, and local models each look like a `ProviderAdapter`. Declarative routing:
+Every provider is a `ProviderAdapter` with one of two modes:
+
+| Mode | Wire | Auth | Examples |
+| ---- | ---- | ---- | -------- |
+| `api` | HTTPS | API key (env var) | `cerebras.glm-4.7`, `openai.gpt-5.5`, `anthropic.opus-4-7`, `openrouter`, `litellm`, `google.gemini-2.5-pro` |
+| `cli` | Local subprocess + protocol | Consumer subscription (CLI login on the dev machine) | `anthropic.claude-code`, `openai.codex`, `google.gemini`, `xai.grok` |
+
+Declarative routing:
 
 ```text
-route planner    -> anthropic.opus-4-7
-route generator  -> openai.gpt-5.5-codex
-route evaluator  -> openai.gpt-5.5
-route resolver   -> cerebras.glm-4.7        # LLM resolver default
-route grep       -> cerebras.glm-4.7-fast   # speed-critical
-fallback         -> openrouter
+route planner    -> anthropic.claude-code{mode: cli}        # Claude.ai subscription
+route generator  -> openai.codex{mode: cli}                 # ChatGPT subscription
+route narrate    -> google.gemini{mode: cli}                # Gemini CLI (needs AI Studio key)
+route grep       -> xai.grok{mode: cli}                     # SuperGrok subscription
+route resolver   -> cerebras.glm-4.7{mode: api}             # LLM resolver default
+route evaluator  -> openai.gpt-5.5{mode: api}
+fallback         -> openrouter{mode: api}
 ```
 
-`vibe build` compiles this to LiteLLM router config, OpenAI Agents SDK runners, and Claude Code subagent `model:` fields per target.
+`vibe build` compiles routes to:
+
+- For `api` mode → LiteLLM router config, OpenAI-compatible client setup, Claude Code subagent `model:` fields, `.mcp.json` provider blocks.
+- For `cli` mode → process-supervisor declarations (which binary, which flags, lifecycle policy, IPC protocol), plus per-CLI auth bootstrapping steps in the generated AGENTS.md / CLAUDE.md.
+
+**CLI lifecycle is per-CLI configurable.** Each adapter declares its default lifecycle and the user can override:
+
+```text
+provider anthropic.claude-code {
+  mode      = cli
+  lifecycle = long-lived               # one persistent subprocess per route
+  binary    = "claude"
+  protocol  = "claude-cli-stdio-v1"    # adapter-defined
+}
+
+provider openai.codex {
+  mode      = cli
+  lifecycle = short-lived              # spawn per call; simpler, slower
+  binary    = "codex"
+  protocol  = "codex-cli-jsonrpc"
+}
+```
+
+**Why both lifecycles:** long-lived subprocesses amortize startup cost (the CLI loads models, opens MCP servers, fetches context once and reuses) but Vibe owns crash detection, context-window management, and restart policy. Short-lived is bulletproof (no state to corrupt) but slower per call. The right default depends on the CLI — Claude Code and Codex are long-lived-friendly; one-shot helpers default short.
+
+**The subscription-vs-API caveat as a non-goal:** Vibe does NOT bridge consumer subscriptions to API credits. If a provider's CLI gates on an API key (e.g., Gemini CLI typically wants an AI Studio key, not a Google One AI Premium credential), the user obtains it through that provider's normal flow. Vibe just consumes whatever credential the CLI is configured with.
 
 ### 5.5 Izsha ↔ MCP clients (Claude Code, Codex)
 
@@ -282,6 +318,9 @@ If any of those fail, the architecture as designed is wrong somewhere obvious.
 - **Vault regeneration semantics.** When `vibe sync` re-runs against an updated repo, how does it merge with human edits to the vault? Three-way merge? Append-only? Conflict markers? Decision in Phase 1.
 - **Persona spec.** Is persona a Vibe construct (`persona "coordinator, dry"`) or a runtime config Izsha consumes? Lean toward Vibe construct. Decision in Phase 3.
 - **Economy primitive design.** Are Gold/Lumber/Upkeep/Supply baked in, or are they user-defined economy slots? Lean toward user-defined with AgentOps' set as a stdlib preset. Decision in Phase 3 or 5.
+- **CLI protocol stability.** `claude`, `codex`, `gemini`, `grok` are all moving CLI surfaces; their stdio/JSON-RPC protocols change between versions. How does Vibe pin CLI versions, detect protocol drift, and degrade gracefully when a CLI updates? Decision in Phase 2.
+- **CLI auth bootstrapping.** Each CLI authenticates differently (Claude Code uses `claude login`, Codex uses OpenAI account flow, Gemini CLI wants an AI Studio key, Grok varies). Does `vibe init` detect missing auth and walk the user through per-CLI login? Decision in Phase 2.
+- **CLI lifecycle defaults.** Which CLIs default to long-lived subprocess vs short-lived per-call? Empirical question — depends on each CLI's startup cost, IPC quality, and crash behavior. Decision in Phase 2 with profiling data.
 - **Cloud hosting.** Vercel + Supabase split (frontend on Vercel, Postgres+auth+storage on Supabase). Confirmed at top of Phase 6.
 - **Self-hosting.** When does Vibe become implementable in Vibe? Probably not before Phase 6.
 
