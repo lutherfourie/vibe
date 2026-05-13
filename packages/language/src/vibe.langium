@@ -23,7 +23,17 @@ Field:
     name=ID '=' value=Expression;
 
 Expression:
-    StringLiteral | NumberLiteral | BooleanLiteral | NullLiteral | Reference;
+    StringLiteral | NumberLiteral | BooleanLiteral | NullLiteral
+    | Reference | ListExpression | ObjectExpression;
+
+ListExpression:
+    {infer ListExpression} '[' (items+=Expression (',' items+=Expression)* ','?)? ']';
+
+ObjectExpression:
+    {infer ObjectExpression} '{' (entries+=ObjectEntry (',' entries+=ObjectEntry)* ','?)? '}';
+
+ObjectEntry:
+    key=ID '=' value=Expression;
 
 // `true`, `false`, `null` are reserved keywords and cannot appear as Reference
 // segments — Task 15 will reject declarations whose names collide with reserved
