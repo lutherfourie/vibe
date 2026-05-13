@@ -7,6 +7,7 @@
 **v1 → v2 delta:** folded in (a) hybrid deterministic + LLM-guided framing, (b) conversation files as valid Vibe sources, (c) `vibe init` → `.vibe/` Obsidian vault as the entry point, (d) AgentOps as prior art, (e) collapsed the standalone Vibe IDE subsystem — Obsidian is the v0 IDE.
 **v2 → v3 delta:** providers gain a **mode** dimension — `api` (HTTPS) **and `cli`** (local subprocess: `claude`, `codex`, `gemini`, `grok`). CLI-mode is first-class because most consumer subscriptions (Claude.ai, ChatGPT, Google One AI Premium, SuperGrok) grant CLI access without API credits. Per-CLI lifecycle is configurable (long-lived subprocess vs one-shot per call).
 **v3 → v4 delta:** added a **thin VS Code extension at v0** as a Phase 1 deliverable. VS Code is the authoring surface (syntax highlighting, diagnostics, command palette, hover-based LLM resolver preview); Obsidian remains the navigation/exploration surface for `.vibe/`. They complement, neither replaces the other. Extension lives at `vibe/packages/vscode-extension/` inside this repo.
+**v4 → v5 delta:** two architecture-level facts surfaced by the library survey ([`research/2026-05-13-library-survey.md`](../research/2026-05-13-library-survey.md)): (a) **Grok has no official CLI in May 2026** — §5.4's `xai.grok{mode: cli}` is deferred to API-mode-only via `@ai-sdk/xai` until xAI ships Grok Build; (b) the **file-shape dispatcher** that slices a file into structured regions (→ parser) and prose regions (→ LLM resolver) sits *above* the parser as its own architectural layer — clarified in §5.1.
 
 ---
 
@@ -210,6 +211,8 @@ A `.vibe` source has two kinds of regions:
 
 The boundary is *in the source*, marked by a typed harness or implicit by region kind (markdown headings, fenced code blocks tagged `vibe`, role-tagged chat turns). Resolution outputs are cached by `(content hash + resolver model + temperature)` so re-runs don't burn tokens; variance is exposed per note as `resolver: cerebras.glm-4.7, t: 0.3, at: 2026-05-13T…`.
 
+**Implementation: file-shape dispatcher.** Because markdown and conversation transcripts are not LL(k), the slicing of a source into structured vs prose regions is its **own architectural layer** sitting *above* the parser. The dispatcher runs first: it inspects file shape (pure structured, markdown-with-blocks, conversation transcript) and emits a region stream — structured regions go to the parser, prose regions go to the resolver. The parser does not see markdown; the resolver does not see typed declarations. This keeps the parser context-free and the resolver focused.
+
 ### 5.2 Vibe ↔ runtime (language ↔ Izsha)
 
 The Vibe interpreter exposes a small embedding API to the host runtime:
@@ -242,7 +245,7 @@ Every provider is a `ProviderAdapter` with one of two modes:
 | Mode | Wire | Auth | Examples |
 | ---- | ---- | ---- | -------- |
 | `api` | HTTPS | API key (env var) | `cerebras.glm-4.7`, `openai.gpt-5.5`, `anthropic.opus-4-7`, `openrouter`, `litellm`, `google.gemini-2.5-pro` |
-| `cli` | Local subprocess + protocol | Consumer subscription (CLI login on the dev machine) | `anthropic.claude-code`, `openai.codex`, `google.gemini`, `xai.grok` |
+| `cli` | Local subprocess + protocol | Consumer subscription (CLI login on the dev machine) | `anthropic.claude-code`, `openai.codex`, `google.gemini` (`xai.grok` deferred — no official CLI yet) |
 
 Declarative routing:
 
@@ -250,7 +253,7 @@ Declarative routing:
 route planner    -> anthropic.claude-code{mode: cli}        # Claude.ai subscription
 route generator  -> openai.codex{mode: cli}                 # ChatGPT subscription
 route narrate    -> google.gemini{mode: cli}                # Gemini CLI (needs AI Studio key)
-route grep       -> xai.grok{mode: cli}                     # SuperGrok subscription
+route grep       -> xai.grok{mode: api}                     # api-mode only; no official CLI in May 2026
 route resolver   -> cerebras.glm-4.7{mode: api}             # LLM resolver default
 route evaluator  -> openai.gpt-5.5{mode: api}
 fallback         -> openrouter{mode: api}
