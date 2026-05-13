@@ -20,15 +20,21 @@ Persona:
     'persona' name=ID '{' fields+=Field* '}';
 
 Field:
-    name=ID (':' type=TypeReference)? '=' value=Expression;
+    name=Name (':' type=TypeReference)? '=' value=Expression;
 
-// Task 6.5 will introduce a `Name` rule alias that lets primitive keywords
-// (agent, route, persona, memory, harness, plugin, provider, trigger) appear
-// as Reference segments. TypeReference needs the same treatment so that type
-// shapes like `memory.Spineflow` or `plugin.asset_pipeline.Handle` survive
-// once those words become reserved in Tasks 7-14.
+// Name lets structural-primitive keywords appear as identifiers in identifier
+// positions — Reference / TypeReference segments, Field names, ObjectEntry
+// keys. Each primitive task (Tasks 7-14) must append its keyword here.
+// `true`, `false`, `null` are deliberately excluded — they stay reserved for
+// the literal expressions so the parser can never ambiguate `x = true`.
+// Declaration headers still bind `name=ID` so declaration names cannot collide
+// with structural keywords; the Task 15 validator enforces the same constraint
+// for `true`/`false`/`null` and any future literal-shaped keyword.
+Name returns string:
+    ID | 'agent' | 'route' | 'persona';
+
 TypeReference:
-    segments+=ID ('.' segments+=ID)*;
+    segments+=Name ('.' segments+=Name)*;
 
 Expression:
     StringLiteral | NumberLiteral | BooleanLiteral | NullLiteral
@@ -41,13 +47,10 @@ ObjectExpression:
     {infer ObjectExpression} '{' (entries+=ObjectEntry (',' entries+=ObjectEntry)* ','?)? '}';
 
 ObjectEntry:
-    key=ID '=' value=Expression;
+    key=Name '=' value=Expression;
 
-// `true`, `false`, `null` are reserved keywords and cannot appear as Reference
-// segments — Task 15 will reject declarations whose names collide with reserved
-// words to keep this constraint enforceable.
 Reference:
-    segments+=ID ('.' segments+=ID)*;
+    segments+=Name ('.' segments+=Name)*;
 
 StringLiteral:
     value=STRING;
