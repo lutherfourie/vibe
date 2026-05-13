@@ -8,13 +8,16 @@ entry Project:
     declarations+=Declaration*;
 
 Declaration:
-    Agent | Route | Persona | Provider;
+    Agent | Route | Fallback | Persona | Provider;
 
 Agent:
     'agent' name=ID '{' '}';
 
 Route:
-    'route' from=ID '->' to=ID;
+    'route' from=ID '->' to=QualifiedName ('{' fields+=Field* '}')?;
+
+Fallback:
+    'fallback' '->' to=QualifiedName ('{' fields+=Field* '}')?;
 
 Persona:
     'persona' name=ID '{' fields+=Field* '}';
