@@ -1,15 +1,22 @@
 # Vibe — top-level architecture and sequencing
 
-**Status:** Design v1. Top-level only — per-subsystem specs come in later sessions.
+**Status:** Design v2. Top-level only — per-subsystem specs come in later sessions.
 **Date:** 2026-05-13
 **Owner:** Luther
 **Working title (previously):** Hive
+**v1 → v2 delta:** folded in (a) hybrid deterministic + LLM-guided framing, (b) conversation files as valid Vibe sources, (c) `vibe init` → `.vibe/` Obsidian vault as the entry point, (d) AgentOps as prior art, (e) collapsed the standalone Vibe IDE subsystem — Obsidian is the v0 IDE.
 
 ---
 
 ## 1. Vision
 
-**Vibe is a specification language for vibecoded ecosystems.** A real interpreted language — parser, AST, runtime, standard library — designed to be the unified target for LLM-authored large-system software, provider-agnostic across Codex / Claude / Cerebras / local models.
+**Vibe is a hybrid specification language for vibecoded ecosystems.** A real interpreted language — parser, AST, runtime, standard library — but with one defining twist: the language is **deterministic where the source is structured** (declarations, types, routing, plugin manifests) **and LLM-guided where the source is prose** (intent, vibes, design goals, conversations). The LLM resolver defaults to **Cerebras-hosted GLM** (the latest available, currently `zai-glm-4.7`) and is provider-swappable.
+
+This makes three things first-class in Vibe that no existing tool unifies:
+
+1. **A `.vibe` file can be structured syntax** (à la Pkl / Starlark / HCL).
+2. **A `.vibe` file can be a markdown spec** with embedded `vibe { ... }` blocks.
+3. **A `.vibe` file can be a conversation transcript** — chat turns between human and assistant — that the interpreter reads as source code, with the LLM resolver extracting deterministic outputs from the prose.
 
 When a programmer is asked *"what languages do you code in?"* a valid answer is **"Vibe."** Vibe coders write programs the way React developers write apps: a coherent enough convention that the language earns its own name even though tool bodies underneath are still TS/Python.
 
@@ -17,257 +24,301 @@ When a programmer is asked *"what languages do you code in?"* a valid answer is 
 
 Vibe is the **administration plane** of an LLM-authored system. You declare in Vibe:
 
-- **Agents** — their persona, memory binding, tool permissions, triggers
+- **Agents** — their persona, memory binding, tool permissions, triggers, role (Planner / Scout / Verifier / Worker)
 - **Plugins** — collections of tools/resources/prompts with TS or Python implementations registered via FFI
-- **Orchestrations** — when X happens, do Y; cross-agent flows
+- **Orchestrations** — turn lifecycle, admission gates, dispatch policy, fog-of-war on durable writes
 - **Schedules** — cron-style triggers, event subscriptions
-- **Spec & plan artifacts** — the long-horizon-task harness primitives (frozen specs, milestones, validation commands) as first-class language constructs
-- **Provider bindings** — which LLM provider drives which agent, with hot-swap semantics
+- **Spec & plan artifacts** — acceptance criteria, milestones, validation commands as first-class blocks
+- **Provider bindings** — declarative routing (`route planner -> anthropic.opus-4-7; route grep -> cerebras.glm-fast`)
+- **Resource economy** — reasoning budget, retrieval budget, concurrency penalty, capacity (the AgentOps Gold/Lumber/Upkeep/Supply model)
 
 You do **not** write the imperative tool implementations in Vibe — those stay in TS or Python and are registered via FFI. Vibe handles the composition; existing languages handle the work.
+
+### How Vibe enters a project: `vibe init`
+
+Vibe is **initialized into existing repositories**, not bootstrapped from blank files. Running `vibe init` on a repo:
+
+1. Performs **deterministic analysis** — git topology, branch state, hotspot detection, file inventory, AGENTS.md / CLAUDE.md / README extraction, existing plan files.
+2. Runs **LLM-guided narrative extraction** (Cerebras + GLM) — clusters commits into decisions, infers intent from revert chains, extracts domain glossary, summarizes per-week activity.
+3. Emits a **`.vibe/` Obsidian vault** — markdown files with `[[wikilinks]]`, navigable in Obsidian or any markdown reader, capturing the project's state, agents, decisions, plans, timeline, hotspots, glossary, and imported conversations.
+4. Surfaces variance honestly — every LLM-extracted note records the model + temperature + timestamp that generated it. Re-running `vibe sync` shows the diff.
+
+The first reference target is **GameSpree** (`c:/GameSpree`): 198 commits, 39 branches, 3 AI agent identities producing `claude/*` and `codex/*` branches, 3 historical reverts, rich uncodified vocabulary (swipe trail, ornate panel, cat presence, wave clear, fog-of-war). When `vibe init` runs cleanly on GameSpree, the design is proven against real mess.
 
 ### Why Vibe exists (the gap)
 
 Today, LLM-authored software is a swamp of provider-specific conventions:
 
-- `AGENTS.md` (Codex), `CLAUDE.md` (Claude Code), `MEMORY.md` (custom harnesses)
-- `.codex/`, `.claude/plugins/`, `.cursor/` — overlapping, incompatible structures
-- Each provider's tool-call format, system-prompt convention, plan-file layout differs
+- `AGENTS.md` (Codex / 60K projects / LF stewardship), `CLAUDE.md` (Claude Code holdout), `MEMORY.md` (custom harnesses)
+- `.codex/`, `.claude/plugins/`, `.cursorrules`, `.windsurfrules` — overlapping, incompatible structures
+- Each provider's tool-call format, plan-file layout, hook vocabulary differs
 - Switching from Codex to Claude (or back) means rewriting glue, not just changing an API key
 
-**Vibe is the unified abstraction** these tools never agreed on. Once you write a Vibe project, any compliant provider runtime can author into it. Provider differences become language-level concerns the runtime handles — not concerns leaking into every project.
+The Phase 0 research ([`docs/superpowers/research/2026-05-13-codex-claude-ecosystem-survey.md`](../research/2026-05-13-codex-claude-ecosystem-survey.md)) maps every existing standardization attempt — LangChain, DSPy, BAML, LiteLLM, MCP, AGENTS.md — and shows the **project-shape × subagent × skill × hook × memory × narrative** surface is uncovered. That's the Vibe-shaped hole.
+
+**Vibe is the unified abstraction** these tools never agreed on. Once you write a Vibe project — or have Vibe init one for you — any compliant provider runtime can author into it. Provider differences become language-level concerns the runtime handles, not concerns leaking into every project.
 
 ### What Vibe is not
 
-- **Not a general-purpose programming language.** No need to write OS kernels in Vibe. No borrow checker. No SIMD intrinsics. Scope is bounded to administering vibecoded ecosystems.
-- **Not just a config format.** Vibe has computation, types, modules, and FFI. Closer to Pkl, HCL, Starlark, or Nix expression than to YAML.
+- **Not a general-purpose programming language.** Bounded to administering vibecoded ecosystems.
+- **Not just a config format.** Vibe has computation, types, modules, FFI, **and an LLM resolver for prose regions**. Closer to Pkl × LLM than to YAML.
 - **Not a prompt framework.** LangChain abstracts prompts. Vibe abstracts a layer above — the *project* and *agent ecosystem*, not the individual LLM call.
 - **Not a runtime by itself.** Vibe specifies; implementations run. The reference runtime (Izsha) is separate.
+- **Not deterministic by default.** When prose is the source, output may vary across runs. Vibe **exposes variance** rather than hiding it.
 
 ---
 
-## 2. The five subsystems
+## 2. The four subsystems
+
+(v1 had five; the Vibe IDE collapsed — Obsidian is the v0 authoring surface, see §6.)
 
 ```text
-                                    ┌──────────────────┐
-                                    │  Vibe IDE        │
-                                    │  (LLM-assisted   │
-                                    │  spec / plan     │
-                                    │  authoring)      │
-                                    └────────┬─────────┘
-                                             │
-                                             ▼
-            ┌────────────────────────────────────────────────────────┐
-            │  Vibe (language)                                       │
-            │  parser · AST · interpreter · stdlib · FFI             │
-            │  + Vibe (ecosystem) — provider adapters                │
-            └─┬──────────────────────────────────────┬───────────────┘
-              │ FFI                                  │ provider adapters
-              ▼                                      ▼
-        ┌──────────────────┐                  ┌─────────────────────┐
-        │  Spineflow       │                  │  Provider runtimes  │
-        │  Python library  │                  │  Codex · Claude     │
-        │  living memory   │                  │  Cerebras · local   │
-        └──────────────────┘                  └─────────────────────┘
-              ▲
-              │ used by
-              │
-        ┌──────────────────┐
-        │  Izsha v1        │
-        │  reference agent │
-        │  declared in     │
-        │  Vibe, drains    │
-        │  Pawfall backlog │
-        └──────────────────┘
+                  ┌──────────────────────────────────────────────────┐
+                  │  Vibe (language)                                 │
+                  │  parser · AST · evaluator · stdlib · FFI         │
+                  │  + LLM resolver (Cerebras + GLM, swappable)      │
+                  │  + provider adapters (Codex / Claude / etc.)     │
+                  │  + `vibe init` / `vibe sync` / `vibe build`      │
+                  └──┬───────────────────────────────────────────┬───┘
+                     │                                           │
+                     │ FFI (TS in-process)                       │ HTTPS
+                     │                                           │
+                     ▼                                           ▼
+        ┌──────────────────────┐                        ┌─────────────────────┐
+        │  Izsha v1 (runtime)  │                        │  Spineflow          │
+        │  reference agent     │                        │  the memory spine   │
+        │  hosts MCP for       │                        │  Python service     │
+        │  Codex + Claude      │                        │  source of truth    │
+        │  drains Pawfall      │                        │                     │
+        └──────────┬───────────┘                        └──────────▲──────────┘
+                   │                                               │
+                   │ reads / writes via stdlib                     │
+                   └───────────────────────────────────────────────┘
+
+        Author surface:  Obsidian on `.vibe/` (markdown + graph view)
+        Reader surface:  `vibe build` emits AGENTS.md, .claude/, .codex/, .mcp.json
 ```
 
-### 2.1 Vibe (language)
+### 2.1 Vibe (language + resolver + adapters + init)
 
-Interpreted, embedded-bootstrap-in-TS for v0, with the long-term option to extract into a standalone binary (Rust or Go) once the language stabilizes.
+Vibe combines five previously-separate concerns into a single subsystem because they share the parser, evaluator, and FFI plumbing:
 
-**Owns:** lexer, parser, AST, evaluator, standard library, type system (gradual — runtime checks first, optional static typing later), FFI to TS and Python.
+- **Language core.** Lexer → parser → AST → evaluator → standard library. File extension `.vibe`. Three input shapes accepted: structured syntax, markdown with embedded blocks, conversation transcripts (role-tagged).
+- **LLM resolver.** Prose regions of source go through the resolver. Default: Cerebras + GLM (`zai-glm-4.7`). Swappable per route declaration. Resolutions are cached by content + model + temperature for incremental re-runs; cache invalidation is content-keyed.
+- **Provider adapters.** Codegen targets: `AGENTS.md` (primary human-readable), `.claude/agents/*.md` + `CLAUDE.md` + `.claude/settings.json` (Claude Code), `.codex/config.toml` + `.codex/agents/*.toml` (Codex), `.mcp.json` (MCP host config), `.cursorrules` / `.windsurfrules` (IDE rules), OpenAI-compatible client config (Cerebras / OpenRouter / LiteLLM).
+- **Init / sync / build pipeline.** `vibe init <repo>` walks the repo and emits a `.vibe/` Obsidian vault. `vibe sync` re-runs the analysis after the repo changes. `vibe build` compiles `.vibe` sources into provider artifacts (AGENTS.md, etc.).
+- **Embedding strategy.** v0 ships as a TypeScript package, interpreter embedded in the Izsha Node process. Long-term option to extract a standalone Rust or Go binary once language stabilizes.
 
-**File extension:** `.vibe`.
+**Defers to per-subsystem spec (Phase 1):** syntax design, type system depth, error message strategy, package manager, formatter / LSP.
 
-**Defers to per-subsystem spec:** syntax design, type system depth, error message strategy, package manager design, formatter / LSP.
+### 2.2 Izsha v1 (reference runtime)
 
-### 2.2 Vibe (ecosystem abstraction)
+The reference agent declared in Vibe, ships first with one plugin: **asset-pipeline**, which drains the Pawfall codex backlog and resolves the actual present pain.
 
-The provider-adapter layer that makes a single Vibe project portable across Codex, Claude Code, Cerebras, and local models.
-
-**Owns:** the abstraction of agent file conventions (translates Vibe's canonical form to/from AGENTS.md, CLAUDE.md, plugin manifests, MCP configs), tool-call format normalization, prompt-caching strategy abstraction, memory/compaction primitives, provider hot-swap.
-
-**Depends on:** Phase 0 deep research (`docs/superpowers/research/2026-05-13-codex-claude-ecosystem-survey.md`) — designs the abstraction layer with full knowledge of what each provider already does, so Vibe's primitives are honest unions, not lowest-common-denominator stubs.
-
-**Defers to per-subsystem spec:** which conventions become first-class, which become escape hatches, how provider-specific extensions are namespaced.
-
-### 2.3 Vibe IDE
-
-Interactive editor with LLM-assisted authoring specifically aimed at **specifying and planning large software systems** — not just code completion. Think a working environment for the brainstorming → spec → plan → implementation flow we just lived through, formalized.
-
-**Owns:** Vibe syntax highlighting, LSP, AST-aware refactors, an LLM-assisted spec/plan authoring surface (interactive specification companion, plan tree visualizer, milestone state tracking), integration with the host runtime so you can run Vibe programs from the editor.
-
-**Form factor (open):** VS Code extension first (rides existing infrastructure), with a possible standalone Electron / Tauri app later. Decided in the per-subsystem spec.
-
-**Defers:** everything. This subsystem is the latest in the sequence; do not block earlier phases on its design.
-
-### 2.4 Spineflow
-
-A **Python library** for living memory: event log, knowledge graph, embedding recall, background consolidation. Already partially developed at `C:\Hive\spineflow`.
-
-**Owns:** memory primitives consumed by Vibe agents via FFI — `remember`, `recall`, `tail`, plus richer graph queries.
-
-**Relationship to Vibe:** Spineflow is a network service Vibe talks to via HTTP. Vibe's standard library wraps Spineflow's HTTP API so agents call it as if it were native (`agent.memory.recall(...)` desugars to an HTTP request to Spineflow). For v0, **the in-process FFI is TS-only**; Python integration is exclusively via HTTP. A future Phase considers in-process Python FFI if there's pressure for it, but it's not on the v1 critical path.
-
-**Defers to per-subsystem spec:** Spineflow's full architecture (graph model, decay semantics, consolidation workers, persistence layer choice).
-
-### 2.5 Izsha v1
-
-The **reference agent declared in Vibe**, ships first with one plugin: **asset-pipeline**, which drains the Pawfall codex backlog and resolves the actual present pain.
-
-**Owns:** runtime process that loads Vibe-declared agents, hosts MCP for Claude Code + Codex, runs the smart layer (default Cerebras + GLM, swappable), holds the scheduler, embeds the Vibe interpreter (v0 bootstrap form).
+**Owns:** runtime process that loads Vibe-declared agents, hosts MCP over stdio for Claude Code + Codex, runs the smart layer (LLM resolver double-duties here), holds the scheduler, embeds the Vibe interpreter.
 
 **Plugins (initial):** asset-pipeline only at v1. Deploy / content / life follow as their own per-plugin specs once Izsha v1 is alive.
 
-**Defers to per-subsystem spec:** plugin contract details (FFI shape, tool/resource/prompt/trigger declarations), smart-layer composition (per-tool opt-in), CLI surface, Claude Code shim packaging.
+**Defers to per-subsystem spec (Phase 3):** plugin contract details (FFI shape, tool/resource/prompt/trigger declarations), persona format, CLI surface, Claude Code shim packaging.
+
+### 2.3 Spineflow — the memory spine
+
+A **Python network service** for living memory: append-only event log, knowledge graph, embedding recall, background consolidation. Already partially developed at `c:/Hive/spineflow`.
+
+**Owns:** memory primitives consumed by Vibe agents via the Vibe stdlib (which wraps Spineflow's HTTP API). `remember` / `recall` / `tail` / graph queries.
+
+**The AgentOps invariant** (§3): *"The memory spine is the source of truth; orchestration is not."* Orchestration (Vibe-declared agents) reads against Spineflow. Spineflow's writes go through fog-of-war confidence gating — high-fog turns block irreversible writes; medium-fog allows provisional outputs with explicit uncertainty.
+
+**Defers to per-subsystem spec (Phase 4):** Spineflow's full architecture (graph model, decay semantics, consolidation workers, persistence layer choice, confidence model).
+
+### 2.4 `.vibe/` Obsidian vault (the authoring + reading surface)
+
+Not a software subsystem in the same sense as the others — it's a **convention + generation target**. Every Vibe-initialized project gets a `.vibe/` directory that's:
+
+- A valid Obsidian vault (`.obsidian/` config, markdown files, `[[wikilinks]]`)
+- Numbered top-level folders for natural sort: `00-state`, `10-projects`, `20-agents`, `30-decisions`, `40-plans`, `50-timeline`, `60-hotspots`, `70-glossary`, `80-conversations`, `90-research`
+- Append-only on the human side: anything a human writes in the vault is honored on next `vibe sync`
+- Regenerable on the machine side: deterministic-extracted notes can be regenerated from source repo state; LLM-extracted notes show provenance
+
+This is **the IDE for v0**. Obsidian gives graph view, backlinks, search, plugins (Dataview, Tasks) for free. The custom Vibe IDE (formerly §2.3 in v1) is deferred until Obsidian's seams reveal real pain.
 
 ---
 
-## 3. Sequencing — the eight phases
+## 3. Prior art — AgentOps
+
+[`c:/Hive/AgentOps`](file:///c:/Hive/AgentOps) (`git@github.com:Vibecadex/AgentOps.git`) is a running React + Three.js + Supabase project that builds an **RTS-style control surface** for AI agent orchestration. It exists today, hand-coded, and the user described it as *"a metaphor for vibe coding and managing agents that could have been built on top of vibelang."*
+
+**Why this matters for Vibe's design:**
+
+- **Validates Cerebras + GLM** as the default LLM (AgentOps env: `CEREBRAS_MODEL=zai-glm-4.7`).
+- **Names the architectural seam.** AgentOps' first stated invariant: *"The memory spine is the source of truth; orchestration is not."* This pins Spineflow's role in Vibe.
+- **Contributes a novel resource-economy vocabulary**: Gold (reasoning budget), Lumber (retrieval budget), Upkeep (concurrency penalty), Supply (capacity). Vibe should be expressive enough to declare these as typed economy slots.
+- **Provides a role taxonomy** that converges with the Anthropic harness research: Planner (hero, picks macro action and owns final answer), Scout (hero, reduces fog via retrieval), Verifier (hero, adversarial pass for high-stakes), Worker (deterministic execution). With hard constraints: planner ≠ verifier, only one planner owns final answer per turn, workers cannot self-upgrade.
+- **Provides a turn lifecycle**: intent → scout/assess → admission gate → dispatch → observe → evaluate → learn. Every turn emits a typed `CommandCard` — replayable, debuggable. This is the *plan files as first-class artifacts* finding from research, named and operationalized.
+- **Provides fog-of-war policy**: high-fog blocks irreversible actions + durable memory writes; medium-fog allows provisional outputs with uncertainty markup; low-fog allows normal write policy.
+
+**Relationship to Vibe:** AgentOps stays its own project. Vibe v0 does **not** depend on or rewrite AgentOps. Spec cites AgentOps as the existence proof for Vibe-shaped concerns. Long-term (post-Izsha-v1), AgentOps is a candidate to *become* a Vibe IDE — refactored to compile from `.vibe` files — but that's deferred until both projects have stabilized.
+
+---
+
+## 4. Sequencing — the seven phases
 
 Phases gate on artifacts, not dates. Each phase produces a per-subsystem spec, then implementation.
 
 | Phase | Name | Output | Blocks |
 | ----- | ---- | ------ | ------ |
-| **0** | **Codex+Claude ecosystem deep research** | `docs/superpowers/research/2026-05-13-codex-claude-ecosystem-survey.md` | Phase 1, 2 |
-| **1** | **Vibe v0 language spec** | `docs/superpowers/specs/<date>-vibe-language-v0.md` + reference parser/interpreter (embed-in-TS) | Phase 2, 3 |
-| **2** | **Vibe ecosystem abstraction v0** | `docs/superpowers/specs/<date>-vibe-providers-v0.md` + Codex + Claude adapters | Phase 3 |
-| **3** | **Izsha v1** | `docs/superpowers/specs/<date>-izsha-v1.md` + runtime + asset-pipeline plugin + Claude Code shim | nothing — Pawfall pain solved here |
-| **4** | **Spineflow v1 (formalized)** | `docs/superpowers/specs/<date>-spineflow-v1.md` (with Izsha's actual usage as input) | richer agent memory features |
+| **0** | **Codex+Claude ecosystem deep research** ✅ done | [`research/2026-05-13-codex-claude-ecosystem-survey.md`](../research/2026-05-13-codex-claude-ecosystem-survey.md) | Phases 1, 2 |
+| **1** | **Vibe v0 language spec + init pipeline** | `specs/<date>-vibe-language-v0.md` + reference parser/interpreter + `vibe init` working on GameSpree | Phases 2, 3 |
+| **2** | **Vibe provider adapters v0** | `specs/<date>-vibe-providers-v0.md` + Codex + Claude + Cerebras adapters; `vibe build` emits AGENTS.md as primary | Phase 3 |
+| **3** | **Izsha v1** | `specs/<date>-izsha-v1.md` + runtime + asset-pipeline plugin + Claude Code shim — Pawfall pain solved | nothing |
+| **4** | **Spineflow v1 (formalized)** | `specs/<date>-spineflow-v1.md` with Izsha's actual usage as input | richer agent memory features |
 | **5** | **Additional plugins** | Per-plugin specs: deploy / content / life | Vibe ecosystem self-administrates |
-| **6** | **Vibe IDE v1** | `docs/superpowers/specs/<date>-vibe-ide-v1.md` + VS Code extension | better authoring loop |
-| **7** | **Dashboard, mobile PWA, watch** | Per-surface specs | reachability when away from terminal |
+| **6** | **Dashboard, mobile PWA, watch** | Per-surface specs; possibly AgentOps becomes the Vibe IDE here | reachability beyond terminal |
 
-**Phase 0 is running now** (background research agent launched 2026-05-13).
-
-**Phase 1–3 are the critical path to ending the Pawfall pain.** Estimated 6–10 weeks of focused work for these three combined.
-
-**Phases 4–7 are parallelizable** once Izsha v1 lands.
+**Phase 0** completed during this brainstorm.
+**Phases 1–3** are the critical path to ending the Pawfall pain. Estimated 6–10 weeks of focused work combined.
+**Phases 4–6** parallelize after Izsha v1 lands.
 
 ### Decision: bootstrap embed-in-TS, not standalone binary
 
-Vibe v0 is implemented as a TypeScript package: lexer, parser, evaluator, FFI to TS. `.vibe` files are real but the runtime is a library loaded by Izsha's Node process. This gets us to a working Vibe in weeks, not months. Once the language stabilizes and there's pressure to use it outside Node (CLI tools, embedded in other languages), we extract a standalone Rust or Go interpreter. The language design must not assume the TS host — semantics stay portable.
+Vibe v0 is implemented as a TypeScript package: lexer, parser, evaluator, LLM resolver, provider adapters, init pipeline. `.vibe` files are real but the runtime is a library loaded by Izsha's Node process. Working Vibe in weeks, not months. Once the language stabilizes and there's pressure to use it outside Node, extract a standalone Rust or Go interpreter. Language design must not assume the TS host — semantics stay portable.
 
 ---
 
-## 4. Cross-cutting contracts
+## 5. Cross-cutting contracts
 
-The four seams where subsystems meet. Each gets fleshed out in its own spec; this section commits only to the **shape** of each.
+The five seams where subsystems meet. Each gets fleshed out in its own spec; this section commits only to the **shape** of each.
 
-### 4.1 Vibe ↔ runtime (language ↔ Izsha)
+### 5.1 Deterministic ↔ LLM-resolver boundary (the hybrid seam)
+
+A `.vibe` source has two kinds of regions:
+
+- **Structured regions** — language syntax, typed declarations, `agent { ... }`, `route { ... }`, `plugin { ... }`. Evaluated deterministically by the AST interpreter.
+- **Prose regions** — markdown paragraphs, conversation turns, free-text intent. Evaluated by the LLM resolver, which is given the prose + the project's declared primitives + Spineflow context, and asked to produce structured output (typed declarations, decision summaries, plan steps).
+
+The boundary is *in the source*, marked by a typed harness or implicit by region kind (markdown headings, fenced code blocks tagged `vibe`, role-tagged chat turns). Resolution outputs are cached by `(content hash + resolver model + temperature)` so re-runs don't burn tokens; variance is exposed per note as `resolver: cerebras.glm-4.7, t: 0.3, at: 2026-05-13T…`.
+
+### 5.2 Vibe ↔ runtime (language ↔ Izsha)
 
 The Vibe interpreter exposes a small embedding API to the host runtime:
 
 ```ts
-// Conceptual — finalized in Phase 1 spec
 interface VibeRuntime {
   load(source: string, opts?: LoadOpts): VibeProgram;
   evaluate(program: VibeProgram, ctx: VibeContext): VibeValue;
-  ffi: { registerTs(name: string, fn: TsFunction): void; ... };
+  ffi: { registerTs(name: string, fn: TsFunction): void; /* ... */ };
+  resolver: { resolve(prose: string, schema: JsonSchema): Promise<unknown>; };
 }
 ```
 
 Vibe-declared agents/plugins/triggers compile to runtime objects the host scheduler and MCP server consume.
 
-### 4.2 Vibe ↔ Spineflow
+### 5.3 Vibe ↔ Spineflow
 
-Vibe's standard library re-exports Spineflow primitives. The FFI is HTTP (Spineflow is a Python service Izsha connects to) with a local cache + write queue for offline resilience. Wire format and offline-degradation rules belong in Phase 4 (Spineflow spec) but the **interface stays stable** from Phase 3 onward — Izsha v1 uses a minimal Spineflow stub.
+Vibe's standard library wraps Spineflow's HTTP API. For v0, **in-process FFI is TS-only**; Python integration is exclusively via HTTP. Wire format and offline-degradation rules belong in Phase 4 (Spineflow spec) but the **interface stays stable** from Phase 3 onward — Izsha v1 uses a minimal Spineflow stub.
 
-### 4.3 Vibe ↔ providers
+Spineflow writes are gated by **fog-of-war confidence** declared at the Vibe level:
 
-Codex, Claude Code, Cerebras, and local models each look like a `ProviderAdapter`:
-
-```vibe
-// Conceptual — finalized in Phase 2 spec
-provider claude {
-  endpoint env.ANTHROPIC_API_KEY
-  caching enabled
-  capabilities { tools, prompt_caching, extended_thinking, mcp }
-}
+```text
+write decision into spineflow when fog <= medium with provenance required
 ```
 
-The runtime selects which provider drives which agent at evaluation time. Agents do not embed provider knowledge; the binding is at the project level.
+### 5.4 Vibe ↔ providers
 
-### 4.4 Izsha ↔ MCP clients (Claude Code, Codex)
+Codex, Claude Code, Cerebras, OpenAI, and local models each look like a `ProviderAdapter`. Declarative routing:
 
-Izsha hosts MCP over stdio. Plugin tools become namespaced MCP tools (`<plugin>.<tool>`). Claude Code and Codex see Izsha as a normal MCP server — no special integration required. Specific shim packaging (Claude Code plugin manifest, Codex `.mcp.json`) is Phase 3 detail.
+```text
+route planner    -> anthropic.opus-4-7
+route generator  -> openai.gpt-5.5-codex
+route evaluator  -> openai.gpt-5.5
+route resolver   -> cerebras.glm-4.7        # LLM resolver default
+route grep       -> cerebras.glm-4.7-fast   # speed-critical
+fallback         -> openrouter
+```
+
+`vibe build` compiles this to LiteLLM router config, OpenAI Agents SDK runners, and Claude Code subagent `model:` fields per target.
+
+### 5.5 Izsha ↔ MCP clients (Claude Code, Codex)
+
+Izsha hosts MCP over stdio. Plugin tools become namespaced MCP tools (`<plugin>.<tool>`). Claude Code and Codex see Izsha as a normal MCP server. Shim packaging (Claude Code plugin manifest, Codex `.mcp.json`) is Phase 3 detail.
 
 ---
 
-## 5. Constraints & non-goals
+## 6. Constraints & non-goals
 
+- **Obsidian is the v0 author/read surface.** No custom IDE in v1. `.vibe/` is a valid Obsidian vault. Custom IDE (and the AgentOps-as-IDE possibility) defers to Phase 6.
+- **`AGENTS.md` is the canonical human-readable build artifact.** Per Phase 0 research R9 (60K-project adoption + Linux Foundation stewardship + GitHub native rendering). Provider-specific files (`.claude/`, `.codex/`, `.mcp.json`) are machine outputs derived from the same `.vibe` source.
+- **MCP is the canonical client protocol.** No proprietary protocols where MCP works.
 - **No JavaScript ecosystem invention.** Vibe uses npm for distributing TS-implementation packages; no parallel package manager at v1.
-- **No new authentication system.** Reuse existing provider API keys via env vars. Supabase auth where cloud-side identity is needed; nothing custom.
-- **No proprietary protocols where MCP works.** MCP is the canonical client-facing interface.
+- **No new authentication system.** Reuse provider API keys via env vars. Supabase auth where cloud-side identity is needed.
 - **No premature performance work.** Vibe v0 is interpreted, slow, fine. Optimization waits until profiling shows real pain.
 - **No mobile / watch / dashboard in v1.** Defer all frontend surfaces until at least one agent is running in production.
 - **No multi-tenant.** Single-user system. Identity is the developer's machine + their Supabase account.
+- **Variance is honest, not hidden.** When prose regions produce LLM-resolved output, Vibe does not pretend it's deterministic. Re-runs may differ; the difference is surfaced in the vault.
 
 ---
 
-## 6. Success criteria
+## 7. Success criteria
 
 The architecture is right if, six months in:
 
-1. A Vibe program declaring Izsha + the asset-pipeline plugin runs end-to-end, drains the Pawfall codex backlog, and the developer never wrote provider-specific glue.
-2. Switching the same Vibe project from Codex to Claude (or vice versa) is a one-line provider declaration change, not a rewrite.
-3. Spineflow can be swapped between "local sqlite stub" and "Python service" with no plugin-side code changes.
-4. The brainstorming → spec → plan → implementation flow has happened **inside Vibe IDE** for at least one new plugin (deploy, content, or life).
-5. At least one other developer can read a Vibe project and understand its agent structure without reading the runtime code.
+1. **`vibe init c:/GameSpree`** runs end-to-end and produces a `c:/GameSpree/.vibe/` Obsidian vault that another developer can open in Obsidian and *understand the project from* — its sub-projects, in-flight branches, decisions, hotspots, and active agents.
+2. A Vibe program declaring Izsha + the asset-pipeline plugin runs and drains the Pawfall codex backlog. The developer never wrote provider-specific glue.
+3. Switching the same Vibe project from Codex to Claude (or vice versa) is a one-line provider route change, not a rewrite. `vibe build` emits the right per-provider files automatically.
+4. Spineflow can be swapped between "local sqlite stub" and "Python service" with no plugin-side code changes.
+5. At least one **conversation file** (a chat transcript from a brainstorming session) is a valid `.vibe` source, and its `vibe build` produces the same kind of decision/plan artifacts a hand-written `.vibe` file would.
+6. AgentOps' RTS-metaphor concepts (Gold/Lumber/Upkeep/Supply economy, Planner/Scout/Verifier/Worker roles, fog-of-war write gating, CommandCard) are *expressible* in Vibe — even if AgentOps itself hasn't been refactored to use Vibe yet.
 
 If any of those fail, the architecture as designed is wrong somewhere obvious.
 
 ---
 
-## 7. Open questions deferred to later specs
+## 8. Open questions deferred to later specs
 
 - **Vibe syntax.** Influences: Pkl (typed config), Nix expression (functional, declarative), Starlark (Python-subset). Decision in Phase 1.
-- **Type system depth.** Gradual typing (dynamic with optional static checks) vs strict static from day 1. Decision in Phase 1, informed by what makes LLM authors more reliable.
-- **Persona spec.** Is persona a Vibe construct (`persona "coordinator, dry"`) or a runtime config Izsha consumes? Lean toward Vibe construct for portability. Decision in Phase 3.
-- **Smart-layer composition.** Per-tool opt-in vs always-on. Per-tool wins on debuggability; finalized in Phase 3.
-- **Cloud hosting.** Vercel + Supabase split (frontend on Vercel, Postgres+auth+storage on Supabase). Confirmed at top of Phase 7.
-- **Watch.** Real bidirectional UI vs notification-only. Almost certainly notification-only for v1 of the watch surface.
+- **Markup vs syntax balance.** How aggressively do we treat plain markdown as Vibe source? Where's the line between "this is prose" and "this is a typed declaration"? Decision in Phase 1.
+- **Type system depth.** Gradual typing (dynamic with optional static checks) vs strict static from day 1. Decision in Phase 1.
+- **LLM resolver prompt engineering.** How are the resolver prompts constructed? How is hallucination bounded? How are typed-output JSON Schemas enforced? Decision in Phase 1.
+- **Vault regeneration semantics.** When `vibe sync` re-runs against an updated repo, how does it merge with human edits to the vault? Three-way merge? Append-only? Conflict markers? Decision in Phase 1.
+- **Persona spec.** Is persona a Vibe construct (`persona "coordinator, dry"`) or a runtime config Izsha consumes? Lean toward Vibe construct. Decision in Phase 3.
+- **Economy primitive design.** Are Gold/Lumber/Upkeep/Supply baked in, or are they user-defined economy slots? Lean toward user-defined with AgentOps' set as a stdlib preset. Decision in Phase 3 or 5.
+- **Cloud hosting.** Vercel + Supabase split (frontend on Vercel, Postgres+auth+storage on Supabase). Confirmed at top of Phase 6.
 - **Self-hosting.** When does Vibe become implementable in Vibe? Probably not before Phase 6.
 
 ---
 
-## 8. Repo layout (current state)
+## 9. Repo layout (current state)
 
 ```text
 github.com/lutherfourie/
-├── vibe          ← THIS REPO. Top-level for the language + ecosystem + specs.
+├── vibe          ← THIS REPO. Language + ecosystem + specs. Empty before this brainstorm.
 │   └── docs/superpowers/{specs,research}/
-├── Hive          ← To be renamed or retired. Was the previous working title.
+├── Hive          ← Previous working title. To be retired/redirected.
 ├── Izsha         ← Will become the reference agent's repo. Vibe-declared.
-└── spineflow     ← Python memory library. Stays.
+└── spineflow     ← Python memory spine library. Stays.
+
+github.com/Vibecadex/
+├── AgentOps      ← Prior art. RTS-style agent orchestration. Hand-coded today.
+└── GameSpree     ← First `vibe init` target. Messy real project.
 
 c:/Hive/                 ← VS Code workspace folder (not a git repo itself)
 ├── vibe/                ← clone of lutherfourie/vibe (THIS REPO)
-├── Izsha/               ← clone of lutherfourie/Izsha
-├── spineflow/           ← clone of lutherfourie/spineflow
+├── Izsha/               ← clone of lutherfourie/Izsha (empty)
+├── spineflow/           ← clone of lutherfourie/spineflow (real Python work)
+├── AgentOps/            ← clone of Vibecadex/AgentOps (rich React app)
+├── The-Pipe/            ← Next.js project, relationship to Vibe TBD
 └── GameSpree.code-workspace
 ```
 
-The user has a parallel sibling clone `C:\Hive\The-Pipe/` (Next.js project) whose relationship to Vibe is currently unclassified — needs a one-line note in a future spec revision.
+---
+
+## 10. Immediate next actions
+
+1. **Phase 0 deep research** ✅ delivered: [`docs/superpowers/research/2026-05-13-codex-claude-ecosystem-survey.md`](../research/2026-05-13-codex-claude-ecosystem-survey.md).
+2. Brainstorm the **Phase 1 Vibe v0 language spec** in a new session — syntax design, evaluator architecture, LLM resolver wiring, `vibe init` pipeline. Use this top-level spec + Phase 0 research as inputs.
+3. **In parallel:** continue the Pawfall TS-only Izsha-precursor (the `feat/pawfall-long-horizon-plan` branch in GameSpree) to drain the immediate codex backlog. That work is not blocked by Vibe and should not wait.
+4. **Eventually (Phase 1 deliverable):** `vibe init c:/GameSpree` running end-to-end and producing a navigable `.vibe/` vault. That run is the architecture's first-mile proof.
 
 ---
 
-## 9. Immediate next actions
-
-1. **Phase 0 deep research** is already running (background agent launched 2026-05-13). Report lands at `docs/superpowers/research/2026-05-13-codex-claude-ecosystem-survey.md`.
-2. After research lands and is reviewed, open the **Vibe v0 language spec** brainstorm session (Phase 1).
-3. In parallel: solve Pawfall's immediate problem with a minimal TS-only Izsha-precursor in the GameSpree repo (the `feat/pawfall-long-horizon-plan` branch already exists and has the coordinator script). That work is not blocked by Vibe and should not wait.
-
----
-
-*End of top-level spec. Per-subsystem specs follow in their own brainstorming sessions.*
+*End of top-level spec v2. Per-subsystem specs follow in their own brainstorming sessions.*
