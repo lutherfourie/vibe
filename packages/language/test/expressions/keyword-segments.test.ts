@@ -50,6 +50,50 @@ describe("structural keywords as Reference segments", () => {
     }
   });
 
+  it("accepts `memory` as a Reference first segment", async () => {
+    // The canonical agent shape from spec §2.9 is `memory = memory.izsha_global`
+    // — the field name `memory` and the leading Reference segment `memory`
+    // both collide with the declaration keyword. With Name in place this
+    // parses cleanly; without `memory` in Name's alternatives the second
+    // `memory` token here would fail Reference matching.
+    const project = await expectParses(`
+      persona p { spine = memory.spineflow_global }
+    `);
+    const field = firstPersona(project).fields[0];
+    expect(field.name).toBe("spine");
+    expect(isReference(field.value)).toBe(true);
+    if (isReference(field.value)) {
+      expect(field.value.segments).toEqual(["memory", "spineflow_global"]);
+    }
+  });
+
+  it("accepts `memory` as a Field name and TypeReference segment", async () => {
+    // Two-axis coverage for the `memory` keyword: as a Field name (mirroring
+    // the canonical agent `memory = memory.X` shape) and as a segment inside
+    // a TypeReference (`x : memory.Handle = ...`).
+    const project = await expectParses(`
+      persona p {
+        memory = memory.izsha_global
+        binding : memory.Handle = "x"
+      }
+    `);
+    const persona = firstPersona(project);
+    expect(persona.fields).toHaveLength(2);
+    const [memoryField, bindingField] = persona.fields;
+    expect(memoryField.name).toBe("memory");
+    expect(isReference(memoryField.value)).toBe(true);
+    if (isReference(memoryField.value)) {
+      expect(memoryField.value.segments).toEqual(["memory", "izsha_global"]);
+    }
+    expect(bindingField.name).toBe("binding");
+    expect(bindingField.type?.$type).toBe("TypeReference");
+    expect(bindingField.type?.segments).toEqual(["memory", "Handle"]);
+    expect(isStringLiteral(bindingField.value)).toBe(true);
+    if (isStringLiteral(bindingField.value)) {
+      expect(bindingField.value.value).toBe("x");
+    }
+  });
+
   it("accepts `fallback` and `provider` as Reference first segments", async () => {
     // `fallback` and `provider` are both leading-keyword declarations; they
     // must work as identifiers in Reference positions too. This covers the

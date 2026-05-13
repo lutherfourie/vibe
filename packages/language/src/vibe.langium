@@ -8,7 +8,7 @@ entry Project:
     declarations+=Declaration*;
 
 Declaration:
-    Agent | Route | Fallback | Persona | Provider;
+    Agent | Route | Fallback | Persona | Provider | Memory;
 
 Agent:
     'agent' name=ID '{' '}';
@@ -25,6 +25,9 @@ Persona:
 Provider:
     'provider' name=QualifiedName '{' fields+=Field* '}';
 
+Memory:
+    'memory' name=ID '{' fields+=Field* '}';
+
 QualifiedName:
     segments+=ID ('.' segments+=ID)*;
 
@@ -40,7 +43,7 @@ Field:
 // with structural keywords; the Task 15 validator enforces the same constraint
 // for `true`/`false`/`null` and any future literal-shaped keyword.
 Name returns string:
-    ID | 'agent' | 'route' | 'persona' | 'provider' | 'fallback';
+    ID | 'agent' | 'route' | 'persona' | 'provider' | 'fallback' | 'memory';
 
 TypeReference:
     segments+=Name ('.' segments+=Name)*;

@@ -1,11 +1,13 @@
 import {
   isFallback,
+  isMemory,
   isPersona,
   isProvider,
   isRoute,
 } from "../src/generated/ast.js";
 import type {
   Fallback,
+  Memory,
   Persona,
   Provider,
   Route,
@@ -39,4 +41,8 @@ export function firstRoute(project: { declarations: unknown[] }): Route {
 
 export function firstFallback(project: { declarations: unknown[] }): Fallback {
   return first(project, isFallback, "Fallback");
+}
+
+export function firstMemory(project: { declarations: unknown[] }): Memory {
+  return first(project, isMemory, "Memory");
 }
