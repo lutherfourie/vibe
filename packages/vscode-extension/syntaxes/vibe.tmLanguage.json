@@ -1,0 +1,57 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Vibe",
+  "scopeName": "source.vibe",
+  "fileTypes": ["vibe"],
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#strings" },
+    { "include": "#keywords" },
+    { "include": "#numbers" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.vibe",
+          "match": "//.*$"
+        },
+        {
+          "name": "comment.block.vibe",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.vibe",
+          "begin": "\"",
+          "end": "\""
+        },
+        {
+          "name": "string.quoted.backtick.vibe",
+          "begin": "`",
+          "end": "`"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.vibe",
+          "match": "\\b(agent|plugin|tool|resource|prompt|trigger|route|provider|persona|memory|harness|spec|plan|when|then|do|emit|on|fallback)\\b"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.vibe",
+          "match": "\\b\\d+(\\.\\d+)?\\b"
+        }
+      ]
+    }
+  }
+}

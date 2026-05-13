@@ -1,0 +1,28 @@
+{
+  "name": "@vibe/language",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Vibe language: parser, AST, evaluator, stdlib, FFI, LLM resolver, init pipeline.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "echo 'no tests yet'",
+    "clean": "rimraf dist"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

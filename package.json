@@ -1,0 +1,19 @@
+{
+  "name": "vibe-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The unified vibecode language (monorepo root).",
+  "license": "MIT",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@9.0.0"
+}
