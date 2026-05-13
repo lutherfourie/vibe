@@ -21,7 +21,13 @@ export async function expectParses(source: string): Promise<Project> {
 
 export async function expectParseFailure(source: string): Promise<string[]> {
   const document = await parseVibe(source);
-  return document.parseResult.lexerErrors
+  const messages = document.parseResult.lexerErrors
     .concat(document.parseResult.parserErrors)
     .map((e) => e.message);
+  if (messages.length === 0) {
+    throw new Error(
+      `Expected parse failure but source parsed cleanly.\n\nSource:\n${source}`,
+    );
+  }
+  return messages;
 }
