@@ -4,7 +4,7 @@ import {
   isReference,
   isRoute,
 } from "../../src/generated/ast.js";
-import type { Fallback, Route } from "../../src/generated/ast.js";
+import { firstFallback, firstRoute } from "../ast-helpers.js";
 import { expectParseFailure, expectParses } from "../parse-helper.js";
 
 // Task 8: route primitive — full surface. Spec §2.2:
@@ -12,26 +12,6 @@ import { expectParseFailure, expectParses } from "../parse-helper.js";
 //   fallback           "->" <DottedId> ("{" <fields> "}")?
 // Reserved route names (`resolver`, `fallback`) are validator territory
 // (Task 15); the grammar only needs to accept the shape.
-
-function firstRoute(project: { declarations: unknown[] }): Route {
-  const decl = project.declarations[0];
-  if (!isRoute(decl)) {
-    throw new Error(
-      `Expected first declaration to be Route, got ${(decl as { $type?: string })?.$type}`,
-    );
-  }
-  return decl;
-}
-
-function firstFallback(project: { declarations: unknown[] }): Fallback {
-  const decl = project.declarations[0];
-  if (!isFallback(decl)) {
-    throw new Error(
-      `Expected first declaration to be Fallback, got ${(decl as { $type?: string })?.$type}`,
-    );
-  }
-  return decl;
-}
 
 describe("route primitive", () => {
   it("parses simple route to dotted-id target", async () => {

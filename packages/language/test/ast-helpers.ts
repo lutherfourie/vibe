@@ -1,22 +1,42 @@
-import { isPersona, isProvider } from "../src/generated/ast.js";
-import type { Persona, Provider } from "../src/generated/ast.js";
+import {
+  isFallback,
+  isPersona,
+  isProvider,
+  isRoute,
+} from "../src/generated/ast.js";
+import type {
+  Fallback,
+  Persona,
+  Provider,
+  Route,
+} from "../src/generated/ast.js";
 
-export function firstPersona(project: { declarations: unknown[] }): Persona {
+function first<T>(
+  project: { declarations: unknown[] },
+  guard: (item: unknown) => item is T,
+  typeName: string,
+): T {
   const decl = project.declarations[0];
-  if (!isPersona(decl)) {
+  if (!guard(decl)) {
     throw new Error(
-      `Expected first declaration to be Persona, got ${(decl as { $type?: string })?.$type}`,
+      `Expected first declaration to be ${typeName}, got ${(decl as { $type?: string })?.$type}`,
     );
   }
   return decl;
 }
 
+export function firstPersona(project: { declarations: unknown[] }): Persona {
+  return first(project, isPersona, "Persona");
+}
+
 export function firstProvider(project: { declarations: unknown[] }): Provider {
-  const decl = project.declarations[0];
-  if (!isProvider(decl)) {
-    throw new Error(
-      `Expected first declaration to be Provider, got ${(decl as { $type?: string })?.$type}`,
-    );
-  }
-  return decl;
+  return first(project, isProvider, "Provider");
+}
+
+export function firstRoute(project: { declarations: unknown[] }): Route {
+  return first(project, isRoute, "Route");
+}
+
+export function firstFallback(project: { declarations: unknown[] }): Fallback {
+  return first(project, isFallback, "Fallback");
 }

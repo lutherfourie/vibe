@@ -50,6 +50,30 @@ describe("structural keywords as Reference segments", () => {
     }
   });
 
+  it("accepts `fallback` and `provider` as Reference first segments", async () => {
+    // `fallback` and `provider` are both leading-keyword declarations; they
+    // must work as identifiers in Reference positions too. This covers the
+    // canonical `routes = { fallback = route.cerebras }` shape and any
+    // `selectedProvider = provider.cerebras_glm` reference.
+    const project = await expectParses(`
+      persona p {
+        backup = fallback.handle_failure
+        primary_provider = provider.cerebras_glm
+      }
+    `);
+    const persona = firstPersona(project);
+    expect(persona.fields).toHaveLength(2);
+    const [backup, primary] = persona.fields;
+    expect(isReference(backup.value)).toBe(true);
+    if (isReference(backup.value)) {
+      expect(backup.value.segments).toEqual(["fallback", "handle_failure"]);
+    }
+    expect(isReference(primary.value)).toBe(true);
+    if (isReference(primary.value)) {
+      expect(primary.value.segments).toEqual(["provider", "cerebras_glm"]);
+    }
+  });
+
   it("accepts keyword-prefixed references inside a list literal", async () => {
     const project = await expectParses(`
       persona p { routes = [route.planner, route.generator, agent.izsha] }

@@ -40,7 +40,7 @@ Field:
 // with structural keywords; the Task 15 validator enforces the same constraint
 // for `true`/`false`/`null` and any future literal-shaped keyword.
 Name returns string:
-    ID | 'agent' | 'route' | 'persona' | 'provider';
+    ID | 'agent' | 'route' | 'persona' | 'provider' | 'fallback';
 
 TypeReference:
     segments+=Name ('.' segments+=Name)*;
