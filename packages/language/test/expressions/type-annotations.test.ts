@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  isNumberLiteral,
   isReference,
   isStringLiteral,
 } from "../../src/generated/ast.js";
@@ -35,6 +36,23 @@ describe("type annotations on fields", () => {
     expect(isStringLiteral(field.value)).toBe(true);
     if (isStringLiteral(field.value)) {
       expect(field.value.value).toBe("coordinator");
+    }
+  });
+
+  it("parses field with compact whitespace around colon and equals", async () => {
+    // WS is a hidden terminal, so name:Type=value should parse identically
+    // to name : Type = value. This locks in that invariant for future grammar
+    // changes that could accidentally make adjacency significant.
+    const project = await expectParses(`
+      persona p { count:Number=3 }
+    `);
+    const field = firstPersona(project).fields[0];
+    expect(field.name).toBe("count");
+    expect(field.type?.$type).toBe("TypeReference");
+    expect(field.type?.segments).toEqual(["Number"]);
+    expect(isNumberLiteral(field.value)).toBe(true);
+    if (isNumberLiteral(field.value)) {
+      expect(field.value.value).toBe(3);
     }
   });
 

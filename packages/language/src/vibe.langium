@@ -22,6 +22,11 @@ Persona:
 Field:
     name=ID (':' type=TypeReference)? '=' value=Expression;
 
+// Task 6.5 will introduce a `Name` rule alias that lets primitive keywords
+// (agent, route, persona, memory, harness, plugin, provider, trigger) appear
+// as Reference segments. TypeReference needs the same treatment so that type
+// shapes like `memory.Spineflow` or `plugin.asset_pipeline.Handle` survive
+// once those words become reserved in Tasks 7-14.
 TypeReference:
     segments+=ID ('.' segments+=ID)*;
 
