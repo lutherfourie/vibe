@@ -196,9 +196,9 @@ agent izsha {
   uses    = [plugin.asset_pipeline]
 
   routes = {
-    planner   = route.planner
-    generator = route.generator
-    resolver  = route.resolver
+    planner   = route.planner,
+    generator = route.generator,
+    resolver  = route.resolver,
   }
 }
 ```
