@@ -147,9 +147,9 @@ describe("cross-reference validator — declared names must resolve", () => {
 
   it("reports an unknown provider reference (dotted-segment second part)", async () => {
     // Provider names are dotted, so the declared-name set holds the joined
-    // dotted id. A reference like `provider.openai` (only one segment after
-    // the kind keyword) won't match `openai.gpt_5`; we just key on the
-    // second segment, so this is a "name not in set" case.
+    // dotted id (e.g. `cerebras.glm_4_7`). The cross-ref check joins
+    // ref.segments.slice(1) before lookup so a reference `provider.nope`
+    // tries to find `nope` and correctly misses.
     const messages = await diagnosticMessages(`
       provider cerebras.glm_4_7 { mode = api }
       route resolver -> cerebras.glm_4_7
@@ -163,6 +163,49 @@ describe("cross-reference validator — declared names must resolve", () => {
     const unknown = messages.filter((m) => UNKNOWN_REF_REGEX.test(m));
     expect(unknown).toEqual([
       "Unknown provider reference: nope",
+    ]);
+  });
+
+  it("accepts a fully-qualified dotted provider reference", async () => {
+    // `provider.cerebras.glm_4_7` must resolve to the declared
+    // `provider cerebras.glm_4_7` — segments after the head are joined for
+    // the lookup. Regression test for a bug where only segments[1] was
+    // checked, which would have false-positived as "Unknown provider
+    // reference: cerebras".
+    const messages = await diagnosticMessages(`
+      provider cerebras.glm_4_7 { mode = api }
+      provider openai.gpt_5    { mode = api }
+      route resolver -> cerebras.glm_4_7
+      plugin p { impl = "./p.ts" }
+
+      agent izsha {
+        primary  = provider.cerebras.glm_4_7
+        fallback = provider.openai.gpt_5
+        uses     = [plugin.p]
+      }
+    `);
+    const unknown = messages.filter((m) => UNKNOWN_REF_REGEX.test(m));
+    expect(unknown).toEqual([]);
+  });
+
+  it("flags an unknown dotted provider tail", async () => {
+    // The vendor (`cerebras`) matches a declared provider's first segment,
+    // but the model tail (`mystery`) does not — the joined `cerebras.mystery`
+    // is not in the declared set, so the diagnostic should fire on the full
+    // joined tail.
+    const messages = await diagnosticMessages(`
+      provider cerebras.glm_4_7 { mode = api }
+      route resolver -> cerebras.glm_4_7
+      plugin p { impl = "./p.ts" }
+
+      agent izsha {
+        primary = provider.cerebras.mystery
+        uses    = [plugin.p]
+      }
+    `);
+    const unknown = messages.filter((m) => UNKNOWN_REF_REGEX.test(m));
+    expect(unknown).toEqual([
+      "Unknown provider reference: cerebras.mystery",
     ]);
   });
 

@@ -310,9 +310,17 @@ export class VibeValidator {
       if (typed.$type === "Reference") {
         const ref = node as VibeReference;
         const head = ref.segments[0];
-        const tail = ref.segments[1];
-        if (head !== undefined && tail !== undefined && isCrossRefKind(head)) {
-          if (!declared[head].has(tail)) {
+        if (head !== undefined && isCrossRefKind(head) && ref.segments.length >= 2) {
+          // Provider declared names are dotted (`cerebras.glm_4_7`), so a
+          // reference like `provider.cerebras.glm_4_7` must join all segments
+          // after the head for lookup. Plugin tool references stay flat
+          // (`plugin.<name>.<tool>`) — segments[2] is the runtime tool and is
+          // ignored at v0; only segments[1] (the plugin name) is validated.
+          const tail =
+            head === "provider"
+              ? ref.segments.slice(1).join(".")
+              : ref.segments[1];
+          if (tail !== undefined && !declared[head].has(tail)) {
             accept("error", `Unknown ${head} reference: ${tail}`, {
               node: ref,
             });
