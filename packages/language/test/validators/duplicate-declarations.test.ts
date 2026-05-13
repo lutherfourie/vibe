@@ -23,13 +23,22 @@
 // also having to relitigate the keyword set.
 
 import { EmptyFileSystem } from "langium";
+import { parseHelper } from "langium/test";
 import { describe, expect, it } from "vitest";
+import type { Project } from "../../src/generated/ast.js";
 import { createVibeServices } from "../../src/vibe-module.js";
-import { expectParseFailure, parseVibe } from "../parse-helper.js";
+import { expectParseFailure } from "../parse-helper.js";
+
+// Both the parser and the validator must use the SAME services container so
+// the document the validator runs against is owned by that container's
+// DocumentBuilder. The previous shape mixed parse-helper's singleton with a
+// per-call fresh container — it happened to work but was fragile to any
+// future change in Langium's document-ownership semantics.
+const services = createVibeServices(EmptyFileSystem).Vibe;
+const parse = parseHelper<Project>(services);
 
 async function diagnosticMessages(source: string): Promise<string[]> {
-  const services = createVibeServices(EmptyFileSystem).Vibe;
-  const document = await parseVibe(source);
+  const document = await parse(source);
   await services.shared.workspace.DocumentBuilder.build([document], {
     validation: true,
   });
