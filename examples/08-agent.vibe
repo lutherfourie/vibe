@@ -1,0 +1,20 @@
+// A full agent declaration composes persona, memory, harness, and plugins.
+
+provider cerebras.glm_4_7 { mode = api }
+route resolver -> cerebras.glm_4_7
+
+plugin  asset_pipeline { impl = "./plugins/asset-pipeline/index.ts" }
+persona izsha_voice    { description = "coordinator, dry" }
+harness asset_drain    { kind = planner_generator_evaluator }
+
+memory izsha_global {
+  kind      = spineflow
+  namespace = "izsha.global"
+}
+
+agent izsha {
+  persona = persona.izsha_voice
+  memory  = memory.izsha_global
+  harness = harness.asset_drain
+  uses    = [plugin.asset_pipeline]
+}

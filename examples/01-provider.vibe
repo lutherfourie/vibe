@@ -1,0 +1,14 @@
+// Provider declarations. Two modes: api (HTTPS) and cli (local subprocess).
+
+provider cerebras.glm_4_7 {
+  mode  = api
+  model = "glm-4.7"
+}
+
+provider anthropic.claude_code {
+  mode      = cli
+  binary    = "claude"
+  lifecycle = long_lived
+}
+
+route resolver -> cerebras.glm_4_7

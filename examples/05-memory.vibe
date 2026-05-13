@@ -1,0 +1,10 @@
+// Memory bindings connect logical names to Spineflow namespaces.
+
+provider cerebras.glm_4_7 { mode = api }
+route resolver -> cerebras.glm_4_7
+
+memory izsha_global {
+  kind          = spineflow
+  namespace     = "izsha.global"
+  fog_threshold = medium
+}
