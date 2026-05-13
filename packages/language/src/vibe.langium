@@ -23,7 +23,10 @@ Field:
     name=ID '=' value=Expression;
 
 Expression:
-    StringLiteral | NumberLiteral | BooleanLiteral | NullLiteral;
+    StringLiteral | NumberLiteral | BooleanLiteral | NullLiteral | Reference;
+
+Reference:
+    segments+=ID ('.' segments+=ID)*;
 
 StringLiteral:
     value=STRING;
