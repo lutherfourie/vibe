@@ -101,4 +101,17 @@ describe("provider primitive", () => {
     `);
     expect(messages.length).toBeGreaterThan(0);
   });
+
+  it("parses a single-segment provider name (grammar permissive, Task 15 enforces dotted)", async () => {
+    // The grammar's QualifiedName uses `('.' ...)*` (zero-or-more), so
+    // `provider cerebras { ... }` is syntactically valid. The spec §2.1
+    // requires <vendor>.<modelOrCli>, so the Task 15 validator will reject
+    // names with fewer than 2 segments. This test locks in the parse
+    // behaviour so a future grammar tightening can't break it silently.
+    const project = await expectParses(`
+      provider cerebras { mode = api }
+    `);
+    const provider = firstProvider(project);
+    expect(provider.name.segments).toEqual(["cerebras"]);
+  });
 });
