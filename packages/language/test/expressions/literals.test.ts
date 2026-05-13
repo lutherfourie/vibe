@@ -6,16 +6,8 @@ import {
   isPersona,
   isStringLiteral,
 } from "../../src/generated/ast.js";
-import type { Persona } from "../../src/generated/ast.js";
+import { firstPersona } from "../ast-helpers.js";
 import { expectParses } from "../parse-helper.js";
-
-function firstPersona(project: { declarations: unknown[] }): Persona {
-  const decl = project.declarations[0];
-  if (!isPersona(decl)) {
-    throw new Error(`Expected first declaration to be Persona, got ${(decl as { $type?: string })?.$type}`);
-  }
-  return decl;
-}
 
 describe("literal expressions", () => {
   it("parses string literals (single line)", async () => {
@@ -65,6 +57,7 @@ describe("literal expressions", () => {
     expect(project.declarations).toHaveLength(2);
     const pField = firstPersona(project).fields[0];
     expect(isBooleanLiteral(pField.value)).toBe(true);
+    // NB: BooleanLiteral.value is the keyword string "true"/"false", not a JS boolean.
     if (isBooleanLiteral(pField.value)) {
       expect(pField.value.value).toBe("true");
     }

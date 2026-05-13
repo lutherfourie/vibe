@@ -4,22 +4,11 @@ import {
   isListExpression,
   isNumberLiteral,
   isObjectExpression,
-  isPersona,
   isReference,
   isStringLiteral,
 } from "../../src/generated/ast.js";
-import type { Persona } from "../../src/generated/ast.js";
+import { firstPersona } from "../ast-helpers.js";
 import { expectParseFailure, expectParses } from "../parse-helper.js";
-
-function firstPersona(project: { declarations: unknown[] }): Persona {
-  const decl = project.declarations[0];
-  if (!isPersona(decl)) {
-    throw new Error(
-      `Expected first declaration to be Persona, got ${(decl as { $type?: string })?.$type}`,
-    );
-  }
-  return decl;
-}
 
 describe("list expressions", () => {
   it("parses empty list", async () => {
@@ -74,6 +63,34 @@ describe("list expressions", () => {
     }
   });
 
+  it("parses list nested in list", async () => {
+    const project = await expectParses(`
+      persona p { matrix = [["a", "b"], ["c"]] }
+    `);
+    const field = firstPersona(project).fields[0];
+    expect(isListExpression(field.value)).toBe(true);
+    if (isListExpression(field.value)) {
+      expect(field.value.items).toHaveLength(2);
+      const [row0, row1] = field.value.items;
+      expect(isListExpression(row0)).toBe(true);
+      if (isListExpression(row0)) {
+        expect(row0.items).toHaveLength(2);
+        const [a, b] = row0.items;
+        expect(isStringLiteral(a)).toBe(true);
+        if (isStringLiteral(a)) expect(a.value).toBe("a");
+        expect(isStringLiteral(b)).toBe(true);
+        if (isStringLiteral(b)) expect(b.value).toBe("b");
+      }
+      expect(isListExpression(row1)).toBe(true);
+      if (isListExpression(row1)) {
+        expect(row1.items).toHaveLength(1);
+        const [c] = row1.items;
+        expect(isStringLiteral(c)).toBe(true);
+        if (isStringLiteral(c)) expect(c.value).toBe("c");
+      }
+    }
+  });
+
   it("parses list of mixed literals", async () => {
     const project = await expectParses(`
       persona p { tags = ["urgent", "v0", 1, true] }
@@ -92,6 +109,7 @@ describe("list expressions", () => {
       expect(isNumberLiteral(c)).toBe(true);
       if (isNumberLiteral(c)) expect(c.value).toBe(1);
       expect(isBooleanLiteral(d)).toBe(true);
+      // NB: BooleanLiteral.value is the keyword string "true"/"false", not a JS boolean.
       if (isBooleanLiteral(d)) expect(d.value).toBe("true");
     }
   });
@@ -169,6 +187,32 @@ describe("object expressions", () => {
         const [c] = heroes.value.items;
         expect(isReference(c)).toBe(true);
         if (isReference(c)) expect(c.segments).toEqual(["plugin", "c"]);
+      }
+    }
+  });
+
+  it("parses object nested in object", async () => {
+    const project = await expectParses(`
+      persona p {
+        config = { inner = { x = 1, y = "ok" } }
+      }
+    `);
+    const field = firstPersona(project).fields[0];
+    expect(isObjectExpression(field.value)).toBe(true);
+    if (isObjectExpression(field.value)) {
+      expect(field.value.entries).toHaveLength(1);
+      const [innerEntry] = field.value.entries;
+      expect(innerEntry.key).toBe("inner");
+      expect(isObjectExpression(innerEntry.value)).toBe(true);
+      if (isObjectExpression(innerEntry.value)) {
+        expect(innerEntry.value.entries).toHaveLength(2);
+        const [x, y] = innerEntry.value.entries;
+        expect(x.key).toBe("x");
+        expect(isNumberLiteral(x.value)).toBe(true);
+        if (isNumberLiteral(x.value)) expect(x.value.value).toBe(1);
+        expect(y.key).toBe("y");
+        expect(isStringLiteral(y.value)).toBe(true);
+        if (isStringLiteral(y.value)) expect(y.value.value).toBe("ok");
       }
     }
   });
