@@ -25,6 +25,9 @@ Field:
 Expression:
     StringLiteral | NumberLiteral | BooleanLiteral | NullLiteral | Reference;
 
+// `true`, `false`, `null` are reserved keywords and cannot appear as Reference
+// segments — Task 15 will reject declarations whose names collide with reserved
+// words to keep this constraint enforceable.
 Reference:
     segments+=ID ('.' segments+=ID)*;
 

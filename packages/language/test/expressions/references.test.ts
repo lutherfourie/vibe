@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { isPersona, isReference } from "../../src/generated/ast.js";
 import type { Persona } from "../../src/generated/ast.js";
-import { expectParses } from "../parse-helper.js";
+import { expectParseFailure, expectParses } from "../parse-helper.js";
 
 function firstPersona(project: { declarations: unknown[] }): Persona {
   const decl = project.declarations[0];
@@ -55,5 +55,28 @@ describe("reference expressions", () => {
         "list_backlog",
       ]);
     }
+  });
+});
+
+describe("malformed references", () => {
+  it("rejects trailing dot", async () => {
+    const messages = await expectParseFailure(`
+      persona p { tool = plugin.asset_pipeline. }
+    `);
+    expect(messages.length).toBeGreaterThan(0);
+  });
+
+  it("rejects leading dot", async () => {
+    const messages = await expectParseFailure(`
+      persona p { tool = .plugin }
+    `);
+    expect(messages.length).toBeGreaterThan(0);
+  });
+
+  it("rejects double dot between segments", async () => {
+    const messages = await expectParseFailure(`
+      persona p { tool = plugin..list_backlog }
+    `);
+    expect(messages.length).toBeGreaterThan(0);
   });
 });
