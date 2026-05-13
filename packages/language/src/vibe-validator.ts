@@ -1,5 +1,6 @@
 /**
  * Vibe v0 validators — Task 15: name policy. Task 16: reserved route name.
+ * Task 17: cross-reference resolution.
  *
  * Concerns:
  *
@@ -18,6 +19,19 @@
  *     nothing to resolve from, so the missing-resolver diagnostic would be
  *     noise. The moment the file grows an agent or a route, the requirement
  *     kicks in.
+ *
+ *   - Cross-reference resolution. Every `Reference` AST node whose first
+ *     segment is one of the nine declaration-kind keywords (`agent`,
+ *     `route`, `persona`, `memory`, `harness`, `plugin`, `provider`,
+ *     `trigger`, `fallback`) must have its second segment match a declared
+ *     name of that kind. Catches the most common authoring typo —
+ *     `uses = [plugin.assett_pipeline]` when the real declaration is
+ *     `plugin asset_pipeline { ... }`. Three-segment `plugin.X.tool`
+ *     references only validate the plugin segment; the tool segment is a
+ *     runtime concern (spec §2.4) because tools live inside the TS module
+ *     and aren't statically knowable. Bare-identifier references whose
+ *     first segment isn't a kind keyword (e.g. `pushback = high`,
+ *     `mode = api`) are skipped — they're enum-ish values, not cross-refs.
  *
  * Non-concerns (intentional, see test file for the long form):
  *
@@ -48,6 +62,7 @@ import type {
   Plugin,
   Project,
   Provider,
+  Reference as VibeReference,
   Route,
   VibeAstType,
 } from "./generated/ast.js";
@@ -217,6 +232,140 @@ export class VibeValidator {
       { node: project },
     );
   }
+
+  /**
+   * Walk every Reference node in the project and require that any reference
+   * whose first segment is a recognized declaration-kind keyword resolves to
+   * a declared name of that kind. The walker visits the whole AST (not just
+   * top-level declarations) because references can nest arbitrarily deep
+   * inside lists, object expressions, and trigger fields.
+   *
+   * Three rules of the road, each load-bearing:
+   *
+   *   1. Provider names are dotted, so the declared-name set joins
+   *      `decl.name.segments` with `.`. Every other primitive binds a single
+   *      ID and uses `decl.name` directly. Route uses `decl.from`.
+   *
+   *   2. Bare-identifier references are skipped if their first segment isn't
+   *      a kind keyword. `pushback = high` parses `high` as a Reference (the
+   *      grammar reuses bare ids as references at expression position), but
+   *      the validator is not an enum checker — those are advisory values,
+   *      not cross-refs.
+   *
+   *   3. `plugin.<name>.<tool>` (three-segment) only validates the plugin
+   *      name. Tool names live inside the TS plugin module (spec §2.4) and
+   *      aren't knowable without importing the module, so v0 leaves the
+   *      tool segment to the runtime.
+   *
+   * The walker uses an `unknown` traversal rather than a typed visitor so
+   * we don't have to enumerate every container shape (Field, ListExpression,
+   * ObjectEntry, Trigger fields, ...) by hand. Any future grammar addition
+   * that introduces a new container of expressions gets covered for free.
+   */
+  checkCrossReferences(project: Project, accept: ValidationAcceptor): void {
+    const declared: Record<CrossRefKind, Set<string>> = {
+      agent: new Set<string>(),
+      route: new Set<string>(),
+      persona: new Set<string>(),
+      memory: new Set<string>(),
+      harness: new Set<string>(),
+      plugin: new Set<string>(),
+      provider: new Set<string>(),
+      trigger: new Set<string>(),
+      fallback: new Set<string>(),
+    };
+
+    for (const decl of project.declarations) {
+      switch (decl.$type) {
+        case "Agent":
+          declared.agent.add(decl.name);
+          break;
+        case "Route":
+          declared.route.add(decl.from);
+          break;
+        case "Persona":
+          declared.persona.add(decl.name);
+          break;
+        case "Memory":
+          declared.memory.add(decl.name);
+          break;
+        case "Harness":
+          declared.harness.add(decl.name);
+          break;
+        case "Plugin":
+          declared.plugin.add(decl.name);
+          break;
+        case "Provider":
+          declared.provider.add(decl.name.segments.join("."));
+          break;
+        // Trigger and Fallback have no name slot; they're listed in
+        // CROSS_REF_KINDS for completeness (the spec lists them as kind
+        // keywords) but never accept references back to themselves at v0.
+      }
+    }
+
+    const visit = (node: unknown): void => {
+      if (node === null || typeof node !== "object") return;
+      const typed = node as { $type?: string };
+      if (typed.$type === "Reference") {
+        const ref = node as VibeReference;
+        const head = ref.segments[0];
+        const tail = ref.segments[1];
+        if (head !== undefined && tail !== undefined && isCrossRefKind(head)) {
+          if (!declared[head].has(tail)) {
+            accept("error", `Unknown ${head} reference: ${tail}`, {
+              node: ref,
+            });
+          }
+        }
+        // Stop descending: Reference nodes have only `segments: string[]`,
+        // nothing meaningful to recurse into and the strings would otherwise
+        // be visited as character-indexed objects on some engines.
+        return;
+      }
+      // Walk only own enumerable properties, and skip the Langium AST
+      // back-references (`$container`, `$cstNode`, `$document`, etc.) that
+      // would otherwise create cycles and blow the stack. The convention is
+      // that every Langium-internal property starts with `$`; the AST's own
+      // semantic fields don't.
+      for (const key of Object.keys(node)) {
+        if (key.startsWith("$")) continue;
+        const value = (node as Record<string, unknown>)[key];
+        if (Array.isArray(value)) {
+          for (const item of value) visit(item);
+        } else if (value !== null && typeof value === "object") {
+          visit(value);
+        }
+      }
+    };
+
+    visit(project);
+  }
+}
+
+/**
+ * The nine declaration-kind keywords that the grammar treats as the head of
+ * a cross-reference path. Trigger and Fallback have no bindable name at v0
+ * so their declared-name sets are always empty, but we keep them in the
+ * union so the spec's list stays authoritative — any reference like
+ * `trigger.foo` would correctly report "Unknown trigger reference: foo"
+ * because nothing can populate that set today.
+ */
+const CROSS_REF_KINDS = [
+  "agent",
+  "route",
+  "persona",
+  "memory",
+  "harness",
+  "plugin",
+  "provider",
+  "trigger",
+  "fallback",
+] as const;
+type CrossRefKind = (typeof CROSS_REF_KINDS)[number];
+
+function isCrossRefKind(value: string): value is CrossRefKind {
+  return (CROSS_REF_KINDS as readonly string[]).includes(value);
 }
 
 /**
@@ -230,6 +379,7 @@ export function registerValidationChecks(services: LangiumServices): void {
     Project: [
       validator.checkDuplicateDeclarations.bind(validator),
       validator.checkResolverRoute.bind(validator),
+      validator.checkCrossReferences.bind(validator),
     ],
   };
   registry.register(checks, validator);
