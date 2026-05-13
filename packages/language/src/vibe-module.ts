@@ -21,6 +21,7 @@ import {
   VibeGeneratedModule,
   VibeGeneratedSharedModule,
 } from "./generated/module.js";
+import { registerValidationChecks } from "./vibe-validator.js";
 
 /**
  * Declaration of custom services to be injected on top of Langium defaults.
@@ -61,5 +62,6 @@ export function createVibeServices(context: DefaultSharedModuleContext): {
     VibeModule,
   );
   shared.ServiceRegistry.register(Vibe);
+  registerValidationChecks(Vibe);
   return { shared, Vibe };
 }
