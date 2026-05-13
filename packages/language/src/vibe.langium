@@ -20,7 +20,10 @@ Persona:
     'persona' name=ID '{' fields+=Field* '}';
 
 Field:
-    name=ID '=' value=Expression;
+    name=ID (':' type=TypeReference)? '=' value=Expression;
+
+TypeReference:
+    segments+=ID ('.' segments+=ID)*;
 
 Expression:
     StringLiteral | NumberLiteral | BooleanLiteral | NullLiteral
