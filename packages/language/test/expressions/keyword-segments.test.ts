@@ -13,6 +13,8 @@ import { expectParses } from "../parse-helper.js";
 // identifier segments inside Reference / TypeReference / Field-name /
 // ObjectEntry-key positions. Spec §2.9 uses the `routes = { planner = route.X }`
 // shape for the canonical agent example, so these patterns are load-bearing.
+// Task 13 added the `trigger` keyword coverage below alongside harness/memory/
+// plugin/fallback/provider.
 
 describe("structural keywords as Reference segments", () => {
   it("accepts `route` as a Reference first segment", async () => {
@@ -163,6 +165,49 @@ describe("structural keywords as Reference segments", () => {
     expect(isStringLiteral(bindingField.value)).toBe(true);
     if (isStringLiteral(bindingField.value)) {
       expect(bindingField.value.value).toBe("x");
+    }
+  });
+
+  it("accepts `trigger` as a Reference first segment and as a Field name", async () => {
+    // Task 13: `trigger` becomes a declaration keyword (cron + event shapes).
+    // Mirror the harness/memory/plugin two-axis coverage: it must work as a
+    // leading Reference segment (`hook = trigger.daily_check`), as a Field
+    // name (`trigger = trigger.daily_check`), and as a TypeReference segment
+    // (`schedule : trigger.Cron = "1h"`). Without `trigger` in Name's
+    // alternatives any of these would fail Reference / Field-name matching.
+    const project = await expectParses(`
+      persona p {
+        trigger = trigger.daily_check
+        hook   = trigger.daily_check.payload
+        schedule : trigger.Cron = "1h"
+      }
+    `);
+    const persona = firstPersona(project);
+    expect(persona.fields).toHaveLength(3);
+    const [triggerField, hookField, scheduleField] = persona.fields;
+    expect(triggerField.name).toBe("trigger");
+    expect(isReference(triggerField.value)).toBe(true);
+    if (isReference(triggerField.value)) {
+      expect(triggerField.value.segments).toEqual([
+        "trigger",
+        "daily_check",
+      ]);
+    }
+    expect(hookField.name).toBe("hook");
+    expect(isReference(hookField.value)).toBe(true);
+    if (isReference(hookField.value)) {
+      expect(hookField.value.segments).toEqual([
+        "trigger",
+        "daily_check",
+        "payload",
+      ]);
+    }
+    expect(scheduleField.name).toBe("schedule");
+    expect(scheduleField.type?.$type).toBe("TypeReference");
+    expect(scheduleField.type?.segments).toEqual(["trigger", "Cron"]);
+    expect(isStringLiteral(scheduleField.value)).toBe(true);
+    if (isStringLiteral(scheduleField.value)) {
+      expect(scheduleField.value.value).toBe("1h");
     }
   });
 

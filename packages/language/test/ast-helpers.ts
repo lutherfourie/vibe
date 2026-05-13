@@ -6,6 +6,7 @@ import {
   isPlugin,
   isProvider,
   isRoute,
+  isTrigger,
 } from "../src/generated/ast.js";
 import type {
   Fallback,
@@ -15,6 +16,7 @@ import type {
   Plugin,
   Provider,
   Route,
+  Trigger,
 } from "../src/generated/ast.js";
 
 function first<T>(
@@ -57,4 +59,8 @@ export function firstHarness(project: { declarations: unknown[] }): Harness {
 
 export function firstPlugin(project: { declarations: unknown[] }): Plugin {
   return first(project, isPlugin, "Plugin");
+}
+
+export function firstTrigger(project: { declarations: unknown[] }): Trigger {
+  return first(project, isTrigger, "Trigger");
 }

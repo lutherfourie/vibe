@@ -8,7 +8,7 @@ entry Project:
     declarations+=Declaration*;
 
 Declaration:
-    Agent | Route | Fallback | Persona | Provider | Memory | Harness | Plugin;
+    Agent | Route | Fallback | Persona | Provider | Memory | Harness | Plugin | Trigger;
 
 Agent:
     'agent' name=ID '{' '}';
@@ -34,6 +34,9 @@ Harness:
 Plugin:
     'plugin' name=ID '{' fields+=Field* '}';
 
+Trigger:
+    'trigger' kind=('every' | 'on') schedule=STRING '{' fields+=Field* '}';
+
 QualifiedName:
     segments+=ID ('.' segments+=ID)*;
 
@@ -49,7 +52,7 @@ Field:
 // with structural keywords; the Task 15 validator enforces the same constraint
 // for `true`/`false`/`null` and any future literal-shaped keyword.
 Name returns string:
-    ID | 'agent' | 'route' | 'persona' | 'provider' | 'fallback' | 'memory' | 'harness' | 'plugin';
+    ID | 'agent' | 'route' | 'persona' | 'provider' | 'fallback' | 'memory' | 'harness' | 'plugin' | 'trigger';
 
 TypeReference:
     segments+=Name ('.' segments+=Name)*;
