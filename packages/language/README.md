@@ -8,7 +8,7 @@ LLM resolver, and provider adapters.
 
 - **SD1 (Language layer):** 9 primitives (agent, route, fallback, persona,
   provider, memory, harness, plugin, trigger) plus the SD2 `corrected`
-  declaration. 3 validators (duplicate-declarations, required-resolver-route,
+  declaration. 4 validators (duplicate-declarations, required-resolver-route,
   cross-reference-resolution, corrected-target).
 - **SD2 (Dispatcher + Resolver):** file-shape dispatcher slices `.vibe` source
   into structured + prose regions. Resolver wraps a pluggable ProviderAdapter
