@@ -56,3 +56,42 @@ She should sound terse.
     expect(result.resolvedRegions[0].value).toEqual({ description: "coordinator, dry" });
   });
 });
+
+describe("runPipeline — corrected blocks override resolver output", () => {
+  it("applies a corrected block to a tagged resolver region", async () => {
+    const provider = createMockProvider({
+      id: "mock.api",
+      response: { description: "LLM original" },
+    });
+    const registry = createProviderRegistry();
+    registry.register(provider);
+
+    const result = await runPipeline({
+      source: `# Izsha
+
+We want a coordinator agent.
+
+\`\`\`vibe-prose#tag1
+We want a coordinator agent.
+\`\`\`
+
+\`\`\`vibe
+provider cerebras.glm_4_7 { mode = api }
+route resolver -> cerebras.glm_4_7
+
+corrected for "tag1" {
+  description = "human override"
+}
+\`\`\`
+`,
+      registry,
+      defaultResolver: { provider: "mock.api", model: "mock-m", temperature: 0.3 },
+      proseSchema: z.object({ description: z.string() }),
+    });
+
+    expect(result.resolvedRegions.length).toBeGreaterThan(0);
+    expect(result.mergedRegions).toBeDefined();
+    expect(result.mergedRegions[0].value).toEqual({ description: "human override" });
+    expect(result.mergedRegions[0].overrides).toEqual(["description"]);
+  });
+});
