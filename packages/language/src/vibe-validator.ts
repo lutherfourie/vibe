@@ -349,6 +349,37 @@ export class VibeValidator {
 
     visit(project);
   }
+
+  /**
+   * SD2 Task 8: `corrected for "<target>" { ... }` carries a feedback edit
+   * that the resolver merges back into a specific resolver invocation
+   * addressed by the target string. An empty or whitespace-only target has
+   * no merge destination, so the block becomes dead text and is almost
+   * certainly an authoring mistake (typo, deleted addressing key, paste
+   * error). We surface a source-level error so the IDE underlines the empty
+   * string instead of the runtime silently dropping the block.
+   *
+   * The diagnostic anchors on `{ node: decl, property: "target" }` so the
+   * IDE marker underlines the (empty) target literal rather than the whole
+   * `corrected { ... }` block — matching the per-property anchoring pattern
+   * the other validators in this file already use.
+   *
+   * Whitespace-only targets (`"   "`) are treated as empty: a target made of
+   * nothing but spaces can't be a valid addressing key in any future routing
+   * scheme, and accepting it would defeat the purpose of the check.
+   */
+  checkCorrectedTarget(project: Project, accept: ValidationAcceptor): void {
+    for (const decl of project.declarations) {
+      if (decl.$type !== "Corrected") continue;
+      const target = decl.target?.trim() ?? "";
+      if (target.length === 0) {
+        accept("error", "`corrected` target must not be empty.", {
+          node: decl,
+          property: "target",
+        });
+      }
+    }
+  }
 }
 
 /**
@@ -388,6 +419,7 @@ export function registerValidationChecks(services: LangiumServices): void {
       validator.checkDuplicateDeclarations.bind(validator),
       validator.checkResolverRoute.bind(validator),
       validator.checkCrossReferences.bind(validator),
+      validator.checkCorrectedTarget.bind(validator),
     ],
   };
   registry.register(checks, validator);
