@@ -37,6 +37,7 @@
     "@ai-sdk/openai-compatible": "^2.0.47",
     "ai": "^6.0.182",
     "chevrotain": "^11.0.3",
+    "execa": "^9.6.1",
     "langium": "^4.2.4",
     "remark-parse": "^11.0.0",
     "unified": "^11.0.5",
