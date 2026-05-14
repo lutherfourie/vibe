@@ -1,7 +1,10 @@
 import type { ProseRegion, Region } from "./types.js";
 
-const ROLE_RE = /^###\s+(user|assistant|system)\b[^\n]*$/gm;
-const FENCED_VIBE_RE = /```vibe\n([\s\S]*?)```/g;
+const ROLE_RE = /^###\s+(user|assistant|system)\b[^\r\n]*$/gm;
+// Allow optional CR before LF so CRLF-checked-out sources (Windows autocrlf)
+// match the same as LF sources. The capture group preserves the inner content
+// verbatim including any trailing CR before the closing fence.
+const FENCED_VIBE_RE = /```vibe\r?\n([\s\S]*?)```/g;
 
 type Role = "user" | "assistant" | "system";
 
@@ -22,7 +25,10 @@ function findTurns(source: string): Turn[] {
     const m = matches[i]!;
     const role = m[1] as Role;
     const tagStart = m.index!;
-    const bodyStart = tagStart + m[0].length + 1; // +1 for the newline after the tag
+    // Skip past the role-tag line terminator. Handles both LF (\n, +1) and
+    // CRLF (\r\n, +2) so Windows autocrlf checkouts parse identically.
+    const afterTag = tagStart + m[0].length;
+    const bodyStart = source.startsWith("\r\n", afterTag) ? afterTag + 2 : afterTag + 1;
     const next = matches[i + 1];
     const bodyEnd = next ? next.index! : source.length;
     turns.push({

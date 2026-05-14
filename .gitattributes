@@ -1,0 +1,19 @@
+# Normalize line endings on commit (default text behavior) but check out
+# everything as LF — including on Windows — so test fixtures, .vibe sources,
+# and dispatcher regexes do not have to worry about autocrlf drift between
+# worktrees.
+* text=auto eol=lf
+
+# Markdown can keep platform-native endings if a tool needs CRLF on Windows.
+*.md text eol=lf
+
+# Test fixtures and .vibe sources are parsed by regex/dispatcher — pin to LF.
+*.vibe text eol=lf
+test/fixtures/** text eol=lf
+
+# Binary types we never want git touching.
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.vsix binary
