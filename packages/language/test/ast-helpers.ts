@@ -1,5 +1,6 @@
 import {
   isAgent,
+  isCorrected,
   isFallback,
   isHarness,
   isMemory,
@@ -11,6 +12,7 @@ import {
 } from "../src/generated/ast.js";
 import type {
   Agent,
+  Corrected,
   Fallback,
   Harness,
   Memory,
@@ -69,4 +71,10 @@ export function firstPlugin(project: { declarations: unknown[] }): Plugin {
 
 export function firstTrigger(project: { declarations: unknown[] }): Trigger {
   return first(project, isTrigger, "Trigger");
+}
+
+export function firstCorrected(project: {
+  declarations: unknown[];
+}): Corrected {
+  return first(project, isCorrected, "Corrected");
 }
