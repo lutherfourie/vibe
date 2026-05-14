@@ -1,31 +1,65 @@
 # @vibe/language
 
-Parser, AST, evaluator (forthcoming), and Langium-powered LSP for the [Vibe](../..) v0 specification language.
+Vibe is a hybrid specification language for vibecoded ecosystems. This package
+ships the SD1 + SD2 surface: parser, AST, validators, file-shape dispatcher,
+LLM resolver, and provider adapters.
 
 ## Status
 
-**v0 SD1 (Language)** — complete. Grammar covers all 9 primitives (`agent`, `plugin`, `tool` as reference path, `route`, `provider`, `persona`, `memory`, `trigger`, `harness`), all expression types (literals, references, collections, optional type annotations), and three validators (duplicate declarations, required `resolver` route, cross-reference resolution).
+- **SD1 (Language layer):** 9 primitives (agent, route, fallback, persona,
+  provider, memory, harness, plugin, trigger) plus the SD2 `corrected`
+  declaration. 3 validators (duplicate-declarations, required-resolver-route,
+  cross-reference-resolution, corrected-target).
+- **SD2 (Dispatcher + Resolver):** file-shape dispatcher slices `.vibe` source
+  into structured + prose regions. Resolver wraps a pluggable ProviderAdapter
+  with content-addressed cache + Zod schema validation + variance metadata.
+  Adjacent `corrected for "tag"` blocks override resolver outputs per-key.
+- **Provider adapters:** Cerebras via @ai-sdk/openai-compatible (default for
+  resolver). claude CLI shim via execa. codex / gemini shims follow in Phase 2.
+- **Not yet:** vibe init, vibe sync, vibe build, full VS Code LSP integration
+  (hover-based resolver preview lands in SD4).
 
-**Not yet shipping:** the evaluator (SD2), LLM resolver (SD2), `vibe init` analysis pipeline (SD3). See [`../../docs/superpowers/specs/2026-05-13-vibe-language-v0.md`](../../docs/superpowers/specs/2026-05-13-vibe-language-v0.md).
-
-## Commands
+## Build + test
 
 ```bash
-pnpm --filter @vibe/language langium:generate   # regenerate parser/AST from src/vibe.langium
-pnpm --filter @vibe/language build              # generate + tsc
-pnpm --filter @vibe/language test               # run Vitest test suite
-pnpm --filter @vibe/language test:watch         # watch mode
+pnpm --filter @vibe/language build
+pnpm --filter @vibe/language test
 ```
+
+## Usage
+
+```ts
+import {
+  createCerebrasProvider,
+  createProviderRegistry,
+  runPipeline,
+} from "@vibe/language";
+import { z } from "zod";
+
+const registry = createProviderRegistry();
+registry.register(createCerebrasProvider({
+  apiKey: process.env.CEREBRAS_API_KEY!,
+  baseUrl: "https://api.cerebras.ai/v1",
+  model: "zai-glm-4.7",
+}));
+
+const result = await runPipeline({
+  source: await readFile("project.vibe", "utf8"),
+  registry,
+  defaultResolver: { provider: "cerebras.zai-glm-4.7", model: "zai-glm-4.7", temperature: 0.3 },
+  proseSchema: z.object({ description: z.string() }),
+});
+
+console.log(result.shape, result.parseErrors, result.mergedRegions);
+```
+
+## Grammar quick reference
+
+See `examples/` for canonical shapes. Key additions in SD2:
+
+- `corrected for "tag" { ... }` — overrides a resolver output by tag
 
 ## Examples
 
-See [`../../examples`](../../examples) for one `.vibe` file per primitive plus a composite project example. Every example parses and validates as part of the test suite.
-
-## Grammar surface
-
-Defined in [`src/vibe.langium`](src/vibe.langium). Quick reference:
-
-- **Top-level declarations:** `agent`, `route`, `fallback`, `persona`, `provider`, `memory`, `harness`, `plugin`, `trigger`.
-- **Expressions:** string / number / boolean / null literals, references (single or dotted), list `[...]`, object `{ key = value, ... }`.
-- **Optional type annotation:** `key : Type = expression`. Parsed but not statically enforced (gradual typing — runtime check only).
-- **Comments:** `//` line and `/* ... */` block.
+Every file in `examples/` parses + validates + (for markdown sources) flows
+through `runPipeline` cleanly. The integration test enforces this.
