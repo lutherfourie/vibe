@@ -1,6 +1,8 @@
 import { EmptyFileSystem, type LangiumDocument } from "langium";
 import { parseHelper } from "langium/test";
+import type { ZodTypeAny } from "zod";
 import { dispatchSource } from "../dispatcher/index.js";
+import { resolveProse } from "../resolver/index.js";
 import type { ResolverResult } from "../resolver/types.js";
 import type { Project } from "../generated/ast.js";
 import type { ProviderRegistry } from "../providers/index.js";
@@ -10,6 +12,8 @@ export interface PipelineInput {
   source: string;
   registry: ProviderRegistry;
   defaultResolver: { provider: string; model: string; temperature: number };
+  /** Schema used to shape every prose-region resolution. */
+  proseSchema?: ZodTypeAny;
 }
 
 export interface PipelineResult {
@@ -40,7 +44,18 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
         { validation: true },
       );
     } else {
-      // Prose handling lands in Task 21.
+      if (!input.proseSchema) continue; // pipeline configured to ignore prose
+      const resolved = await resolveProse({
+        region,
+        context: {
+          provider: input.defaultResolver.provider,
+          model: input.defaultResolver.model,
+          temperature: input.defaultResolver.temperature,
+        },
+        schema: input.proseSchema,
+        registry: input.registry,
+      });
+      resolvedRegions.push(resolved);
     }
   }
 
