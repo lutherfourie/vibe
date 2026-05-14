@@ -1,0 +1,42 @@
+// Canonical Vibe v0 project — every primitive used in one file.
+
+provider anthropic.claude_code { mode = cli }
+provider openai.codex          { mode = cli }
+provider cerebras.glm_4_7      { mode = api }
+provider google.gemini         { mode = cli }
+provider xai.grok              { mode = api }    // api-only; no Grok CLI in May 2026
+
+route planner   -> anthropic.claude_code
+route generator -> openai.codex
+route resolver  -> cerebras.glm_4_7
+route grep      -> cerebras.glm_4_7
+fallback        -> cerebras.glm_4_7
+
+plugin asset_pipeline {
+  impl = "./plugins/asset-pipeline/index.ts"
+}
+
+persona izsha_voice {
+  description = "coordinator, dry, pushes back on speculative work"
+}
+
+memory izsha_global {
+  kind          = spineflow
+  namespace     = "izsha.global"
+  fog_threshold = medium
+}
+
+harness asset_drain {
+  kind = planner_generator_evaluator
+}
+
+agent izsha {
+  persona = persona.izsha_voice
+  memory  = memory.izsha_global
+  harness = harness.asset_drain
+  uses    = [plugin.asset_pipeline]
+}
+
+trigger every "1h" {
+  do = plugin.asset_pipeline.health_check
+}
