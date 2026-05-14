@@ -1,16 +1,51 @@
 // @vibe/language — entry point.
 //
-// Phase 1 scaffold: re-exports the Langium-generated AST + module wiring so
-// host packages (the VS Code extension, the future evaluator) can import a
-// single surface. The real evaluator, LLM resolver, and init pipeline land
-// after the Phase 1 brainstorming session settles language syntax.
+// One-stop import for consumers: SD1 (parser + AST + validators) plus the
+// SD2 surface (dispatcher, resolver, providers, pipeline, corrections).
+// Internal types stay internal.
 
 export const VERSION = "0.0.0";
 
 export * from "./generated/ast.js";
+export { createVibeServices, VibeModule } from "./vibe-module.js";
+export { registerValidationChecks } from "./vibe-validator.js";
+
+// SD2 surface
 export {
-  VibeGeneratedModule,
-  VibeGeneratedSharedModule,
-  VibeLanguageMetaData,
-} from "./generated/module.js";
-export { createVibeServices } from "./vibe-module.js";
+  dispatchSource,
+  detectShape,
+  type Region,
+  type RegionKind,
+  type RegionStream,
+  type ProseRegion,
+  type StructuredRegion,
+  type SourceShape,
+} from "./dispatcher/index.js";
+
+export {
+  resolveProse,
+  createInMemoryCache,
+  computeCacheKey,
+  makeVariance,
+  formatVariance,
+  type ResolverContext,
+  type ResolverResult,
+  type Variance,
+  type PrimitivesSummary,
+} from "./resolver/index.js";
+
+export {
+  createProviderRegistry,
+  createMockProvider,
+  type ProviderAdapter,
+  type ProviderMode,
+  type ChatMessage,
+  type ChatRole,
+  type GenerateObjectRequest,
+  type GenerateObjectResponse,
+} from "./providers/index.js";
+
+export { createCerebrasProvider } from "./providers/api/cerebras.js";
+export { createClaudeCliProvider } from "./providers/cli/claude.js";
+export { mergeCorrected } from "./resolver/corrections.js";
+export { runPipeline, type PipelineInput, type PipelineResult } from "./pipeline/run.js";
