@@ -42,6 +42,12 @@ plugin runtime_spike_lane {
   emits = "provisional local tooling"
 }
 
+plugin execution_surface_lane {
+  impl  = "./tools/execution-surface-lane"
+  owns  = "docs/** examples/**"
+  emits = "explicit handling for phone, web, IDE, GitHub, local desktop, and cloud-agent control"
+}
+
 plugin human_merge_gate {
   impl  = "./tools/human-merge-gate"
   owns  = "review"
@@ -56,6 +62,7 @@ agent vibe_bootstrap {
     plugin.research_lane,
     plugin.language_lane,
     plugin.runtime_spike_lane,
+    plugin.execution_surface_lane,
     plugin.human_merge_gate
   ]
 }

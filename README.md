@@ -51,6 +51,11 @@ This is the first dogfood loop. It is not final self-hosting. Long-horizon
 agents are an eventual execution target for Vibe lanes, not a dependency of
 the initial setup.
 
+Vibe also needs to know where a lane is being managed from. A lane may be
+started or supervised from a local desktop, phone, web session, IDE, GitHub, or
+cloud agent, but the contract should stay repo-grounded: source, branch,
+handoff, write scope, validation gate, and human approval.
+
 ## Repo Layout
 
 ```text

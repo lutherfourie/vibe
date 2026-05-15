@@ -18,6 +18,7 @@
         "plugin.research_lane",
         "plugin.language_lane",
         "plugin.runtime_spike_lane",
+        "plugin.execution_surface_lane",
         "plugin.human_merge_gate"
       ]
     }
@@ -54,6 +55,17 @@
         "impl": "./tools/runtime-spike-lane",
         "owns": "go/**",
         "emits": "provisional local tooling"
+      }
+    },
+    {
+      "name": "execution_surface_lane",
+      "impl": "./tools/execution-surface-lane",
+      "owns": "docs/** examples/**",
+      "emits": "explicit handling for phone, web, IDE, GitHub, local desktop, and cloud-agent control",
+      "metadata": {
+        "impl": "./tools/execution-surface-lane",
+        "owns": "docs/** examples/**",
+        "emits": "explicit handling for phone, web, IDE, GitHub, local desktop, and cloud-agent control"
       }
     }
   ],

@@ -33,6 +33,11 @@ Dogfooding is a constraint, but not a license to build a large self-hosting
 system early. The first dogfood loop is small: use `.vibe` source to describe or
 guide Vibe's next repo artifact, then let the repo learn what tooling is needed.
 
+Execution surface awareness belongs in Vibe. A lane may be managed from phone,
+web, IDE, GitHub, local desktop, or a cloud agent. The important part is that the
+repo contract remains explicit: source, branch, handoff, write scope, validation
+gate, and human approval.
+
 ## What Carries Forward
 
 From `C:\Hive\vibe`, carry forward the useful ideas and working machinery, but
@@ -46,6 +51,8 @@ not the old repo identity:
   parser/test suite already works.
 - Go remains a possible local runtime layer for repo safety, subprocesses, and
   coordination, but it is experimental and should not block the first loop.
+- Phone, web, IDE, GitHub, local desktop, and cloud agents are execution
+  surfaces Vibe should model explicitly instead of treating as hidden context.
 
 ## Next Step
 

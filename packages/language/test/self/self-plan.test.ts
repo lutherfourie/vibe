@@ -29,6 +29,7 @@ describe("Vibe self-plan extraction", () => {
       "research_lane",
       "language_lane",
       "runtime_spike_lane",
+      "execution_surface_lane",
     ]);
     expect(plan.gates.map((gate) => gate.name)).toEqual([
       "human_merge_gate",
