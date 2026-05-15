@@ -8,6 +8,49 @@
     "implementation": "openai.codex"
   },
   "fallback": "cerebras.glm_4_7",
+  "surfaces": [
+    {
+      "name": "codex.local",
+      "kind": "codex",
+      "mode": "local",
+      "metadata": {
+        "kind": "codex",
+        "mode": "local",
+        "guidance": "AGENTS.md",
+        "skills": "./.agents/skills"
+      }
+    },
+    {
+      "name": "codex.cli",
+      "kind": "codex",
+      "mode": "cli",
+      "metadata": {
+        "kind": "codex",
+        "mode": "cli",
+        "binary": "codex"
+      }
+    },
+    {
+      "name": "codex.cloud",
+      "kind": "codex",
+      "mode": "cloud",
+      "metadata": {
+        "kind": "codex",
+        "mode": "cloud",
+        "environment": "chatgpt.com/codex"
+      }
+    },
+    {
+      "name": "codex.github_pr",
+      "kind": "codex",
+      "mode": "github_pr",
+      "metadata": {
+        "kind": "codex",
+        "mode": "github_pr",
+        "trigger": "@codex"
+      }
+    }
+  ],
   "agents": [
     {
       "name": "vibe_bootstrap",
@@ -19,6 +62,8 @@
         "plugin.language_lane",
         "plugin.runtime_spike_lane",
         "plugin.execution_surface_lane",
+        "plugin.bootstrap_tooling_lane",
+        "plugin.local_toolkit_lane",
         "plugin.human_merge_gate"
       ]
     }
@@ -66,6 +111,52 @@
         "impl": "./tools/execution-surface-lane",
         "owns": "docs/** examples/**",
         "emits": "explicit handling for phone, web, IDE, GitHub, local desktop, and cloud-agent control"
+      }
+    },
+    {
+      "name": "bootstrap_tooling_lane",
+      "impl": "./tools/bootstrap-tooling-lane",
+      "owns": "docs/bootstrap-todos.md docs/local-toolkit.md",
+      "emits": "tooling and auth checklist for gh, Playwright browsers, jq, yq, fd, and plugins/connectors",
+      "metadata": {
+        "impl": "./tools/bootstrap-tooling-lane",
+        "owns": "docs/bootstrap-todos.md docs/local-toolkit.md",
+        "emits": "tooling and auth checklist for gh, Playwright browsers, jq, yq, fd, and plugins/connectors"
+      }
+    },
+    {
+      "name": "local_toolkit_lane",
+      "impl": "./tools/local-toolkit-lane",
+      "owns": "docs/local-toolkit.md go/** packages/**",
+      "emits": "small vibe CLI plan for doctor, lanes, handoff, verify, and memory",
+      "target": "surface.codex.local",
+      "reads": [
+        "README.md",
+        "docs/fresh-start.md",
+        "examples/vibe-self.vibe"
+      ],
+      "verify": [
+        "pnpm run self:plan",
+        "pnpm test",
+        "pnpm run build"
+      ],
+      "approval": "human.before_commit",
+      "metadata": {
+        "impl": "./tools/local-toolkit-lane",
+        "target": "surface.codex.local",
+        "reads": [
+          "README.md",
+          "docs/fresh-start.md",
+          "examples/vibe-self.vibe"
+        ],
+        "owns": "docs/local-toolkit.md go/** packages/**",
+        "verify": [
+          "pnpm run self:plan",
+          "pnpm test",
+          "pnpm run build"
+        ],
+        "approval": "human.before_commit",
+        "emits": "small vibe CLI plan for doctor, lanes, handoff, verify, and memory"
       }
     }
   ],

@@ -25,12 +25,43 @@ describe("Vibe self-plan extraction", () => {
       implementation: "openai.codex",
     });
     expect(plan.fallback).toBe("cerebras.glm_4_7");
+    expect(plan.surfaces.map((surface) => surface.name)).toEqual([
+      "codex.local",
+      "codex.cli",
+      "codex.cloud",
+      "codex.github_pr",
+    ]);
+    expect(plan.surfaces[0]).toMatchObject({
+      name: "codex.local",
+      kind: "codex",
+      mode: "local",
+      metadata: {
+        guidance: "AGENTS.md",
+        skills: "./.agents/skills",
+      },
+    });
     expect(plan.lanes.map((lane) => lane.name)).toEqual([
       "research_lane",
       "language_lane",
       "runtime_spike_lane",
       "execution_surface_lane",
+      "bootstrap_tooling_lane",
+      "local_toolkit_lane",
     ]);
+    expect(plan.lanes.find((lane) => lane.name === "local_toolkit_lane")).toMatchObject({
+      target: "surface.codex.local",
+      reads: [
+        "README.md",
+        "docs/fresh-start.md",
+        "examples/vibe-self.vibe",
+      ],
+      verify: [
+        "pnpm run self:plan",
+        "pnpm test",
+        "pnpm run build",
+      ],
+      approval: "human.before_commit",
+    });
     expect(plan.gates.map((gate) => gate.name)).toEqual([
       "human_merge_gate",
     ]);
@@ -45,19 +76,34 @@ describe("Vibe self-plan extraction", () => {
   it("can extract from an already parsed project", async () => {
     const project = await expectParses(`
       provider cerebras.glm_4_7 { mode = api }
+      surface codex.local { kind = codex mode = local guidance = "AGENTS.md" }
       route resolver -> cerebras.glm_4_7
       memory vibe_project { kind = vault namespace = "C:/vibe" }
-      plugin research_lane { impl = "./tools/research" owns = "docs/**" emits = "notes" }
+      plugin research_lane { impl = "./tools/research" owns = "docs/**" emits = "notes" target = surface.codex.local verify = ["pnpm test"] }
       plugin human_gate { impl = "./tools/gate" owns = "review" emits = "approval" }
     `);
 
     const plan = extractSelfPlan(project);
 
     expect(plan.repo).toBe("C:/vibe");
+    expect(plan.surfaces).toEqual([
+      {
+        name: "codex.local",
+        kind: "codex",
+        mode: "local",
+        metadata: {
+          kind: "codex",
+          mode: "local",
+          guidance: "AGENTS.md",
+        },
+      },
+    ]);
     expect(plan.lanes).toHaveLength(1);
     expect(plan.lanes[0]).toMatchObject({
       name: "research_lane",
       owns: "docs/**",
+      target: "surface.codex.local",
+      verify: ["pnpm test"],
     });
     expect(plan.gates).toHaveLength(1);
     expect(plan.gates[0]).toMatchObject({

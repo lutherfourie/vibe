@@ -67,6 +67,11 @@ pnpm run build
 The next implementation slice should improve the self-plan loop without
 pretending the syntax or runtime split is final.
 
+Near-term setup and tooling work lives in:
+
+- [`docs/bootstrap-todos.md`](bootstrap-todos.md)
+- [`docs/local-toolkit.md`](local-toolkit.md)
+
 ## Current Tooling
 
 The repo now has a TypeScript/Langium source loop:

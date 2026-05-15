@@ -37,6 +37,9 @@ pnpm run check
 `pnpm run self:plan` extracts a JSON self-plan from
 `examples/vibe-self.vibe` into `docs/examples/vibe-self-plan.json`.
 
+Bootstrap setup work is tracked in [`docs/bootstrap-todos.md`](docs/bootstrap-todos.md).
+The proposed local CLI shape is tracked in [`docs/local-toolkit.md`](docs/local-toolkit.md).
+
 ## Bootstrap Loop
 
 ```text
