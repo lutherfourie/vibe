@@ -1,0 +1,9 @@
+// A plugin declaration points at a TS module that exports a definePlugin() result.
+
+provider cerebras.glm_4_7 { mode = api }
+route resolver -> cerebras.glm_4_7
+
+plugin asset_pipeline {
+  impl    = "./plugins/asset-pipeline/index.ts"
+  version = "0.1.0"
+}

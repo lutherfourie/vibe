@@ -1,0 +1,78 @@
+{
+  "name": "vibe-self",
+  "source": "C:/vibe/examples/vibe-self.vibe",
+  "repo": "C:/vibe",
+  "routes": {
+    "resolver": "cerebras.glm_4_7",
+    "researcher": "cerebras.glm_4_7",
+    "implementation": "openai.codex"
+  },
+  "fallback": "cerebras.glm_4_7",
+  "agents": [
+    {
+      "name": "vibe_bootstrap",
+      "persona": "persona.vibe_bootstrap_voice",
+      "memory": "memory.vibe_project",
+      "harness": "harness.self_making",
+      "uses": [
+        "plugin.research_lane",
+        "plugin.language_lane",
+        "plugin.runtime_spike_lane",
+        "plugin.human_merge_gate"
+      ]
+    }
+  ],
+  "lanes": [
+    {
+      "name": "research_lane",
+      "impl": "./tools/research-lane",
+      "owns": "docs/superpowers/research/**",
+      "emits": "decision notes and framework maps",
+      "metadata": {
+        "impl": "./tools/research-lane",
+        "owns": "docs/superpowers/research/**",
+        "emits": "decision notes and framework maps"
+      }
+    },
+    {
+      "name": "language_lane",
+      "impl": "./tools/language-lane",
+      "owns": "packages/language/**",
+      "emits": "parser, dispatcher, resolver, and validation changes",
+      "metadata": {
+        "impl": "./tools/language-lane",
+        "owns": "packages/language/**",
+        "emits": "parser, dispatcher, resolver, and validation changes"
+      }
+    },
+    {
+      "name": "runtime_spike_lane",
+      "impl": "./tools/runtime-spike-lane",
+      "owns": "go/**",
+      "emits": "provisional local tooling",
+      "metadata": {
+        "impl": "./tools/runtime-spike-lane",
+        "owns": "go/**",
+        "emits": "provisional local tooling"
+      }
+    }
+  ],
+  "gates": [
+    {
+      "name": "human_merge_gate",
+      "impl": "./tools/human-merge-gate",
+      "owns": "review",
+      "emits": "approved next slice",
+      "metadata": {
+        "impl": "./tools/human-merge-gate",
+        "owns": "review",
+        "emits": "approved next slice"
+      }
+    }
+  ],
+  "notes": [
+    "This is a provisional self-plan extracted from current Vibe primitives.",
+    "Plugins ending in _lane are treated as lanes until lane syntax exists.",
+    "Plugins ending in _gate are treated as gates until gate syntax exists."
+  ]
+}

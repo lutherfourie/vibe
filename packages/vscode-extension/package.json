@@ -1,0 +1,80 @@
+{
+  "name": "vibe-vscode",
+  "displayName": "Vibe",
+  "description": "Authoring support for Vibe (.vibe) — the unified vibecode language.",
+  "version": "0.0.0",
+  "publisher": "lutherfourie",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.95.0",
+    "node": ">=22"
+  },
+  "categories": [
+    "Programming Languages",
+    "Other"
+  ],
+  "keywords": [
+    "vibe",
+    "vibecode",
+    "agents",
+    "llm",
+    "spec language"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "vibe",
+        "aliases": ["Vibe", "vibelang"],
+        "extensions": [".vibe"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "vibe",
+        "scopeName": "source.vibe",
+        "path": "./syntaxes/vibe.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "vibe.init",
+        "title": "Vibe: Init Project"
+      },
+      {
+        "command": "vibe.build",
+        "title": "Vibe: Build"
+      },
+      {
+        "command": "vibe.sync",
+        "title": "Vibe: Sync"
+      },
+      {
+        "command": "vibe.openVaultInObsidian",
+        "title": "Vibe: Open Vault in Obsidian"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "echo \"no tests yet\"",
+    "clean": "rimraf dist",
+    "vscode:prepublish": "pnpm run build"
+  },
+  "activationEvents": [
+    "onLanguage:vibe",
+    "workspaceContains:**/.vibe/**"
+  ],
+  "dependencies": {
+    "@vibe/language": "workspace:*",
+    "vscode-languageclient": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "@types/vscode": "^1.95.0",
+    "typescript": "^5.6.3",
+    "rimraf": "^6.0.1"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "request": {
+    "messages": [
+      { "role": "system", "content": "<system-prompt-elided>" },
+      { "role": "user", "content": "<prose>Make an agent named Izsha.</prose>" }
+    ],
+    "temperature": 0.3,
+    "model": "zai-glm-4.7"
+  },
+  "response": {
+    "name": "izsha",
+    "description": "coordinator, dry"
+  }
+}

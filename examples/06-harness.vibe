@@ -1,0 +1,12 @@
+// Harnesses cite the Anthropic + Brain/Hands/Session patterns from Phase 0 research.
+
+provider cerebras.glm_4_7 { mode = api }
+route resolver -> cerebras.glm_4_7
+
+harness asset_drain {
+  kind = planner_generator_evaluator
+}
+
+harness fast_loop {
+  kind = brain_hands_session
+}

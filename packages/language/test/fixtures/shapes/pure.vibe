@@ -1,0 +1,3 @@
+provider cerebras.glm_4_7 { mode = api }
+route resolver -> cerebras.glm_4_7
+persona izsha { description = "coordinator, dry" }

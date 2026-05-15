@@ -1,0 +1,31 @@
+# Izsha Sketch
+
+We want a coordinator agent that owns the asset pipeline. She should be terse
+and prefer concrete plans over speculation.
+
+```vibe-prose#izsha-sketch
+We want a coordinator agent that owns the asset pipeline. She should be terse
+and prefer concrete plans over speculation.
+```
+
+```vibe
+provider cerebras.glm_4_7 { mode = api }
+route resolver -> cerebras.glm_4_7
+
+persona izsha {
+  description = "placeholder — resolver fills this in"
+}
+
+agent izsha {
+  persona = persona.izsha
+  uses = [plugin.asset_pipeline]
+}
+
+plugin asset_pipeline {
+  impl = "./plugins/asset-pipeline.ts"
+}
+
+corrected for "izsha-sketch" {
+  description = "coordinator, dry"
+}
+```

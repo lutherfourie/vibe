@@ -1,0 +1,13 @@
+### user
+We need an agent that drains the codex backlog. Call her Izsha.
+
+### assistant
+Here is a starting sketch.
+
+```vibe
+provider cerebras.glm_4_7 { mode = api }
+persona izsha { description = "coordinator, dry" }
+```
+
+### user
+She should also own the deploy pipeline.

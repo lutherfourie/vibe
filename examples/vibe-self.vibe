@@ -1,47 +1,61 @@
-# Draft source: human-first and line-oriented.
-# This syntax is not final.
+// Vibe describing its own near-term work.
+// This file is intentionally small. Future syntax may grow real lane and gate
+// primitives; for now, lane-shaped work is represented as plugins consumed by
+// one bootstrap agent.
 
-vibe: self
-company: Vibecade
-active_repo: C:/vibe
-reference_repo: C:/Hive/vibe
+provider cerebras.glm_4_7 { mode = api }
+provider openai.codex     { mode = cli }
 
-purpose:
-  Vibe is Vibecade's concrete tool for vibe-coded systems.
-  Treat .vibe as source for Agentic Infrastructure as Code.
+route resolver      -> cerebras.glm_4_7
+route researcher    -> cerebras.glm_4_7
+route implementation -> openai.codex
+fallback            -> cerebras.glm_4_7
 
-constraints:
-  spec_is_fluid
-  source_before_scaffold
-  dogfood_vibe_source_before_tooling
-  reference_repo_is_not_binding
-  gamespree_is_future_proof_target_only
-  long_horizon_agents_are_future_targets_not_bootstrap_dependencies
+persona vibe_bootstrap_voice {
+  description = "pragmatic Vibe bootstrapper; keeps the spec fluid while making useful artifacts"
+}
 
-carry_forward:
-  agentic_iac
-  lanes
-  handoffs
-  gates
-  provider_routes
-  write_scopes
-  existing_ai_frameworks_as_backends
-  go_as_possible_local_runtime
-  long_horizon_agents_as_eventual_lane_execution_target
+memory vibe_project {
+  kind      = vault
+  namespace = "C:/vibe"
+}
 
-next_work:
-  lane source_loop
-    goal: use this source to guide Vibe's next repo artifact
-    write_scope: README.md docs/** examples/**
-    handoff: repo-grounded summary of the next implementation slice
-    gate: human_review
+harness self_making {
+  kind = planner_generator_evaluator
+}
 
-  lane language_probe
-    goal: decide whether packages/language is needed for the first dogfood reader
-    write_scope: packages/language/**
-    handoff: tiny checker or parser proposal with build/test commands
-    gate: parser_needed
+plugin research_lane {
+  impl  = "./tools/research-lane"
+  owns  = "docs/superpowers/research/**"
+  emits = "decision notes and framework maps"
+}
 
-gates:
-  human_review: required before commit
-  parser_needed: pass only if the source loop cannot stay line-oriented
+plugin language_lane {
+  impl  = "./tools/language-lane"
+  owns  = "packages/language/**"
+  emits = "parser, dispatcher, resolver, and validation changes"
+}
+
+plugin runtime_spike_lane {
+  impl  = "./tools/runtime-spike-lane"
+  owns  = "go/**"
+  emits = "provisional local tooling"
+}
+
+plugin human_merge_gate {
+  impl  = "./tools/human-merge-gate"
+  owns  = "review"
+  emits = "approved next slice"
+}
+
+agent vibe_bootstrap {
+  persona = persona.vibe_bootstrap_voice
+  memory  = memory.vibe_project
+  harness = harness.self_making
+  uses    = [
+    plugin.research_lane,
+    plugin.language_lane,
+    plugin.runtime_spike_lane,
+    plugin.human_merge_gate
+  ]
+}
