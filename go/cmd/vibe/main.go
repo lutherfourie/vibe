@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/lutherfourie/vibe/go/internal/bootstrap"
@@ -73,7 +74,7 @@ func usage(out *os.File) {
 	fmt.Fprintln(out, "  serve       Host the local Vibe admin dashboard")
 	fmt.Fprintln(out, "  verify      Run the repo verification command")
 	fmt.Fprintln(out, "  make-plan   Emit the bootstrap lane plan JSON")
-	fmt.Fprintln(out, "  handoff     Emit markdown handoffs from a lane-plan JSON")
+	fmt.Fprintln(out, "  handoff     Emit markdown handoffs from a lane-plan or self-plan JSON")
 }
 
 func runContinue(ctx context.Context, args []string) error {
@@ -222,6 +223,22 @@ func runServe(args []string) error {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		fmt.Fprint(w, graph)
 	})
+	mux.HandleFunc("/handoffs/", func(w http.ResponseWriter, r *http.Request) {
+		filename := strings.TrimPrefix(r.URL.Path, "/handoffs/")
+		for _, lane := range plan.Lanes {
+			if filename != selfplan.HandoffFilename(lane) {
+				continue
+			}
+			w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
+			w.Header().Set("Content-Disposition", "attachment; filename="+strconv.Quote(filename))
+			fmt.Fprint(w, selfplan.LaneHandoff(plan, lane))
+			return
+		}
+		http.NotFound(w, r)
+	})
+	mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
 
 	log.Printf("Vibe admin dashboard listening on http://%s", *addr)
 	return http.ListenAndServe(*addr, mux)
@@ -292,12 +309,28 @@ func runHandoff(ctx context.Context, args []string) error {
 	flags := flag.NewFlagSet("handoff", flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)
 	planPath := flags.String("plan", "", "path to lane-plan JSON")
+	selfPlanPath := flags.String("self-plan", "", "path to Vibe self-plan JSON")
 	outDir := flags.String("out", ".vibe-out", "directory for generated handoffs")
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
-	if *planPath == "" {
-		return fmt.Errorf("--plan is required")
+	if (*planPath == "") == (*selfPlanPath == "") {
+		return fmt.Errorf("exactly one of --plan or --self-plan is required")
+	}
+
+	if *selfPlanPath != "" {
+		plan, err := selfplan.Load(resolveRepoPath(*selfPlanPath))
+		if err != nil {
+			return err
+		}
+		exports, err := selfplan.WriteLaneHandoffs(plan, resolveRepoPathForWrite(*outDir))
+		if err != nil {
+			return err
+		}
+		for _, handoff := range exports {
+			fmt.Printf("self-plan\t%s\t%s\n", handoff.LaneName, handoff.Path)
+		}
+		return nil
 	}
 
 	raw, err := os.ReadFile(resolveRepoPath(*planPath))

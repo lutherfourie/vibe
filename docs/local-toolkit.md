@@ -37,7 +37,12 @@ same self-plan JSON used by the VS Code lane tree.
 
 ### `vibe handoff`
 
-Implemented in the unified Go binary as `vibe handoff --plan <lane-plan.json>`.
+Implemented in the unified Go binary as:
+
+```powershell
+vibe handoff --plan <lane-plan.json>
+vibe handoff --self-plan docs/examples/vibe-self-plan.json --out .vibe-out/handoffs
+```
 
 Produces agent-ready prompts from the older lane-plan JSON shape:
 
@@ -47,6 +52,10 @@ Produces agent-ready prompts from the older lane-plan JSON shape:
 - Explicit repo, branch, write scope, verification, and stop conditions.
 - Surface-aware targets such as `surface.codex.local`,
   `surface.codex.cloud`, and `surface.codex.github_pr`.
+
+For the generated self-plan JSON, it exports one markdown handoff per lane using
+the same lane body shown in the dashboard. `vibe serve` exposes the same
+handoffs as `/handoffs/<lane>.md` downloads.
 
 ### `vibe verify`
 
@@ -65,6 +74,10 @@ Hosts the current admin surface at `http://127.0.0.1:8787` with:
 - `/` local HTML dashboard.
 - `/self-plan.json` machine-readable self-plan.
 - `/vibe-lanes.mmd` Mermaid lane graph.
+- Visual lane graph cards rendered from the same self-plan.
+- Copyable lane handoff panels with read scope, write scope, target surface,
+  verification commands, and approval point.
+- Raw Mermaid source in a collapsible debugging panel.
 
 ### `vibe memory`
 
@@ -123,10 +136,21 @@ Reference docs used for this direction:
 - Supabase AI and Vectors: https://supabase.com/docs/guides/ai
 - Supabase `pgvector`: https://supabase.com/docs/guides/database/extensions/pgvector
 
+## Current Slice
+
+`vibe serve` now keeps the raw Mermaid endpoint but renders a local visual lane
+graph, copyable handoff panels, and downloadable markdown handoffs directly from
+the self-plan. The CLI can also export those handoffs with
+`vibe handoff --self-plan docs/examples/vibe-self-plan.json --out .vibe-out/handoffs`.
+
+It intentionally does not pull Mermaid from a CDN or add a browser dependency
+yet; the dashboard must stay useful from a local checkout without external
+service assumptions.
+
 ## Next Slice
 
-The next useful slice is to make `vibe serve` render the Mermaid graph visually
-instead of showing raw Mermaid text, then add a copyable handoff panel per lane.
-
-Keep installation side effects out of the CLI until the report format and human
+The next useful slice is to wire this local-toolkit output into the VS Code
+dogfood loop: make `Vibe: Init Project` create a useful `.vibe/` workspace,
+parse it into `.vibe/state.json`, and show it in the Vibe tree. Keep
+installation side effects out of the CLI until the report format and human
 approval flow are clearer.

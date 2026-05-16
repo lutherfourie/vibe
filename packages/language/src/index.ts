@@ -50,6 +50,7 @@ export {
   createOpenAIProvider,
   DEFAULT_OPENAI_MODEL,
   DEFAULT_OPENAI_PROVIDER_ID,
+  type OpenAIProviderOptions,
 } from "./providers/api/openai.js";
 export { createClaudeCliProvider } from "./providers/cli/claude.js";
 export { mergeCorrected } from "./resolver/corrections.js";
@@ -67,5 +68,6 @@ export {
   type SelfAgent,
   type SelfGate,
   type SelfLane,
+  type SelfProvider,
   type VibeSelfPlan,
 } from "./self/self-plan.js";

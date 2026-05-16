@@ -8,6 +8,7 @@ import {
   isNumberLiteral,
   isObjectExpression,
   isPlugin,
+  isProvider,
   isReference,
   isRoute,
   isStringLiteral,
@@ -18,6 +19,7 @@ import {
   type Memory,
   type Plugin,
   type Project,
+  type Provider,
   type QualifiedName,
   type Reference,
   type Surface,
@@ -28,6 +30,7 @@ export interface VibeSelfPlan {
   name: string;
   source: string;
   repo?: string;
+  providers: SelfProvider[];
   routes: Record<string, string>;
   fallback?: string;
   surfaces: SelfSurface[];
@@ -41,6 +44,13 @@ export interface SelfSurface {
   name: string;
   kind?: string;
   mode?: string;
+  metadata: Record<string, unknown>;
+}
+
+export interface SelfProvider {
+  name: string;
+  mode?: string;
+  model?: string;
   metadata: Record<string, unknown>;
 }
 
@@ -104,6 +114,7 @@ export function extractSelfPlan(
     name: options.name ?? "vibe-self",
     source: options.sourceName ?? "unknown",
     repo: memory ? readRepo(memory) : undefined,
+    providers: project.declarations.filter(isProvider).map(readProvider),
     routes: readRoutes(project),
     fallback: readFallback(project),
     surfaces: project.declarations.filter(isSurface).map(readSurface),
@@ -115,6 +126,16 @@ export function extractSelfPlan(
       "Plugins ending in _lane are treated as lanes until lane syntax exists.",
       "Plugins ending in _gate are treated as gates until gate syntax exists.",
     ],
+  };
+}
+
+function readProvider(provider: Provider): SelfProvider {
+  const metadata = readMetadata(provider);
+  return {
+    name: qualifiedName(provider.name),
+    mode: stringValue(metadata.mode),
+    model: stringValue(metadata.model),
+    metadata,
   };
 }
 
@@ -165,7 +186,7 @@ function readGate(plugin: Plugin): SelfGate {
   };
 }
 
-function readMetadata(source: Plugin | Surface): Record<string, unknown> {
+function readMetadata(source: Plugin | Provider | Surface): Record<string, unknown> {
   const metadata: Record<string, unknown> = {};
   for (const field of source.fields) {
     metadata[field.name] = expressionValue(field.value);
