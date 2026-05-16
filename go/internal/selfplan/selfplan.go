@@ -37,6 +37,11 @@ type Lane struct {
 	Approval string   `json:"approval,omitempty"`
 }
 
+type HandoffExport struct {
+	LaneName string
+	Path     string
+}
+
 func Load(path string) (Plan, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
@@ -98,6 +103,36 @@ func Mermaid(plan Plan) string {
 	return b.String()
 }
 
+func HandoffFilename(lane Lane) string {
+	return nodeID(lane.Name) + ".md"
+}
+
+func WriteLaneHandoffs(plan Plan, outDir string) ([]HandoffExport, error) {
+	if err := os.MkdirAll(outDir, 0o755); err != nil {
+		return nil, fmt.Errorf("create handoff directory: %w", err)
+	}
+
+	exports := make([]HandoffExport, 0, len(plan.Lanes))
+	used := map[string]int{}
+	for _, lane := range plan.Lanes {
+		filename := HandoffFilename(lane)
+		if count := used[filename]; count > 0 {
+			filename = strings.TrimSuffix(filename, ".md") + fmt.Sprintf("-%d.md", count+1)
+		}
+		used[HandoffFilename(lane)]++
+
+		outPath := filepath.Join(outDir, filename)
+		if err := os.WriteFile(outPath, []byte(LaneHandoff(plan, lane)), 0o644); err != nil {
+			return nil, fmt.Errorf("write handoff %s: %w", lane.Name, err)
+		}
+		exports = append(exports, HandoffExport{
+			LaneName: lane.Name,
+			Path:     outPath,
+		})
+	}
+	return exports, nil
+}
+
 func DashboardHTML(plan Plan, graph string) string {
 	var b bytes.Buffer
 	b.WriteString("<!doctype html><html><head><meta charset=\"utf-8\">")
@@ -105,7 +140,7 @@ func DashboardHTML(plan Plan, graph string) string {
 	b.WriteString("<title>Vibe Admin</title>")
 	b.WriteString("<style>")
 	b.WriteString(":root{color-scheme:light;--ink:#171717;--muted:#5f6368;--line:#d7dadf;--panel:#ffffff;--soft:#f6f8fb;--accent:#0f766e;--accent-soft:#d9f3ef;--warn:#8a5a00;--code:#202938}")
-	b.WriteString("*{box-sizing:border-box}body{font-family:system-ui,sans-serif;margin:0;line-height:1.45;color:var(--ink);background:#f8fafc}main{max-width:1180px;margin:0 auto;padding:2rem}header{display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;border-bottom:1px solid var(--line);padding-bottom:1.25rem;margin-bottom:1.5rem}h1,h2,h3,h4,p{margin-top:0}h1{font-size:2rem;margin-bottom:.35rem}h2{font-size:1.25rem;margin-bottom:.75rem}h3{font-size:1rem;margin-bottom:.35rem}h4{font-size:.92rem;margin-bottom:0}.muted{color:var(--muted)}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--code)}button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:6px;padding:.45rem .75rem;font:inherit;cursor:pointer;min-width:4.25rem}button:hover{border-color:var(--accent);color:var(--accent)}.section{margin:1.5rem 0}.graph{display:grid;gap:.75rem}.graph-row{display:grid;grid-template-columns:minmax(11rem,1fr) 1.75rem minmax(12rem,1.25fr) minmax(12rem,1.2fr);gap:.5rem;align-items:stretch}.node{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:.75rem;min-width:0}.node strong{display:block;font-size:.86rem;margin-bottom:.2rem}.node span{display:block;overflow-wrap:anywhere;color:var(--muted);font-size:.88rem}.lane-node{border-color:var(--accent);box-shadow:inset 4px 0 0 var(--accent)}.target-node{background:var(--accent-soft);border-color:#99d8d0}.edge{align-self:center;text-align:center;color:var(--muted);font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.lanes{display:grid;gap:1rem}.lane{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:1rem}.lane-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem;margin:.75rem 0}.meta{background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:.65rem;min-width:0}.meta b{display:block;font-size:.78rem;text-transform:uppercase;color:var(--muted);font-weight:650;margin-bottom:.2rem}.meta span{overflow-wrap:anywhere}.handoff-head{display:flex;justify-content:space-between;align-items:center;gap:.75rem;margin-top:1rem}.handoff{width:100%;min-height:13rem;resize:vertical;margin-top:.5rem;border:1px solid var(--line);border-radius:6px;padding:.75rem;background:#fbfcfe;color:var(--code);font:0.86rem/1.45 ui-monospace,SFMono-Regular,Consolas,monospace}details{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:1rem}summary{cursor:pointer;font-weight:650}pre{background:#111827;color:#e5e7eb;padding:1rem;overflow:auto;border-radius:6px}@media (max-width:860px){main{padding:1rem}header{display:block}.graph-row{grid-template-columns:1fr}.edge{text-align:left}.lane-meta{grid-template-columns:1fr}}")
+	b.WriteString("*{box-sizing:border-box}body{font-family:system-ui,sans-serif;margin:0;line-height:1.45;color:var(--ink);background:#f8fafc}main{max-width:1180px;margin:0 auto;padding:2rem}header{display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;border-bottom:1px solid var(--line);padding-bottom:1.25rem;margin-bottom:1.5rem}h1,h2,h3,h4,p{margin-top:0}h1{font-size:2rem;margin-bottom:.35rem}h2{font-size:1.25rem;margin-bottom:.75rem}h3{font-size:1rem;margin-bottom:.35rem}h4{font-size:.92rem;margin-bottom:0}.muted{color:var(--muted)}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--code)}button,.button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:6px;padding:.45rem .75rem;font:inherit;cursor:pointer;min-width:4.25rem;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}button:hover,.button:hover{border-color:var(--accent);color:var(--accent)}.section{margin:1.5rem 0}.graph{display:grid;gap:.75rem}.graph-row{display:grid;grid-template-columns:minmax(11rem,1fr) 1.75rem minmax(12rem,1.25fr) minmax(12rem,1.2fr);gap:.5rem;align-items:stretch}.node{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:.75rem;min-width:0}.node strong{display:block;font-size:.86rem;margin-bottom:.2rem}.node span{display:block;overflow-wrap:anywhere;color:var(--muted);font-size:.88rem}.lane-node{border-color:var(--accent);box-shadow:inset 4px 0 0 var(--accent)}.target-node{background:var(--accent-soft);border-color:#99d8d0}.edge{align-self:center;text-align:center;color:var(--muted);font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.lanes{display:grid;gap:1rem}.lane{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:1rem}.lane-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem;margin:.75rem 0}.meta{background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:.65rem;min-width:0}.meta b{display:block;font-size:.78rem;text-transform:uppercase;color:var(--muted);font-weight:650;margin-bottom:.2rem}.meta span{overflow-wrap:anywhere}.handoff-head{display:flex;justify-content:space-between;align-items:center;gap:.75rem;margin-top:1rem}.handoff-actions{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:flex-end}.handoff{width:100%;min-height:13rem;resize:vertical;margin-top:.5rem;border:1px solid var(--line);border-radius:6px;padding:.75rem;background:#fbfcfe;color:var(--code);font:0.86rem/1.45 ui-monospace,SFMono-Regular,Consolas,monospace}details{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:1rem}summary{cursor:pointer;font-weight:650}pre{background:#111827;color:#e5e7eb;padding:1rem;overflow:auto;border-radius:6px}@media (max-width:860px){main{padding:1rem}header{display:block}.graph-row{grid-template-columns:1fr}.edge{text-align:left}.lane-meta{grid-template-columns:1fr}}")
 	b.WriteString("</style>")
 	b.WriteString("</head><body>")
 	b.WriteString("<main>")
@@ -144,7 +179,10 @@ func DashboardHTML(plan Plan, graph string) string {
 			fmt.Fprintf(&b, "<p>%s</p>", html.EscapeString(lane.Emits))
 		}
 		b.WriteString("<div class=\"handoff-head\"><h4>Agent Handoff</h4>")
-		fmt.Fprintf(&b, "<button type=\"button\" data-copy-target=\"%s\">Copy</button></div>", html.EscapeString(handoffID))
+		b.WriteString("<div class=\"handoff-actions\">")
+		fmt.Fprintf(&b, "<button type=\"button\" data-copy-target=\"%s\">Copy</button>", html.EscapeString(handoffID))
+		fmt.Fprintf(&b, "<a class=\"button\" href=\"/handoffs/%s\" download>Download</a>", html.EscapeString(HandoffFilename(lane)))
+		b.WriteString("</div></div>")
 		fmt.Fprintf(&b, "<textarea id=\"%s\" class=\"handoff\" readonly spellcheck=\"false\">%s</textarea>", html.EscapeString(handoffID), html.EscapeString(LaneHandoff(plan, lane)))
 		b.WriteString("</section>")
 	}

@@ -44,3 +44,23 @@ func TestMarkdownGivesACompactResumeProtocol(t *testing.T) {
 		}
 	}
 }
+
+func TestDefaultNextMovesDoNotPointAtMergedTransferPRs(t *testing.T) {
+	moves := strings.Join(DefaultNextMoves(), "\n")
+	for _, stale := range []string{
+		"PR #2 is still draft",
+		"close PR #1",
+	} {
+		if strings.Contains(moves, stale) {
+			t.Fatalf("default next moves still contain stale transfer PR instruction %q:\n%s", stale, moves)
+		}
+	}
+	for _, want := range []string{
+		"Open or update the PR for the current local-toolkit branch.",
+		"Start the VS Code dogfood slice",
+	} {
+		if !strings.Contains(moves, want) {
+			t.Fatalf("default next moves missing %q:\n%s", want, moves)
+		}
+	}
+}

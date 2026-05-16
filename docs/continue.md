@@ -21,13 +21,10 @@ Then read, in order:
 
 ## Current Git Shape
 
-- PR #1 is the transfer-slice review:
-  `codex/vibe-full-transfer-initialization` -> `codex/vibe-full-transfer-base`.
-- PR #2 is the mainline integration PR:
-  `codex/main-transfer-integration` -> `main`.
-- Prefer PR #2 for the actual merge to `main`.
-- After PR #2 merges, close PR #1 as superseded unless a reviewer needs the
-  narrower transfer history.
+- PRs #1-#4 have been merged to `main`.
+- The current local-toolkit work is on `codex/vibe-self-plan-dashboard-gpt55`.
+- Before starting broader work, open or update the PR for the current branch, or
+  merge it if that has already been reviewed.
 
 ## Resume Commands
 
@@ -36,6 +33,9 @@ pnpm install --frozen-lockfile
 pnpm run vibe:continue
 pnpm run vibe:doctor
 pnpm run vibe:lanes
+cd go
+go run ./cmd/vibe handoff --self-plan docs/examples/vibe-self-plan.json --out .vibe-out/handoffs
+cd ..
 pnpm run check
 cd go
 go test ./...
@@ -54,7 +54,7 @@ In VS Code, run task `Vibe: Continue` for the same orientation card.
 
 ## Default Next Move
 
-Get PR #2 reviewed and merged to `main`. Then make the first post-merge slice a
+Finish the current local-toolkit branch, then make the first post-merge slice a
 small VS Code dogfood improvement: make `Vibe: Init Project` create a useful
 `.vibe/` workspace, parse it into `.vibe/state.json`, and show it in the Vibe
 tree without requiring the full future runtime.

@@ -37,7 +37,12 @@ same self-plan JSON used by the VS Code lane tree.
 
 ### `vibe handoff`
 
-Implemented in the unified Go binary as `vibe handoff --plan <lane-plan.json>`.
+Implemented in the unified Go binary as:
+
+```powershell
+vibe handoff --plan <lane-plan.json>
+vibe handoff --self-plan docs/examples/vibe-self-plan.json --out .vibe-out/handoffs
+```
 
 Produces agent-ready prompts from the older lane-plan JSON shape:
 
@@ -47,6 +52,10 @@ Produces agent-ready prompts from the older lane-plan JSON shape:
 - Explicit repo, branch, write scope, verification, and stop conditions.
 - Surface-aware targets such as `surface.codex.local`,
   `surface.codex.cloud`, and `surface.codex.github_pr`.
+
+For the generated self-plan JSON, it exports one markdown handoff per lane using
+the same lane body shown in the dashboard. `vibe serve` exposes the same
+handoffs as `/handoffs/<lane>.md` downloads.
 
 ### `vibe verify`
 
@@ -130,13 +139,18 @@ Reference docs used for this direction:
 ## Current Slice
 
 `vibe serve` now keeps the raw Mermaid endpoint but renders a local visual lane
-graph and copyable handoff panels directly from the self-plan. It intentionally
-does not pull Mermaid from a CDN or add a browser dependency yet; the dashboard
-must stay useful from a local checkout without external service assumptions.
+graph, copyable handoff panels, and downloadable markdown handoffs directly from
+the self-plan. The CLI can also export those handoffs with
+`vibe handoff --self-plan docs/examples/vibe-self-plan.json --out .vibe-out/handoffs`.
+
+It intentionally does not pull Mermaid from a CDN or add a browser dependency
+yet; the dashboard must stay useful from a local checkout without external
+service assumptions.
 
 ## Next Slice
 
-The next useful slice is to add an export path for the generated self-plan
-handoffs, either as a dedicated `vibe handoff --self-plan ...` mode or a
-dashboard download endpoint. Keep installation side effects out of the CLI until
-the report format and human approval flow are clearer.
+The next useful slice is to wire this local-toolkit output into the VS Code
+dogfood loop: make `Vibe: Init Project` create a useful `.vibe/` workspace,
+parse it into `.vibe/state.json`, and show it in the Vibe tree. Keep
+installation side effects out of the CLI until the report format and human
+approval flow are clearer.

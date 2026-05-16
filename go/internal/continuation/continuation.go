@@ -39,6 +39,7 @@ func DefaultCommands() []Command {
 		{Purpose: "Orient", Value: "pnpm run vibe:continue"},
 		{Purpose: "Check tools", Value: "pnpm run vibe:doctor"},
 		{Purpose: "List lanes", Value: "pnpm run vibe:lanes"},
+		{Purpose: "Export self-plan handoffs", Value: "cd go && go run ./cmd/vibe handoff --self-plan docs/examples/vibe-self-plan.json --out .vibe-out/handoffs"},
 		{Purpose: "Verify TypeScript and extension", Value: "pnpm run check"},
 		{Purpose: "Verify Go", Value: "cd go && go test ./..."},
 	}
@@ -46,9 +47,9 @@ func DefaultCommands() []Command {
 
 func DefaultNextMoves() []string {
 	return []string{
-		"If PR #2 is still draft, review it and mark it ready before merging to main.",
-		"After PR #2 merges, close PR #1 as superseded by the main integration PR.",
-		"Pick one lane from `pnpm run vibe:lanes`, give it a branch and write scope, then update `docs/continue.md` before handing off.",
+		"Open or update the PR for the current local-toolkit branch.",
+		"Start the VS Code dogfood slice after that branch merges: make `Vibe: Init Project` create a useful `.vibe/` workspace, parse it into `.vibe/state.json`, and show it in the Vibe tree.",
+		"For any new lane, declare branch, write scope, and verification commands, then update `docs/continue.md` before handing off.",
 	}
 }
 
