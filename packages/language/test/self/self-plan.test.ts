@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   extractSelfPlan,
@@ -14,7 +15,7 @@ describe("Vibe self-plan extraction", () => {
 
     const plan = await extractSelfPlanFromSource(source, {
       sourceName: "examples/vibe-self.vibe",
-      uri: `file:///${sourcePath.replaceAll("\\", "/")}`,
+      uri: pathToFileURL(sourcePath).href,
     });
 
     expect(plan.name).toBe("vibe-self");
