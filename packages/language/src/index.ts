@@ -46,6 +46,11 @@ export {
 } from "./providers/index.js";
 
 export { createCerebrasProvider } from "./providers/api/cerebras.js";
+export {
+  createOpenAIProvider,
+  DEFAULT_OPENAI_MODEL,
+  DEFAULT_OPENAI_PROVIDER_ID,
+} from "./providers/api/openai.js";
 export { createClaudeCliProvider } from "./providers/cli/claude.js";
 export { mergeCorrected } from "./resolver/corrections.js";
 export { runPipeline, type PipelineInput, type PipelineResult } from "./pipeline/run.js";

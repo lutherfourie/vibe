@@ -14,8 +14,9 @@ LLM resolver, and provider adapters.
   into structured + prose regions. Resolver wraps a pluggable ProviderAdapter
   with content-addressed cache + Zod schema validation + variance metadata.
   Adjacent `corrected for "tag"` blocks override resolver outputs per-key.
-- **Provider adapters:** Cerebras via @ai-sdk/openai-compatible (default for
-  resolver). claude CLI shim via execa. codex / gemini shims follow in Phase 2.
+- **Provider adapters:** OpenAI GPT-5.5 via Responses API (default for
+  resolver), Cerebras via @ai-sdk/openai-compatible, and claude CLI via execa.
+  codex / gemini shims follow in Phase 2.
 - **Not yet:** vibe init, vibe sync, vibe build, full VS Code LSP integration
   (hover-based resolver preview lands in SD4).
 
@@ -30,23 +31,22 @@ pnpm --filter @vibe/language test
 
 ```ts
 import {
-  createCerebrasProvider,
+  createOpenAIProvider,
   createProviderRegistry,
   runPipeline,
 } from "@vibe/language";
 import { z } from "zod";
 
 const registry = createProviderRegistry();
-registry.register(createCerebrasProvider({
-  apiKey: process.env.CEREBRAS_API_KEY!,
-  baseUrl: "https://api.cerebras.ai/v1",
-  model: "zai-glm-4.7",
+registry.register(createOpenAIProvider({
+  apiKey: process.env.OPENAI_API_KEY!,
+  model: "gpt-5.5",
 }));
 
 const result = await runPipeline({
   source: await readFile("project.vibe", "utf8"),
   registry,
-  defaultResolver: { provider: "cerebras.zai-glm-4.7", model: "zai-glm-4.7", temperature: 0.3 },
+  defaultResolver: { provider: "openai.gpt_5_5", model: "gpt-5.5", temperature: 0.3 },
   proseSchema: z.object({ description: z.string() }),
 });
 

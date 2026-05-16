@@ -9,8 +9,8 @@ and prefer concrete plans over speculation.
 ```
 
 ```vibe
-provider cerebras.glm_4_7 { mode = api }
-route resolver -> cerebras.glm_4_7
+provider openai.gpt_5_5 { mode = api model = "gpt-5.5" }
+route resolver -> openai.gpt_5_5
 
 persona izsha {
   description = "placeholder — resolver fills this in"

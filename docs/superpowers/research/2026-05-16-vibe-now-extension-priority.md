@@ -18,6 +18,7 @@ The first extension should do these things:
 - Edit `.vibe` files with syntax and diagnostics.
 - Show a `Vibe` tree with project, agents, routes, lanes, gates, plugins,
   memory, and problems.
+- Show a lightweight `Vibe` status bar entry for the active project.
 - Create `.vibe/project.vibe`, `.vibe/state.json`, and `.vibe/notes.md`.
 - Parse the active `.vibe` file into visible state.
 - Generate `.vibe/generated/AGENTS.preview.md`.

@@ -3,7 +3,7 @@
 // primitives; for now, lane-shaped work is represented as plugins consumed by
 // one bootstrap agent.
 
-provider cerebras.glm_4_7 { mode = api }
+provider openai.gpt_5_5 { mode = api model = "gpt-5.5" }
 provider openai.codex     { mode = cli }
 
 surface codex.local {
@@ -47,10 +47,10 @@ surface crewai.local {
   mcp  = true
 }
 
-route resolver      -> cerebras.glm_4_7
-route researcher    -> cerebras.glm_4_7
+route resolver      -> openai.gpt_5_5
+route researcher    -> openai.gpt_5_5
 route implementation -> openai.codex
-fallback            -> cerebras.glm_4_7
+fallback            -> openai.gpt_5_5
 
 persona vibe_bootstrap_voice {
   description = "pragmatic Vibe bootstrapper; keeps the spec fluid while making useful artifacts"

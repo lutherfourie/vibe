@@ -27,8 +27,10 @@ import {
   parseVibeFileToState,
   projectSummary,
 } from "./vibe-workspace.js";
+import { readVibeProjectState } from "./vibe-project.js";
 
 let client: LanguageClient | undefined;
+let statusBar: vscode.StatusBarItem | undefined;
 
 export function activate(context: vscode.ExtensionContext): void {
   const serverModule = context.asAbsolutePath(
@@ -66,8 +68,25 @@ export function activate(context: vscode.ExtensionContext): void {
 
   client.start();
   const projectTree = new VibeProjectTreeDataProvider(getWorkspaceRoot);
+  const vibeStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
+  statusBar = vibeStatusBar;
+  vibeStatusBar.name = "Vibe";
+  vibeStatusBar.command = "vibe.showProjectSummary";
+  vibeStatusBar.tooltip = "Show Vibe project summary";
+
+  const stateWatcher = vscode.workspace.createFileSystemWatcher("**/.vibe/state.json");
+  const refreshVisibleState = () => {
+    projectTree.refresh();
+    void refreshVibeStatusBar();
+  };
+
   context.subscriptions.push(
     { dispose: () => void client?.stop() },
+    vibeStatusBar,
+    stateWatcher,
+    stateWatcher.onDidChange(refreshVisibleState),
+    stateWatcher.onDidCreate(refreshVisibleState),
+    stateWatcher.onDidDelete(refreshVisibleState),
     vscode.window.createTreeView("vibe.now", {
       treeDataProvider: projectTree,
       showCollapseAll: true,
@@ -79,6 +98,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("vibe.serveAdmin", () => runVibeAdminAction("local-admin-host")),
     vscode.commands.registerCommand("vibe.init", () => createProject("generic", projectTree)),
     vscode.commands.registerCommand("vibe.createGameSpreeContract", () => createProject("gamespree", projectTree)),
+    vscode.commands.registerCommand("vibe.createGameSpreeVibeFile", () => createProject("gamespree", projectTree)),
     vscode.commands.registerCommand("vibe.parseCurrentFile", () => parseCurrentFile(projectTree)),
     vscode.commands.registerCommand("vibe.showProjectSummary", () => showProjectSummary()),
     vscode.commands.registerCommand("vibe.buildAgentsPreview", () => buildAgentsPreviewCommand()),
@@ -86,6 +106,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("vibe.sync", () => parseCurrentFile(projectTree)),
     vscode.commands.registerCommand("vibe.openVaultInObsidian", () => openWorkspaceFile(".vibe/notes.md")),
   );
+  void refreshVibeStatusBar();
 }
 
 export function deactivate(): Thenable<void> | undefined {
@@ -154,6 +175,7 @@ async function createProject(
 
   const written = await createVibeProjectFiles(workspaceRoot, kind);
   tree.refresh();
+  void refreshVibeStatusBar();
   await openWorkspaceFile(".vibe/project.vibe");
   void vscode.window.showInformationMessage(
     written.length > 0
@@ -179,6 +201,7 @@ async function parseCurrentFile(tree: VibeProjectTreeDataProvider): Promise<void
       editor.document.getText(),
     );
     tree.refresh();
+    void refreshVibeStatusBar();
     void vscode.window.showInformationMessage("Vibe state updated at .vibe/state.json.");
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -214,4 +237,34 @@ function getWorkspaceRoot(): string | undefined {
   }
 
   return workspaceRoot;
+}
+
+async function refreshVibeStatusBar(): Promise<void> {
+  if (!statusBar) return;
+
+  const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  if (!workspaceRoot) {
+    statusBar.hide();
+    return;
+  }
+
+  try {
+    const state = await readVibeProjectState(workspaceRoot);
+    const routeCount = Object.keys(state.routes ?? {}).length;
+    const laneCount = state.lanes?.length ?? 0;
+    const gateCount = state.gates?.length ?? 0;
+    statusBar.text = `$(symbol-misc) Vibe: ${state.name}`;
+    statusBar.tooltip = [
+      `Vibe project: ${state.name}`,
+      `${routeCount} routes`,
+      `${laneCount} lanes`,
+      `${gateCount} gates`,
+    ].join("\n");
+    statusBar.show();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    statusBar.text = "$(warning) Vibe";
+    statusBar.tooltip = `Vibe state unavailable: ${message}`;
+    statusBar.show();
+  }
 }

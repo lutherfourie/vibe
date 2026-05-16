@@ -76,6 +76,10 @@
         "title": "Vibe: Create GameSpree/Pawfall Project Contract"
       },
       {
+        "command": "vibe.createGameSpreeVibeFile",
+        "title": "Vibe: Create GameSpree Vibe File"
+      },
+      {
         "command": "vibe.init",
         "title": "Vibe: Init Project"
       },
@@ -118,6 +122,7 @@
     "onCommand:vibe.showProjectSummary",
     "onCommand:vibe.buildAgentsPreview",
     "onCommand:vibe.createGameSpreeContract",
+    "onCommand:vibe.createGameSpreeVibeFile",
     "onCommand:vibe.init",
     "onCommand:vibe.build",
     "onCommand:vibe.sync",

@@ -2,15 +2,15 @@
 
 provider anthropic.claude_code { mode = cli }
 provider openai.codex          { mode = cli }
-provider cerebras.glm_4_7      { mode = api }
+provider openai.gpt_5_5      { mode = api }
 provider google.gemini         { mode = cli }
 provider xai.grok              { mode = api }    // api-only; no Grok CLI in May 2026
 
 route planner   -> anthropic.claude_code
 route generator -> openai.codex
-route resolver  -> cerebras.glm_4_7
-route grep      -> cerebras.glm_4_7
-fallback        -> cerebras.glm_4_7
+route resolver  -> openai.gpt_5_5
+route grep      -> openai.gpt_5_5
+fallback        -> openai.gpt_5_5
 
 plugin asset_pipeline {
   impl = "./plugins/asset-pipeline/index.ts"

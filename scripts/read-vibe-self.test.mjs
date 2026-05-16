@@ -15,11 +15,11 @@ test("reads examples/vibe-self.vibe into a standalone self-plan", async () => {
   assert.equal(plan.name, "vibe-self");
   assert.equal(plan.repo, "C:/vibe");
   assert.deepEqual(plan.routes, {
-    resolver: "cerebras.glm_4_7",
-    researcher: "cerebras.glm_4_7",
+    resolver: "openai.gpt_5_5",
+    researcher: "openai.gpt_5_5",
     implementation: "openai.codex",
   });
-  assert.equal(plan.fallback, "cerebras.glm_4_7");
+  assert.equal(plan.fallback, "openai.gpt_5_5");
   assert.deepEqual(plan.surfaces.map((surface) => surface.name), [
     "codex.local",
     "codex.cli",
