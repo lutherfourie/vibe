@@ -3,8 +3,7 @@
  *
  * Phase 1 scaffold: starts the Langium-emitted language server over node-ipc
  * so VS Code gets parse diagnostics and syntax highlighting for `.vibe`
- * files. Tree view, commands, and hover-based LLM resolver preview land in
- * later commits — the activate function stays intentionally minimal.
+ * files, then layers a small local cockpit over the current repo contract.
  */
 
 import * as path from "node:path";
@@ -21,7 +20,13 @@ import {
   VIBE_ADMIN_ACTIONS,
   type VibeAdminAction,
 } from "./vibe-admin.js";
-import { VibeLaneTreeDataProvider } from "./vibe-lane-tree.js";
+import { VibeProjectTreeDataProvider } from "./vibe-project-tree.js";
+import {
+  buildAgentsPreview,
+  createVibeProjectFiles,
+  parseVibeFileToState,
+  projectSummary,
+} from "./vibe-workspace.js";
 
 let client: LanguageClient | undefined;
 
@@ -60,26 +65,26 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   client.start();
-  const laneTree = new VibeLaneTreeDataProvider(getWorkspaceRoot);
+  const projectTree = new VibeProjectTreeDataProvider(getWorkspaceRoot);
   context.subscriptions.push(
     { dispose: () => void client?.stop() },
-    vscode.window.createTreeView("vibe.lanes", {
-      treeDataProvider: laneTree,
+    vscode.window.createTreeView("vibe.now", {
+      treeDataProvider: projectTree,
       showCollapseAll: true,
     }),
     vscode.commands.registerCommand("vibe.admin", () => showVibeAdminPicker()),
-    vscode.commands.registerCommand("vibe.refreshLanes", () => laneTree.refresh()),
+    vscode.commands.registerCommand("vibe.refreshLanes", () => projectTree.refresh()),
     vscode.commands.registerCommand("vibe.showCliLanes", () => runVibeAdminAction("cli-lanes")),
     vscode.commands.registerCommand("vibe.generateLaneGraph", () => runVibeAdminAction("lane-graph")),
     vscode.commands.registerCommand("vibe.serveAdmin", () => runVibeAdminAction("local-admin-host")),
-    vscode.commands.registerCommand("vibe.init", () => openWorkspaceFile("examples/vibe-self.vibe")),
-    vscode.commands.registerCommand("vibe.build", () => runWorkspaceCommand("pnpm run build")),
-    vscode.commands.registerCommand("vibe.sync", () => runVibeAdminAction("regenerate-self-plan")),
-    vscode.commands.registerCommand("vibe.openVaultInObsidian", () => {
-      void vscode.window.showInformationMessage(
-        "Vibe does not have an Obsidian vault command yet. Use Vibe: Admin Workspace for the active repo loop.",
-      );
-    }),
+    vscode.commands.registerCommand("vibe.init", () => createProject("generic", projectTree)),
+    vscode.commands.registerCommand("vibe.createGameSpreeContract", () => createProject("gamespree", projectTree)),
+    vscode.commands.registerCommand("vibe.parseCurrentFile", () => parseCurrentFile(projectTree)),
+    vscode.commands.registerCommand("vibe.showProjectSummary", () => showProjectSummary()),
+    vscode.commands.registerCommand("vibe.buildAgentsPreview", () => buildAgentsPreviewCommand()),
+    vscode.commands.registerCommand("vibe.build", () => buildAgentsPreviewCommand()),
+    vscode.commands.registerCommand("vibe.sync", () => parseCurrentFile(projectTree)),
+    vscode.commands.registerCommand("vibe.openVaultInObsidian", () => openWorkspaceFile(".vibe/notes.md")),
   );
 }
 
@@ -137,6 +142,67 @@ async function openWorkspaceFile(relativePath: string): Promise<void> {
   const document = await vscode.workspace.openTextDocument(
     vscode.Uri.file(path.join(workspaceRoot, relativePath)),
   );
+  await vscode.window.showTextDocument(document);
+}
+
+async function createProject(
+  kind: "generic" | "gamespree",
+  tree: VibeProjectTreeDataProvider,
+): Promise<void> {
+  const workspaceRoot = getWorkspaceRoot();
+  if (!workspaceRoot) return;
+
+  const written = await createVibeProjectFiles(workspaceRoot, kind);
+  tree.refresh();
+  await openWorkspaceFile(".vibe/project.vibe");
+  void vscode.window.showInformationMessage(
+    written.length > 0
+      ? `Vibe project files created: ${written.length}`
+      : "Vibe project files already exist.",
+  );
+}
+
+async function parseCurrentFile(tree: VibeProjectTreeDataProvider): Promise<void> {
+  const workspaceRoot = getWorkspaceRoot();
+  const editor = vscode.window.activeTextEditor;
+  if (!workspaceRoot || !editor) return;
+
+  if (editor.document.languageId !== "vibe") {
+    void vscode.window.showErrorMessage("Open a .vibe file before parsing.");
+    return;
+  }
+
+  try {
+    await parseVibeFileToState(
+      workspaceRoot,
+      editor.document.uri.fsPath,
+      editor.document.getText(),
+    );
+    tree.refresh();
+    void vscode.window.showInformationMessage("Vibe state updated at .vibe/state.json.");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    void vscode.window.showErrorMessage(`Vibe parse failed: ${message}`);
+  }
+}
+
+async function showProjectSummary(): Promise<void> {
+  const workspaceRoot = getWorkspaceRoot();
+  if (!workspaceRoot) return;
+
+  const document = await vscode.workspace.openTextDocument({
+    content: await projectSummary(workspaceRoot),
+    language: "markdown",
+  });
+  await vscode.window.showTextDocument(document);
+}
+
+async function buildAgentsPreviewCommand(): Promise<void> {
+  const workspaceRoot = getWorkspaceRoot();
+  if (!workspaceRoot) return;
+
+  const outPath = await buildAgentsPreview(workspaceRoot);
+  const document = await vscode.workspace.openTextDocument(vscode.Uri.file(outPath));
   await vscode.window.showTextDocument(document);
 }
 

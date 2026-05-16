@@ -39,7 +39,7 @@ Source links:
    `openai.chatgpt` and `anthropic.claude-code`.
 3. Run `Run Vibe VS Code Extension` from Run and Debug. This starts an
    Extension Development Host for `packages/vscode-extension`.
-4. Open Explorer and inspect the `Vibe Lanes` tree.
+4. Open Explorer and inspect the `Vibe` tree.
 5. Open Command Palette and run `Vibe: Admin Workspace`.
 6. Choose `Vibe: CLI Lanes`, `Vibe: Generate Lane Graph`, or
    `Vibe: Local Admin Host`.
@@ -49,6 +49,25 @@ Expected result: a `Vibe Admin` terminal opens and prints the lanes from
 `approval` where present. The graph command writes
 `docs/examples/vibe-lanes.mmd`. The local host command serves
 `http://127.0.0.1:8787`.
+
+## Vibe Now Commands
+
+The extension is intentionally useful before the full runtime exists:
+
+- `Vibe: Init Project` creates `.vibe/project.vibe`, `.vibe/state.json`, and
+  `.vibe/notes.md` for the current repo when they are missing.
+- `Vibe: Create GameSpree/Pawfall Project Contract` creates an opinionated
+  GameSpree starter contract with Pawfall truths, lanes, and gates.
+- `Vibe: Parse Current File` parses the active `.vibe` file and refreshes
+  `.vibe/state.json`.
+- `Vibe: Show Project Summary` opens a readable snapshot of routes, agents,
+  lanes, and gates.
+- `Vibe: Build AGENTS Preview` writes
+  `.vibe/generated/AGENTS.preview.md` from the current state.
+
+This is the repo-cockpit layer from the research notes: VS Code should tell you
+what the repo believes, which agents are allowed to do what, and which gates
+protect the work.
 
 ## Mermaid Lane Graph
 

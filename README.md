@@ -64,9 +64,13 @@ Anthropic Claude Code in VS Code:
   tasks.
 - `packages/vscode-extension` contributes `Vibe: Admin Workspace`, a command
   palette picker that runs the same Vibe Workbench checks from a terminal.
-- The extension also contributes a `Vibe Lanes` tree in Explorer, sourced from
-  `docs/examples/vibe-self-plan.json`, plus command-palette entries for CLI
-  lanes, graph generation, and the local admin host.
+- The extension also contributes a `Vibe` tree in Explorer, sourced from
+  `.vibe/state.json` when present and falling back to
+  `docs/examples/vibe-self-plan.json`.
+- Vibe Now commands can create `.vibe/project.vibe`, parse the active `.vibe`
+  file into `.vibe/state.json`, show a project summary, generate
+  `.vibe/generated/AGENTS.preview.md`, and create an opinionated
+  GameSpree/Pawfall contract.
 
 ## Bootstrap Loop
 

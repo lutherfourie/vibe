@@ -60,6 +60,22 @@
         "title": "Vibe: Local Admin Host"
       },
       {
+        "command": "vibe.parseCurrentFile",
+        "title": "Vibe: Parse Current File"
+      },
+      {
+        "command": "vibe.showProjectSummary",
+        "title": "Vibe: Show Project Summary"
+      },
+      {
+        "command": "vibe.buildAgentsPreview",
+        "title": "Vibe: Build AGENTS Preview"
+      },
+      {
+        "command": "vibe.createGameSpreeContract",
+        "title": "Vibe: Create GameSpree/Pawfall Project Contract"
+      },
+      {
         "command": "vibe.init",
         "title": "Vibe: Init Project"
       },
@@ -79,8 +95,8 @@
     "views": {
       "explorer": [
         {
-          "id": "vibe.lanes",
-          "name": "Vibe Lanes"
+          "id": "vibe.now",
+          "name": "Vibe"
         }
       ]
     }
@@ -97,12 +113,16 @@
     "onCommand:vibe.showCliLanes",
     "onCommand:vibe.generateLaneGraph",
     "onCommand:vibe.serveAdmin",
+    "onCommand:vibe.parseCurrentFile",
+    "onCommand:vibe.showProjectSummary",
+    "onCommand:vibe.buildAgentsPreview",
+    "onCommand:vibe.createGameSpreeContract",
     "onCommand:vibe.init",
     "onCommand:vibe.build",
     "onCommand:vibe.sync",
     "onCommand:vibe.openVaultInObsidian",
     "onLanguage:vibe",
-    "onView:vibe.lanes",
+    "onView:vibe.now",
     "workspaceContains:**/.vibe/**"
   ],
   "dependencies": {

@@ -128,4 +128,24 @@ describe("Vibe self-plan extraction", () => {
       owns: "review",
     });
   });
+
+  it("allows callers to name non-self project snapshots", async () => {
+    const source = `
+provider openai.codex { mode = cli }
+route resolver -> openai.codex
+route implementation -> openai.codex
+memory gamespree_project {
+  kind = vault
+  namespace = "C:/GameSpree"
+}
+`;
+
+    const plan = await extractSelfPlanFromSource(source, {
+      name: "GameSpree",
+      sourceName: ".vibe/project.vibe",
+    });
+
+    expect(plan.name).toBe("GameSpree");
+    expect(plan.source).toBe(".vibe/project.vibe");
+  });
 });

@@ -74,20 +74,21 @@ export interface SelfGate {
 
 export async function extractSelfPlanFromSource(
   source: string,
-  options: { sourceName?: string; uri?: string } = {},
+  options: { sourceName?: string; uri?: string; name?: string } = {},
 ): Promise<VibeSelfPlan> {
   const parsed = await parseVibeSource(source, { uri: options.uri });
   if (parsed.errors.length > 0) {
     throw new Error(`Cannot extract self-plan:\n${parsed.errors.join("\n")}`);
   }
   return extractSelfPlan(parsed.project, {
+    name: options.name,
     sourceName: options.sourceName ?? options.uri ?? "inline",
   });
 }
 
 export function extractSelfPlan(
   project: Project,
-  options: { sourceName?: string } = {},
+  options: { sourceName?: string; name?: string } = {},
 ): VibeSelfPlan {
   const plugins = project.declarations.filter(isPlugin);
   const agents = project.declarations.filter(isAgent).map(readAgent);
@@ -100,7 +101,7 @@ export function extractSelfPlan(
     .map(readGate);
 
   return {
-    name: "vibe-self",
+    name: options.name ?? "vibe-self",
     source: options.sourceName ?? "unknown",
     repo: memory ? readRepo(memory) : undefined,
     routes: readRoutes(project),
