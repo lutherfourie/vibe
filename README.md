@@ -32,6 +32,7 @@ pnpm run self:plan
 pnpm test
 pnpm run build
 pnpm run check
+pnpm run vibe:continue
 pnpm run vibe:doctor
 pnpm run vibe:lanes
 pnpm run vibe:graph
@@ -43,7 +44,11 @@ pnpm run vibe:serve
 `pnpm run vibe:graph` derives `docs/examples/vibe-lanes.mmd` from that JSON.
 `pnpm run vibe:serve` hosts a local admin dashboard at
 `http://127.0.0.1:8787`.
+`pnpm run vibe:continue` prints the compact resume protocol for future Codex,
+Claude Code, or human sessions.
 
+The cross-session resume protocol is tracked in
+[`docs/continue.md`](docs/continue.md).
 Bootstrap setup work is tracked in [`docs/bootstrap-todos.md`](docs/bootstrap-todos.md).
 The local CLI and hosting shape is tracked in
 [`docs/local-toolkit.md`](docs/local-toolkit.md).

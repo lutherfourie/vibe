@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/lutherfourie/vibe/go/internal/bootstrap"
+	"github.com/lutherfourie/vibe/go/internal/continuation"
 	"github.com/lutherfourie/vibe/go/internal/doctor"
 	"github.com/lutherfourie/vibe/go/internal/lanes"
 	"github.com/lutherfourie/vibe/go/internal/selfplan"
@@ -39,6 +40,8 @@ func run(ctx context.Context, args []string) error {
 	switch args[0] {
 	case "doctor":
 		return runDoctor(ctx, args[1:])
+	case "continue":
+		return runContinue(ctx, args[1:])
 	case "lanes":
 		return runLanes(args[1:])
 	case "graph":
@@ -63,6 +66,7 @@ func usage(out *os.File) {
 	fmt.Fprintln(out, "Usage: vibe <command> [options]")
 	fmt.Fprintln(out)
 	fmt.Fprintln(out, "Commands:")
+	fmt.Fprintln(out, "  continue    Print the compact repo resume protocol")
 	fmt.Fprintln(out, "  doctor      Check local tool prerequisites")
 	fmt.Fprintln(out, "  lanes       Print self-plan lanes")
 	fmt.Fprintln(out, "  graph       Generate a Mermaid lane graph")
@@ -70,6 +74,49 @@ func usage(out *os.File) {
 	fmt.Fprintln(out, "  verify      Run the repo verification command")
 	fmt.Fprintln(out, "  make-plan   Emit the bootstrap lane plan JSON")
 	fmt.Fprintln(out, "  handoff     Emit markdown handoffs from a lane-plan JSON")
+}
+
+func runContinue(ctx context.Context, args []string) error {
+	flags := flag.NewFlagSet("continue", flag.ContinueOnError)
+	flags.SetOutput(os.Stderr)
+	planPath := flags.String("plan", defaultSelfPlan, "path to Vibe self-plan JSON")
+	jsonOut := flags.Bool("json", false, "write machine-readable JSON")
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
+
+	report := continuation.Report{
+		RepoRoot:  repoRoot(),
+		Branch:    strings.TrimSpace(gitOutput(ctx, "branch", "--show-current")),
+		Upstream:  strings.TrimSpace(gitOutput(ctx, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}")),
+		ReadFirst: continuation.DefaultReadFirst(),
+		Commands:  continuation.DefaultCommands(),
+		NextMoves: continuation.DefaultNextMoves(),
+	}
+
+	status := gitOutput(ctx, "status", "--short")
+	for _, line := range strings.Split(status, "\n") {
+		line = strings.TrimSpace(line)
+		if line != "" {
+			report.ChangedPaths = append(report.ChangedPaths, line)
+		}
+	}
+	report.Clean = len(report.ChangedPaths) == 0
+
+	if plan, err := selfplan.Load(resolveRepoPath(*planPath)); err == nil {
+		report.PlanName = plan.Name
+		report.PlanSource = plan.Source
+		report.LaneCount = len(plan.Lanes)
+	}
+
+	if *jsonOut {
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+		return enc.Encode(report)
+	}
+
+	fmt.Print(continuation.Markdown(report))
+	return nil
 }
 
 func runDoctor(ctx context.Context, args []string) error {
@@ -304,6 +351,16 @@ func resolveRepoPathForWrite(path string) string {
 		return filepath.Join(root, path)
 	}
 	return path
+}
+
+func gitOutput(ctx context.Context, args ...string) string {
+	cmd := exec.CommandContext(ctx, "git", args...)
+	cmd.Dir = repoRoot()
+	raw, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	return string(raw)
 }
 
 func repoRoot() string {
