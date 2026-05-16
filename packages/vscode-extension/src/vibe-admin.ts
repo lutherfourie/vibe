@@ -33,6 +33,27 @@ export const VIBE_ADMIN_ACTIONS: VibeAdminAction[] = [
     script: ["plugins", "vibe-workbench", "scripts", "vibe_lane_inventory.ps1"],
   },
   {
+    id: "cli-lanes",
+    label: "Vibe: CLI Lanes",
+    detail: "Print lanes from the unified Go CLI and self-plan JSON.",
+    kind: "shell",
+    command: "pnpm run vibe:lanes",
+  },
+  {
+    id: "lane-graph",
+    label: "Vibe: Generate Lane Graph",
+    detail: "Generate docs/examples/vibe-lanes.mmd from the self-plan.",
+    kind: "shell",
+    command: "pnpm run vibe:graph",
+  },
+  {
+    id: "local-admin-host",
+    label: "Vibe: Local Admin Host",
+    detail: "Serve the local Vibe admin dashboard on 127.0.0.1:8787.",
+    kind: "shell",
+    command: "pnpm run vibe:serve",
+  },
+  {
     id: "self-plan-check",
     label: "Vibe: Self-Plan Check",
     detail: "Check whether docs/examples/vibe-self-plan.json is fresh.",

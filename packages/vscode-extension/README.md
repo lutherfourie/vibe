@@ -6,8 +6,8 @@ VS Code extension for [Vibe](../..) — the unified vibecode language.
 
 - TextMate grammar for `.vibe` syntax highlighting (currently a placeholder; will be revisited per library survey — likely tree-sitter for live/incremental highlighting)
 - Command palette: `Vibe: Admin Workspace`, `Vibe: Init Project`, `Vibe: Build`, `Vibe: Sync`, `Vibe: Open Vault in Obsidian`
-- `Vibe: Admin Workspace` opens a picker that runs the Vibe Workbench repo snapshot, lane inventory, self-plan check, self-plan regeneration, or full repo check in a VS Code terminal.
-- `.vibe/` tree view in sidebar
+- `Vibe: Admin Workspace` opens a picker that runs the Vibe Workbench repo snapshot, lane inventory, unified Go CLI lane report, Mermaid graph generation, local admin host, self-plan check, self-plan regeneration, or full repo check in a VS Code terminal.
+- `Vibe Lanes` tree view in Explorer, sourced from `docs/examples/vibe-self-plan.json`.
 - Diagnostics sourced from `vibe build`
 - Hover-based LLM resolver preview with variance metadata
 
@@ -20,7 +20,8 @@ Real implementation lands after the library survey at [`docs/superpowers/researc
 1. Open this package in the VS Code Extension Development Host.
 2. Open Command Palette.
 3. Run `Vibe: Admin Workspace`.
-4. Choose `Vibe: Lane Inventory`.
+4. Choose `Vibe: CLI Lanes`, `Vibe: Generate Lane Graph`, or
+   `Vibe: Local Admin Host`.
 
 The command opens a `Vibe Admin` terminal and runs the same report-only script
-used by the Codex and Claude Code workbench plugin.
+or unified Go CLI used by the Codex and Claude Code workbench plugin.

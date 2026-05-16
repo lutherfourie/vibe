@@ -11,6 +11,9 @@ describe("Vibe VS Code admin actions", () => {
     expect(VIBE_ADMIN_ACTIONS.map((action) => action.id)).toEqual([
       "repo-snapshot",
       "lane-inventory",
+      "cli-lanes",
+      "lane-graph",
+      "local-admin-host",
       "self-plan-check",
       "regenerate-self-plan",
       "full-check",

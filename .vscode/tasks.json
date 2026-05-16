@@ -32,6 +32,45 @@
       "problemMatcher": []
     },
     {
+      "label": "Vibe: CLI Lanes",
+      "type": "shell",
+      "command": "pnpm",
+      "args": [
+        "run",
+        "vibe:lanes"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Vibe: Generate Lane Graph",
+      "type": "shell",
+      "command": "pnpm",
+      "args": [
+        "run",
+        "vibe:graph"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Vibe: Local Admin Host",
+      "type": "shell",
+      "command": "pnpm",
+      "args": [
+        "run",
+        "vibe:serve"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "Vibe: Self-Plan Check",
       "type": "shell",
       "command": "powershell",

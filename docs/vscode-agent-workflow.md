@@ -22,6 +22,8 @@ The practical Vibe layer should therefore be repo-local:
 - `.vscode/extensions.json` for recommended agent extensions.
 - `.vscode/tasks.json` and `Vibe: Admin Workspace` for visible checks.
 - `plugins/vibe-workbench/` for portable Codex and Claude workflow skills.
+- `docs/examples/vibe-self-plan.json` as the shared lane source for Codex,
+  Claude Code, VS Code, and the local Go CLI.
 
 Source links:
 
@@ -37,12 +39,27 @@ Source links:
    `openai.chatgpt` and `anthropic.claude-code`.
 3. Run `Run Vibe VS Code Extension` from Run and Debug. This starts an
    Extension Development Host for `packages/vscode-extension`.
-4. Open Command Palette and run `Vibe: Admin Workspace`.
-5. Choose `Vibe: Lane Inventory`.
+4. Open Explorer and inspect the `Vibe Lanes` tree.
+5. Open Command Palette and run `Vibe: Admin Workspace`.
+6. Choose `Vibe: CLI Lanes`, `Vibe: Generate Lane Graph`, or
+   `Vibe: Local Admin Host`.
 
 Expected result: a `Vibe Admin` terminal opens and prints the lanes from
 `examples/vibe-self.vibe`, including `target`, `reads`, `owns`, `verify`, and
-`approval` where present.
+`approval` where present. The graph command writes
+`docs/examples/vibe-lanes.mmd`. The local host command serves
+`http://127.0.0.1:8787`.
+
+## Mermaid Lane Graph
+
+The current graph is generated, not hand-maintained:
+
+```powershell
+pnpm run vibe:graph
+```
+
+The output is `docs/examples/vibe-lanes.mmd`, and the same graph is exposed by
+the local admin host at `/vibe-lanes.mmd`.
 
 ## Prompts To Try
 

@@ -32,13 +32,21 @@ pnpm run self:plan
 pnpm test
 pnpm run build
 pnpm run check
+pnpm run vibe:doctor
+pnpm run vibe:lanes
+pnpm run vibe:graph
+pnpm run vibe:serve
 ```
 
 `pnpm run self:plan` extracts a JSON self-plan from
 `examples/vibe-self.vibe` into `docs/examples/vibe-self-plan.json`.
+`pnpm run vibe:graph` derives `docs/examples/vibe-lanes.mmd` from that JSON.
+`pnpm run vibe:serve` hosts a local admin dashboard at
+`http://127.0.0.1:8787`.
 
 Bootstrap setup work is tracked in [`docs/bootstrap-todos.md`](docs/bootstrap-todos.md).
-The proposed local CLI shape is tracked in [`docs/local-toolkit.md`](docs/local-toolkit.md).
+The local CLI and hosting shape is tracked in
+[`docs/local-toolkit.md`](docs/local-toolkit.md).
 VS Code agent workflow notes are tracked in
 [`docs/vscode-agent-workflow.md`](docs/vscode-agent-workflow.md).
 
@@ -56,6 +64,9 @@ Anthropic Claude Code in VS Code:
   tasks.
 - `packages/vscode-extension` contributes `Vibe: Admin Workspace`, a command
   palette picker that runs the same Vibe Workbench checks from a terminal.
+- The extension also contributes a `Vibe Lanes` tree in Explorer, sourced from
+  `docs/examples/vibe-self-plan.json`, plus command-palette entries for CLI
+  lanes, graph generation, and the local admin host.
 
 ## Bootstrap Loop
 

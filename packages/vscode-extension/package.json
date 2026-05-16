@@ -44,6 +44,22 @@
         "title": "Vibe: Admin Workspace"
       },
       {
+        "command": "vibe.refreshLanes",
+        "title": "Vibe: Refresh Lanes"
+      },
+      {
+        "command": "vibe.showCliLanes",
+        "title": "Vibe: CLI Lanes"
+      },
+      {
+        "command": "vibe.generateLaneGraph",
+        "title": "Vibe: Generate Lane Graph"
+      },
+      {
+        "command": "vibe.serveAdmin",
+        "title": "Vibe: Local Admin Host"
+      },
+      {
         "command": "vibe.init",
         "title": "Vibe: Init Project"
       },
@@ -59,7 +75,15 @@
         "command": "vibe.openVaultInObsidian",
         "title": "Vibe: Open Vault in Obsidian"
       }
-    ]
+    ],
+    "views": {
+      "explorer": [
+        {
+          "id": "vibe.lanes",
+          "name": "Vibe Lanes"
+        }
+      ]
+    }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -69,11 +93,16 @@
   },
   "activationEvents": [
     "onCommand:vibe.admin",
+    "onCommand:vibe.refreshLanes",
+    "onCommand:vibe.showCliLanes",
+    "onCommand:vibe.generateLaneGraph",
+    "onCommand:vibe.serveAdmin",
     "onCommand:vibe.init",
     "onCommand:vibe.build",
     "onCommand:vibe.sync",
     "onCommand:vibe.openVaultInObsidian",
     "onLanguage:vibe",
+    "onView:vibe.lanes",
     "workspaceContains:**/.vibe/**"
   ],
   "dependencies": {

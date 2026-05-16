@@ -21,6 +21,7 @@ import {
   VIBE_ADMIN_ACTIONS,
   type VibeAdminAction,
 } from "./vibe-admin.js";
+import { VibeLaneTreeDataProvider } from "./vibe-lane-tree.js";
 
 let client: LanguageClient | undefined;
 
@@ -59,9 +60,18 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   client.start();
+  const laneTree = new VibeLaneTreeDataProvider(getWorkspaceRoot);
   context.subscriptions.push(
     { dispose: () => void client?.stop() },
+    vscode.window.createTreeView("vibe.lanes", {
+      treeDataProvider: laneTree,
+      showCollapseAll: true,
+    }),
     vscode.commands.registerCommand("vibe.admin", () => showVibeAdminPicker()),
+    vscode.commands.registerCommand("vibe.refreshLanes", () => laneTree.refresh()),
+    vscode.commands.registerCommand("vibe.showCliLanes", () => runVibeAdminAction("cli-lanes")),
+    vscode.commands.registerCommand("vibe.generateLaneGraph", () => runVibeAdminAction("lane-graph")),
+    vscode.commands.registerCommand("vibe.serveAdmin", () => runVibeAdminAction("local-admin-host")),
     vscode.commands.registerCommand("vibe.init", () => openWorkspaceFile("examples/vibe-self.vibe")),
     vscode.commands.registerCommand("vibe.build", () => runWorkspaceCommand("pnpm run build")),
     vscode.commands.registerCommand("vibe.sync", () => runVibeAdminAction("regenerate-self-plan")),
