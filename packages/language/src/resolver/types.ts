@@ -2,9 +2,9 @@ import type { ProseRegion } from "../dispatcher/types.js";
 export type { ProseRegion };
 
 export interface Variance {
-  /** Provider id used for this resolution (e.g. "cerebras.glm_4_7"). */
+  /** Provider id used for this resolution (e.g. "openai.gpt_5_5"). */
   provider: string;
-  /** Model id within the provider (e.g. "zai-glm-4.7"). */
+  /** Model id within the provider (e.g. "gpt-5.5"). */
   model: string;
   /** Sampling temperature used. */
   temperature: number;

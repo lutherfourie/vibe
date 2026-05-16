@@ -44,9 +44,11 @@ describe("Vibe Now project cockpit", () => {
     const state = gamespreeState("C:/GameSpree");
 
     expect(state.routes).toMatchObject({
+      resolver: "openai.gpt_5_5",
       implementation: "openai.codex",
       reviewer: "anthropic.claude_code",
     });
+    expect(state.fallback).toBe("openai.gpt_5_5");
     expect(state.lanes?.map((lane) => lane.name)).toContain("pawfall_feel_lane");
     expect(state.gates?.map((gate) => gate.name)).toContain("webgl_smoke");
     expect(gamespreeProjectTemplate()).toContain("agent gamespree_operator");
@@ -59,6 +61,7 @@ describe("Vibe Now project cockpit", () => {
     });
 
     expect(plan.name).toBe("GameSpree");
+    expect(plan.routes.resolver).toBe("openai.gpt_5_5");
     expect(plan.routes.reviewer).toBe("anthropic.claude_code");
     expect(plan.lanes.map((lane) => lane.name)).toContain("pawfall_feel_lane");
   });

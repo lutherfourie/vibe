@@ -20,6 +20,16 @@ describe("buildSystemPrompt", () => {
     expect(prompt).toContain("cerebras.glm_4_7");
     expect(prompt).toContain("resolver");
   });
+
+  it("encodes GPT-5.5 resolver guidance without process-heavy instructions", () => {
+    const prompt = buildSystemPrompt({ primitives: { agents: [], personas: [], providers: [], routes: [] } });
+
+    expect(prompt).toContain("Retrieval budget");
+    expect(prompt).toContain("Validation loop");
+    expect(prompt).toContain("Output contract");
+    expect(prompt).toContain("phase");
+    expect(prompt).toContain("preamble");
+  });
 });
 
 describe("buildUserPrompt", () => {

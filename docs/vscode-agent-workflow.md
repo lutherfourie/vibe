@@ -58,12 +58,16 @@ The extension is intentionally useful before the full runtime exists:
   `.vibe/notes.md` for the current repo when they are missing.
 - `Vibe: Create GameSpree/Pawfall Project Contract` creates an opinionated
   GameSpree starter contract with Pawfall truths, lanes, and gates.
+- `Vibe: Create GameSpree Vibe File` is a shorter alias for the same starter
+  contract workflow.
 - `Vibe: Parse Current File` parses the active `.vibe` file and refreshes
   `.vibe/state.json`.
 - `Vibe: Show Project Summary` opens a readable snapshot of routes, agents,
   lanes, and gates.
 - `Vibe: Build AGENTS Preview` writes
   `.vibe/generated/AGENTS.preview.md` from the current state.
+- The `Vibe` status bar entry shows the active project and opens the project
+  summary.
 
 This is the repo-cockpit layer from the research notes: VS Code should tell you
 what the repo believes, which agents are allowed to do what, and which gates

@@ -25,7 +25,7 @@ export interface GenerateObjectResponse<T = unknown> {
 export type ProviderMode = "api" | "cli";
 
 export interface ProviderAdapter {
-  /** Provider id, e.g. "cerebras.glm_4_7" or "anthropic.claude_code". */
+  /** Provider id, e.g. "openai.gpt_5_5" or "anthropic.claude_code". */
   id: string;
   /** Mode this adapter operates in. */
   mode: ProviderMode;

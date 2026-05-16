@@ -86,7 +86,7 @@ describe("examples/ integration — every .vibe parses + validates clean", () =>
   it("10-resolver-flow.vibe flows through runPipeline cleanly", async () => {
     const text = await readFileAsync(join(examplesDir, "10-resolver-flow.vibe"), "utf8");
     const provider = createMockProvider({
-      id: "cerebras.glm_4_7",
+      id: "openai.gpt_5_5",
       response: { description: "coordinator, dry" },
     });
     const registry = createProviderRegistry();
@@ -96,8 +96,8 @@ describe("examples/ integration — every .vibe parses + validates clean", () =>
       source: text,
       registry,
       defaultResolver: {
-        provider: "cerebras.glm_4_7",
-        model: "zai-glm-4.7",
+        provider: "openai.gpt_5_5",
+        model: "gpt-5.5",
         temperature: 0.3,
       },
       proseSchema: z.object({ description: z.string() }),

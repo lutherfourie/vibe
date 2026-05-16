@@ -38,6 +38,7 @@ func CodexWebHandoff(planName string, repo string, lane Lane) string {
 	writeSection(&b, "Read Scope", lane.Reads)
 	writeSection(&b, "Write Scope", lane.Writes)
 	writeSection(&b, "Required Gates", lane.Requires)
+	writeGPT55OperatingContract(&b)
 
 	b.WriteString("## Task\n\n")
 	b.WriteString(strings.TrimSpace(lane.Prompt))
@@ -74,6 +75,7 @@ func LocalChecklist(planName string, repo string, lane Lane) string {
 	writeSection(&b, "Read Scope", lane.Reads)
 	writeSection(&b, "Write Scope", lane.Writes)
 	writeSection(&b, "Required Gates", lane.Requires)
+	writeGPT55OperatingContract(&b)
 
 	b.WriteString("## Task\n\n")
 	b.WriteString(strings.TrimSpace(lane.Prompt))
@@ -101,4 +103,27 @@ func writeSection(b *strings.Builder, title string, items []string) {
 		b.WriteString("\n")
 	}
 	b.WriteString("\n")
+}
+
+func writeGPT55OperatingContract(b *strings.Builder) {
+	b.WriteString("## GPT-5.5 Operating Contract\n\n")
+	b.WriteString("### Customer-Facing Style\n\n")
+	b.WriteString("- Be steady, direct, and practical; assume the user is competent.\n")
+	b.WriteString("- Prefer progress over clarification when the task is clear enough and low-risk.\n")
+	b.WriteString("- Ask only when missing information materially changes the outcome or creates meaningful risk.\n\n")
+
+	b.WriteString("### Retrieval Budget\n\n")
+	b.WriteString("- Start from the declared read scope and the task text.\n")
+	b.WriteString("- Make another lookup only when a required file, owner, date, command, or source is missing.\n")
+	b.WriteString("- Stop retrieving once the core task can be completed with useful evidence.\n\n")
+
+	b.WriteString("### Preamble And Phase Handling\n\n")
+	b.WriteString("- For multi-step or tool-heavy work, begin with a one- or two-sentence preamble naming the first step.\n")
+	b.WriteString("- Preserve assistant item phases if replaying Responses API items between turns.\n")
+	b.WriteString("- Use phase: \"commentary\" for progress updates and phase: \"final_answer\" for the completed answer.\n\n")
+
+	b.WriteString("### Validation Loop\n\n")
+	b.WriteString("- Run the required gates before claiming completion.\n")
+	b.WriteString("- If a gate cannot run in the current environment, report the exact blocker and the next best check.\n")
+	b.WriteString("- Final output should list completed actions, validation evidence, changed files, and residual risk.\n\n")
 }

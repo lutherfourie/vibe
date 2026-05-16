@@ -6,11 +6,12 @@ VS Code extension for [Vibe](../..) — the unified vibecode language.
 the full runtime exists.
 
 - TextMate grammar for `.vibe` syntax highlighting (currently a placeholder; will be revisited per library survey — likely tree-sitter for live/incremental highlighting)
-- Command palette: `Vibe: Admin Workspace`, `Vibe: Init Project`, `Vibe: Parse Current File`, `Vibe: Show Project Summary`, `Vibe: Build AGENTS Preview`, `Vibe: Create GameSpree/Pawfall Project Contract`, `Vibe: Sync`, `Vibe: Open Vault in Obsidian`
+- Command palette: `Vibe: Admin Workspace`, `Vibe: Init Project`, `Vibe: Parse Current File`, `Vibe: Show Project Summary`, `Vibe: Build AGENTS Preview`, `Vibe: Create GameSpree/Pawfall Project Contract`, `Vibe: Create GameSpree Vibe File`, `Vibe: Sync`, `Vibe: Open Vault in Obsidian`
 - `Vibe: Admin Workspace` opens a picker that runs the Vibe Workbench repo snapshot, lane inventory, unified Go CLI lane report, Mermaid graph generation, local admin host, self-plan check, self-plan regeneration, or full repo check in a VS Code terminal.
 - `Vibe` tree view in Explorer, sourced from `.vibe/state.json` when present and falling back to `docs/examples/vibe-self-plan.json`.
+- `Vibe` status bar entry shows the active project and opens the project summary.
 - `Vibe: Build AGENTS Preview` writes `.vibe/generated/AGENTS.preview.md` from the visible project state.
-- `Vibe: Create GameSpree/Pawfall Project Contract` creates `.vibe/project.vibe`, `.vibe/state.json`, and `.vibe/notes.md` for the GameSpree/Pawfall contract.
+- `Vibe: Create GameSpree/Pawfall Project Contract` and `Vibe: Create GameSpree Vibe File` create `.vibe/project.vibe`, `.vibe/state.json`, and `.vibe/notes.md` for the GameSpree/Pawfall contract.
 - Diagnostics sourced from `vibe build`
 - Hover-based LLM resolver preview with variance metadata
 

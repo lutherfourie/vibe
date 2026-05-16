@@ -1,10 +1,10 @@
 // Routes map logical work-names to providers. `resolver` is required.
 
-provider cerebras.glm_4_7      { mode = api }
+provider openai.gpt_5_5      { mode = api }
 provider anthropic.claude_code { mode = cli }
 provider openai.codex          { mode = cli }
 
-route resolver  -> cerebras.glm_4_7
+route resolver  -> openai.gpt_5_5
 route planner   -> anthropic.claude_code
 route generator -> openai.codex
-fallback        -> cerebras.glm_4_7
+fallback        -> openai.gpt_5_5

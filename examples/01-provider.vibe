@@ -1,8 +1,8 @@
 // Provider declarations. Two modes: api (HTTPS) and cli (local subprocess).
 
-provider cerebras.glm_4_7 {
+provider openai.gpt_5_5 {
   mode  = api
-  model = "glm-4.7"
+  model = "gpt-5.5"
 }
 
 provider anthropic.claude_code {
@@ -11,4 +11,4 @@ provider anthropic.claude_code {
   lifecycle = long_lived
 }
 
-route resolver -> cerebras.glm_4_7
+route resolver -> openai.gpt_5_5

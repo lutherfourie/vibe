@@ -3,11 +3,11 @@
   "source": "examples/vibe-self.vibe",
   "repo": "C:/vibe",
   "routes": {
-    "resolver": "cerebras.glm_4_7",
-    "researcher": "cerebras.glm_4_7",
+    "resolver": "openai.gpt_5_5",
+    "researcher": "openai.gpt_5_5",
     "implementation": "openai.codex"
   },
-  "fallback": "cerebras.glm_4_7",
+  "fallback": "openai.gpt_5_5",
   "surfaces": [
     {
       "name": "codex.local",

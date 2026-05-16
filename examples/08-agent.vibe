@@ -1,7 +1,7 @@
 // A full agent declaration composes persona, memory, harness, and plugins.
 
-provider cerebras.glm_4_7 { mode = api }
-route resolver -> cerebras.glm_4_7
+provider openai.gpt_5_5 { mode = api model = "gpt-5.5" }
+route resolver -> openai.gpt_5_5
 
 plugin  asset_pipeline { impl = "./plugins/asset-pipeline/index.ts" }
 persona izsha_voice    { description = "coordinator, dry" }

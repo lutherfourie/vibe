@@ -21,11 +21,11 @@ describe("Vibe self-plan extraction", () => {
     expect(plan.name).toBe("vibe-self");
     expect(plan.repo).toBe("C:/vibe");
     expect(plan.routes).toMatchObject({
-      resolver: "cerebras.glm_4_7",
-      researcher: "cerebras.glm_4_7",
+      resolver: "openai.gpt_5_5",
+      researcher: "openai.gpt_5_5",
       implementation: "openai.codex",
     });
-    expect(plan.fallback).toBe("cerebras.glm_4_7");
+    expect(plan.fallback).toBe("openai.gpt_5_5");
     expect(plan.surfaces.map((surface) => surface.name)).toEqual([
       "codex.local",
       "codex.cli",

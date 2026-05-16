@@ -274,15 +274,15 @@ export function genericState(projectName: string, workspaceRoot: string): VibeSe
 }
 
 export function gamespreeProjectTemplate(): string {
-  return `provider cerebras.glm_4_7 { mode = api }
+  return `provider openai.gpt_5_5 { mode = api model = "gpt-5.5" }
 provider openai.codex { mode = cli }
 provider anthropic.claude_code { mode = cli }
 
-route resolver       -> cerebras.glm_4_7
-route researcher     -> cerebras.glm_4_7
+route resolver       -> openai.gpt_5_5
+route researcher     -> openai.gpt_5_5
 route implementation -> openai.codex
 route reviewer       -> anthropic.claude_code
-fallback             -> cerebras.glm_4_7
+fallback             -> openai.gpt_5_5
 
 memory gamespree_project {
   kind      = vault
@@ -355,12 +355,12 @@ export function gamespreeState(workspaceRoot: string): VibeSelfPlan {
     source: ".vibe/project.vibe",
     repo: workspaceRoot,
     routes: {
-      resolver: "cerebras.glm_4_7",
-      researcher: "cerebras.glm_4_7",
+      resolver: "openai.gpt_5_5",
+      researcher: "openai.gpt_5_5",
       implementation: "openai.codex",
       reviewer: "anthropic.claude_code",
     },
-    fallback: "cerebras.glm_4_7",
+    fallback: "openai.gpt_5_5",
     agents: [
       {
         name: "gamespree_operator",
