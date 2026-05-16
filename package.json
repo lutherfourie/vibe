@@ -8,6 +8,8 @@
     "build": "pnpm -r build",
     "check": "pnpm run self:plan && pnpm run test && pnpm run build",
     "lint": "echo \"no lint configured yet\"",
+    "self:read": "node scripts/read-vibe-self.mjs",
+    "self:read:test": "node --test scripts/read-vibe-self.test.mjs",
     "self:plan": "pnpm --filter @vibe/language build && pnpm --filter @vibe/language self:plan --out ../../docs/examples/vibe-self-plan.json",
     "test": "pnpm -r test",
     "vibe:continue": "cd go && go run ./cmd/vibe continue",
