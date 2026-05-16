@@ -1,7 +1,6 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { pathToFileURL } from "node:url";
-import { extractSelfPlanFromSource } from "@vibe/language";
 import {
   agentsPreviewMarkdown,
   gamespreeProjectTemplate,
@@ -48,6 +47,7 @@ export async function parseVibeFileToState(
   filePath: string,
   source: string,
 ): Promise<VibeSelfPlan> {
+  const { extractSelfPlanFromSource } = await import("@vibe/language");
   const state = await extractSelfPlanFromSource(source, {
     sourceName: toPortablePath(path.relative(workspaceRoot, filePath)),
     uri: pathToFileURL(filePath).href,
