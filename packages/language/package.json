@@ -29,6 +29,7 @@
   "scripts": {
     "langium:generate": "langium generate",
     "build": "pnpm run langium:generate && tsc -p tsconfig.json",
+    "self:plan": "node dist/scripts/self-plan.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "clean": "rimraf dist src/generated"

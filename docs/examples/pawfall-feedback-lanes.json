@@ -1,0 +1,40 @@
+{
+  "name": "pawfall-feedback",
+  "repo": "C:/GameSpree",
+  "lanes": [
+    {
+      "name": "feedback-triage",
+      "mode": "codex.web",
+      "branch": "codex/pawfall-powerup-economy-director",
+      "reads": [
+        "cat-cafe/games/pawfall/docs/feedback/2026-05-15.md",
+        "cat-cafe/games/pawfall/docs/GDD.md"
+      ],
+      "writes": [
+        "cat-cafe/games/pawfall/docs/feedback/2026-05-15-action-plan.md"
+      ],
+      "prompt": "Read the Pawfall feedback and produce a docs-only implementation action plan. Do not edit runtime, Unity asset, or generated files.",
+      "requires": [
+        "human.review"
+      ]
+    },
+    {
+      "name": "unity-runtime-local",
+      "mode": "local",
+      "branch": "codex/pawfall-powerup-economy-director",
+      "reads": [
+        "cat-cafe/games/pawfall/docs/feedback/2026-05-15.md",
+        "cat-cafe/games/pawfall/src/Assets/_Pawfall/Scripts/**"
+      ],
+      "writes": [
+        "cat-cafe/games/pawfall/src/Assets/_Pawfall/Scripts/**"
+      ],
+      "prompt": "Implement the accepted runtime slice locally after the feedback action plan is reviewed. Preserve unrelated dirty work and verify with a targeted Unity compile when available.",
+      "requires": [
+        "git.status.clean-for-lane",
+        "unity.compile",
+        "human.merge-review"
+      ]
+    }
+  ]
+}

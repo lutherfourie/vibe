@@ -1,0 +1,20 @@
+{
+  "name": "vibe-local",
+  "interface": {
+    "displayName": "Vibe Local Plugins"
+  },
+  "plugins": [
+    {
+      "name": "vibe-workbench",
+      "source": {
+        "source": "local",
+        "path": "./plugins/vibe-workbench"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
