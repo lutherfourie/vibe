@@ -6,6 +6,40 @@
 provider cerebras.glm_4_7 { mode = api }
 provider openai.codex     { mode = cli }
 
+surface codex.local {
+  kind     = codex
+  mode     = local
+  guidance = "AGENTS.md"
+  skills   = "./.agents/skills"
+}
+
+surface codex.cli {
+  kind   = codex
+  mode   = cli
+  binary = "codex"
+}
+
+surface codex.cloud {
+  kind         = codex
+  mode         = cloud
+  environment = "chatgpt.com/codex"
+}
+
+surface codex.github_pr {
+  kind    = codex
+  mode    = github_pr
+  trigger = "@codex"
+}
+
+surface vscode.agent_admin {
+  kind             = ide
+  mode             = vscode
+  codex_extension  = "openai.chatgpt"
+  claude_extension = "anthropic.claude-code"
+  tasks            = ".vscode/tasks.json"
+  guidance         = ["AGENTS.md", "CLAUDE.md"]
+}
+
 route resolver      -> cerebras.glm_4_7
 route researcher    -> cerebras.glm_4_7
 route implementation -> openai.codex
@@ -48,6 +82,32 @@ plugin execution_surface_lane {
   emits = "explicit handling for phone, web, IDE, GitHub, local desktop, and cloud-agent control"
 }
 
+plugin bootstrap_tooling_lane {
+  impl  = "./tools/bootstrap-tooling-lane"
+  owns  = "docs/bootstrap-todos.md docs/local-toolkit.md"
+  emits = "tooling and auth checklist for gh, Playwright browsers, jq, yq, fd, and plugins/connectors"
+}
+
+plugin local_toolkit_lane {
+  impl     = "./tools/local-toolkit-lane"
+  target   = surface.codex.local
+  reads    = ["README.md", "docs/fresh-start.md", "examples/vibe-self.vibe"]
+  owns     = "docs/local-toolkit.md go/** packages/**"
+  verify   = ["pnpm run self:plan", "pnpm test", "pnpm run build"]
+  approval = human.before_commit
+  emits    = "small vibe CLI plan for doctor, lanes, handoff, verify, and memory"
+}
+
+plugin vscode_agent_lane {
+  impl     = "./tools/vscode-agent-lane"
+  target   = surface.vscode.agent_admin
+  reads    = ["AGENTS.md", "CLAUDE.md", ".vscode/tasks.json", "packages/vscode-extension/src/extension.ts"]
+  owns     = "AGENTS.md CLAUDE.md .vscode/** packages/vscode-extension/** docs/vscode-agent-workflow.md"
+  verify   = ["pnpm --filter vibe-vscode test", "pnpm --filter vibe-vscode build", "pnpm run check"]
+  approval = human.before_commit
+  emits    = "VS Code command palette and Codex/Claude extension administration loop"
+}
+
 plugin human_merge_gate {
   impl  = "./tools/human-merge-gate"
   owns  = "review"
@@ -63,6 +123,9 @@ agent vibe_bootstrap {
     plugin.language_lane,
     plugin.runtime_spike_lane,
     plugin.execution_surface_lane,
+    plugin.bootstrap_tooling_lane,
+    plugin.local_toolkit_lane,
+    plugin.vscode_agent_lane,
     plugin.human_merge_gate
   ]
 }

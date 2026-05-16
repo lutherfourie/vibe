@@ -124,6 +124,7 @@ automation.
 
 ## Source Links
 
+- Codex surface research note: [2026-05-16-vibe-codex-surface-notes.md](2026-05-16-vibe-codex-surface-notes.md)
 - LangGraph durable execution: https://docs.langchain.com/oss/python/langgraph/durable-execution
 - OpenAI Codex cloud: https://platform.openai.com/docs/codex/overview
 - OpenAI Agents SDK: https://platform.openai.com/docs/guides/agents-sdk/

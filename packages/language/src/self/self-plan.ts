@@ -11,6 +11,7 @@ import {
   isReference,
   isRoute,
   isStringLiteral,
+  isSurface,
   type Agent,
   type Expression,
   type Field,
@@ -19,6 +20,7 @@ import {
   type Project,
   type QualifiedName,
   type Reference,
+  type Surface,
 } from "../generated/ast.js";
 import { parseVibeSource } from "./parse.js";
 
@@ -28,10 +30,18 @@ export interface VibeSelfPlan {
   repo?: string;
   routes: Record<string, string>;
   fallback?: string;
+  surfaces: SelfSurface[];
   agents: SelfAgent[];
   lanes: SelfLane[];
   gates: SelfGate[];
   notes: string[];
+}
+
+export interface SelfSurface {
+  name: string;
+  kind?: string;
+  mode?: string;
+  metadata: Record<string, unknown>;
 }
 
 export interface SelfAgent {
@@ -47,6 +57,10 @@ export interface SelfLane {
   impl?: string;
   owns?: string;
   emits?: string;
+  target?: string;
+  reads?: string[];
+  verify?: string[];
+  approval?: string;
   metadata: Record<string, unknown>;
 }
 
@@ -60,20 +74,21 @@ export interface SelfGate {
 
 export async function extractSelfPlanFromSource(
   source: string,
-  options: { sourceName?: string; uri?: string } = {},
+  options: { sourceName?: string; uri?: string; name?: string } = {},
 ): Promise<VibeSelfPlan> {
   const parsed = await parseVibeSource(source, { uri: options.uri });
   if (parsed.errors.length > 0) {
     throw new Error(`Cannot extract self-plan:\n${parsed.errors.join("\n")}`);
   }
   return extractSelfPlan(parsed.project, {
+    name: options.name,
     sourceName: options.sourceName ?? options.uri ?? "inline",
   });
 }
 
 export function extractSelfPlan(
   project: Project,
-  options: { sourceName?: string } = {},
+  options: { sourceName?: string; name?: string } = {},
 ): VibeSelfPlan {
   const plugins = project.declarations.filter(isPlugin);
   const agents = project.declarations.filter(isAgent).map(readAgent);
@@ -86,11 +101,12 @@ export function extractSelfPlan(
     .map(readGate);
 
   return {
-    name: "vibe-self",
+    name: options.name ?? "vibe-self",
     source: options.sourceName ?? "unknown",
     repo: memory ? readRepo(memory) : undefined,
     routes: readRoutes(project),
     fallback: readFallback(project),
+    surfaces: project.declarations.filter(isSurface).map(readSurface),
     agents,
     lanes,
     gates,
@@ -120,6 +136,20 @@ function readLane(plugin: Plugin): SelfLane {
     impl: stringValue(metadata.impl),
     owns: stringValue(metadata.owns),
     emits: stringValue(metadata.emits),
+    target: stringValue(metadata.target),
+    reads: stringListValue(metadata.reads),
+    verify: stringListValue(metadata.verify),
+    approval: stringValue(metadata.approval),
+    metadata,
+  };
+}
+
+function readSurface(surface: Surface): SelfSurface {
+  const metadata = readMetadata(surface);
+  return {
+    name: qualifiedName(surface.name),
+    kind: stringValue(metadata.kind),
+    mode: stringValue(metadata.mode),
     metadata,
   };
 }
@@ -135,9 +165,9 @@ function readGate(plugin: Plugin): SelfGate {
   };
 }
 
-function readMetadata(plugin: Plugin): Record<string, unknown> {
+function readMetadata(source: Plugin | Surface): Record<string, unknown> {
   const metadata: Record<string, unknown> = {};
-  for (const field of plugin.fields) {
+  for (const field of source.fields) {
     metadata[field.name] = expressionValue(field.value);
   }
   return metadata;
@@ -211,4 +241,10 @@ function qualifiedName(name: QualifiedName): string {
 
 function stringValue(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
+}
+
+function stringListValue(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  if (!value.every((item) => typeof item === "string")) return undefined;
+  return value;
 }
