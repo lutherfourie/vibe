@@ -40,6 +40,13 @@ surface vscode.agent_admin {
   guidance         = ["AGENTS.md", "CLAUDE.md"]
 }
 
+surface crewai.local {
+  kind = framework
+  mode = python
+  docs = "https://docs.crewai.com/llms.txt"
+  mcp  = true
+}
+
 route resolver      -> cerebras.glm_4_7
 route researcher    -> cerebras.glm_4_7
 route implementation -> openai.codex
@@ -108,6 +115,20 @@ plugin vscode_agent_lane {
   emits    = "VS Code command palette and Codex/Claude extension administration loop"
 }
 
+plugin crewai_adapter_lane {
+  impl     = "./tools/crewai-adapter-lane"
+  target   = surface.crewai.local
+  reads    = [
+    "docs/superpowers/research/2026-05-15-vibe-agentic-iac-framework-map.md",
+    "docs/superpowers/research/2026-05-16-vibe-crewai-integration-notes.md",
+    "examples/vibe-self.vibe"
+  ]
+  owns     = "docs/superpowers/research/2026-05-16-vibe-crewai-integration-notes.md examples/vibe-self.vibe"
+  verify   = ["pnpm run self:plan", "pnpm run vibe:lanes", "pnpm run check"]
+  approval = human.before_runtime
+  emits    = "report-only CrewAI adapter shape; no credentials, install, or runtime MCP changes"
+}
+
 plugin human_merge_gate {
   impl  = "./tools/human-merge-gate"
   owns  = "review"
@@ -126,6 +147,7 @@ agent vibe_bootstrap {
     plugin.bootstrap_tooling_lane,
     plugin.local_toolkit_lane,
     plugin.vscode_agent_lane,
+    plugin.crewai_adapter_lane,
     plugin.human_merge_gate
   ]
 }

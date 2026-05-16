@@ -58,3 +58,14 @@ Get PR #2 reviewed and merged to `main`. Then make the first post-merge slice a
 small VS Code dogfood improvement: make `Vibe: Init Project` create a useful
 `.vibe/` workspace, parse it into `.vibe/state.json`, and show it in the Vibe
 tree without requiring the full future runtime.
+
+## Adapter Research Note
+
+CrewAI is now represented as a report-only backend surface in
+`examples/vibe-self.vibe`, with supporting notes in
+`docs/superpowers/research/2026-05-16-vibe-crewai-integration-notes.md`.
+
+Keep this lane non-invasive until a human asks for runtime generation: no
+CrewAI install, no user-local MCP config edits, no credentials, and no runtime
+agent execution. The useful first product move is still the VS Code cockpit and
+local CLI unification.

@@ -31,6 +31,7 @@ describe("Vibe self-plan extraction", () => {
       "codex.cloud",
       "codex.github_pr",
       "vscode.agent_admin",
+      "crewai.local",
     ]);
     expect(plan.surfaces[0]).toMatchObject({
       name: "codex.local",
@@ -41,6 +42,14 @@ describe("Vibe self-plan extraction", () => {
         skills: "./.agents/skills",
       },
     });
+    expect(plan.surfaces.find((surface) => surface.name === "crewai.local")).toMatchObject({
+      kind: "framework",
+      mode: "python",
+      metadata: {
+        docs: "https://docs.crewai.com/llms.txt",
+        mcp: true,
+      },
+    });
     expect(plan.lanes.map((lane) => lane.name)).toEqual([
       "research_lane",
       "language_lane",
@@ -49,6 +58,7 @@ describe("Vibe self-plan extraction", () => {
       "bootstrap_tooling_lane",
       "local_toolkit_lane",
       "vscode_agent_lane",
+      "crewai_adapter_lane",
     ]);
     expect(plan.lanes.find((lane) => lane.name === "local_toolkit_lane")).toMatchObject({
       target: "surface.codex.local",
@@ -78,6 +88,20 @@ describe("Vibe self-plan extraction", () => {
         "pnpm run check",
       ],
       approval: "human.before_commit",
+    });
+    expect(plan.lanes.find((lane) => lane.name === "crewai_adapter_lane")).toMatchObject({
+      target: "surface.crewai.local",
+      reads: [
+        "docs/superpowers/research/2026-05-15-vibe-agentic-iac-framework-map.md",
+        "docs/superpowers/research/2026-05-16-vibe-crewai-integration-notes.md",
+        "examples/vibe-self.vibe",
+      ],
+      verify: [
+        "pnpm run self:plan",
+        "pnpm run vibe:lanes",
+        "pnpm run check",
+      ],
+      approval: "human.before_runtime",
     });
     expect(plan.gates.map((gate) => gate.name)).toEqual([
       "human_merge_gate",

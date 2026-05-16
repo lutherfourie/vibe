@@ -34,3 +34,10 @@ flowchart LR
   owns_vscode_agent_lane["AGENTS.md CLAUDE.md .vscode/** packages/vscode-extension/** docs/vscode-agent-workflow.md"]
   lane_vscode_agent_lane -. owns .-> owns_vscode_agent_lane
   lane_vscode_agent_lane -. verifies .-> verify_vscode_agent_lane["pnpm --filter vibe-vscode test\\npnpm --filter vibe-vscode build\\npnpm run check"]
+  lane_crewai_adapter_lane["crewai_adapter_lane"]
+  plan --> lane_crewai_adapter_lane
+  surface_crewai_local["surface.crewai.local"]
+  lane_crewai_adapter_lane --> surface_crewai_local
+  owns_crewai_adapter_lane["docs/superpowers/research/2026-05-16-vibe-crewai-integration-notes.md examples/vibe-self.vibe"]
+  lane_crewai_adapter_lane -. owns .-> owns_crewai_adapter_lane
+  lane_crewai_adapter_lane -. verifies .-> verify_crewai_adapter_lane["pnpm run self:plan\\npnpm run vibe:lanes\\npnpm run check"]
