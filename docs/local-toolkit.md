@@ -65,6 +65,10 @@ Hosts the current admin surface at `http://127.0.0.1:8787` with:
 - `/` local HTML dashboard.
 - `/self-plan.json` machine-readable self-plan.
 - `/vibe-lanes.mmd` Mermaid lane graph.
+- Visual lane graph cards rendered from the same self-plan.
+- Copyable lane handoff panels with read scope, write scope, target surface,
+  verification commands, and approval point.
+- Raw Mermaid source in a collapsible debugging panel.
 
 ### `vibe memory`
 
@@ -123,10 +127,16 @@ Reference docs used for this direction:
 - Supabase AI and Vectors: https://supabase.com/docs/guides/ai
 - Supabase `pgvector`: https://supabase.com/docs/guides/database/extensions/pgvector
 
+## Current Slice
+
+`vibe serve` now keeps the raw Mermaid endpoint but renders a local visual lane
+graph and copyable handoff panels directly from the self-plan. It intentionally
+does not pull Mermaid from a CDN or add a browser dependency yet; the dashboard
+must stay useful from a local checkout without external service assumptions.
+
 ## Next Slice
 
-The next useful slice is to make `vibe serve` render the Mermaid graph visually
-instead of showing raw Mermaid text, then add a copyable handoff panel per lane.
-
-Keep installation side effects out of the CLI until the report format and human
-approval flow are clearer.
+The next useful slice is to add an export path for the generated self-plan
+handoffs, either as a dedicated `vibe handoff --self-plan ...` mode or a
+dashboard download endpoint. Keep installation side effects out of the CLI until
+the report format and human approval flow are clearer.

@@ -63,3 +63,52 @@ func TestMermaidIncludesLaneAndTargetSurface(t *testing.T) {
 		}
 	}
 }
+
+func TestDashboardIncludesVisualGraphAndCopyableHandoff(t *testing.T) {
+	plan := Plan{
+		Name:   "vibe-self",
+		Source: "examples/vibe-self.vibe",
+		Repo:   "C:/vibe",
+		Lanes: []Lane{
+			{
+				Name:     "local_toolkit_lane",
+				Target:   "surface.codex.local",
+				Reads:    []string{"README.md", "examples/vibe-self.vibe"},
+				Owns:     "docs/local-toolkit.md go/** packages/**",
+				Verify:   []string{"pnpm run self:plan", "pnpm test"},
+				Approval: "human.before_commit",
+				Emits:    "small vibe CLI plan",
+			},
+		},
+	}
+
+	html := DashboardHTML(plan, Mermaid(plan))
+	for _, want := range []string{
+		"<h2>Lane Graph</h2>",
+		"class=\"graph-row\"",
+		"data-copy-target=\"handoff-local_toolkit_lane\"",
+		"# Vibe Lane Handoff: local_toolkit_lane",
+		"Write scope: docs/local-toolkit.md go/** packages/**",
+		"- pnpm run self:plan",
+		"<summary>Mermaid source</summary>",
+	} {
+		if !strings.Contains(html, want) {
+			t.Fatalf("dashboard missing %q:\n%s", want, html)
+		}
+	}
+}
+
+func TestLaneHandoffUsesFallbacksForSparseLanes(t *testing.T) {
+	handoff := LaneHandoff(Plan{Name: "vibe-self"}, Lane{Name: "research_lane"})
+	for _, want := range []string{
+		"Repo: C:/vibe",
+		"Self-plan source: examples/vibe-self.vibe",
+		"Target surface: not declared",
+		"Write scope: not declared",
+		"Approval: not declared",
+	} {
+		if !strings.Contains(handoff, want) {
+			t.Fatalf("handoff missing %q:\n%s", want, handoff)
+		}
+	}
+}

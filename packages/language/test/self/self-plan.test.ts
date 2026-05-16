@@ -26,6 +26,24 @@ describe("Vibe self-plan extraction", () => {
       implementation: "openai.codex",
     });
     expect(plan.fallback).toBe("openai.gpt_5_5");
+    expect(plan.providers).toContainEqual({
+      name: "openai.gpt_5_5",
+      mode: "api",
+      model: "gpt-5.5",
+      metadata: {
+        mode: "api",
+        model: "gpt-5.5",
+      },
+    });
+    expect(plan.providers).toContainEqual({
+      name: "openai.codex",
+      mode: "cli",
+      model: "gpt-5.5",
+      metadata: {
+        mode: "cli",
+        model: "gpt-5.5",
+      },
+    });
     expect(plan.surfaces.map((surface) => surface.name)).toEqual([
       "codex.local",
       "codex.cli",

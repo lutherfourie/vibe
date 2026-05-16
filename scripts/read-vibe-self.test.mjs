@@ -20,6 +20,26 @@ test("reads examples/vibe-self.vibe into a standalone self-plan", async () => {
     implementation: "openai.codex",
   });
   assert.equal(plan.fallback, "openai.gpt_5_5");
+  assert.deepEqual(
+    plan.providers.find((provider) => provider.name === "openai.gpt_5_5"),
+    {
+      name: "openai.gpt_5_5",
+      metadata: {
+        mode: "api",
+        model: "gpt-5.5",
+      },
+    },
+  );
+  assert.deepEqual(
+    plan.providers.find((provider) => provider.name === "openai.codex"),
+    {
+      name: "openai.codex",
+      metadata: {
+        mode: "cli",
+        model: "gpt-5.5",
+      },
+    },
+  );
   assert.deepEqual(plan.surfaces.map((surface) => surface.name), [
     "codex.local",
     "codex.cli",

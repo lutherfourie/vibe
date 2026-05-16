@@ -222,6 +222,9 @@ func runServe(args []string) error {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		fmt.Fprint(w, graph)
 	})
+	mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
 
 	log.Printf("Vibe admin dashboard listening on http://%s", *addr)
 	return http.ListenAndServe(*addr, mux)

@@ -3,8 +3,15 @@
 // primitives; for now, lane-shaped work is represented as plugins consumed by
 // one bootstrap agent.
 
-provider openai.gpt_5_5 { mode = api model = "gpt-5.5" }
-provider openai.codex     { mode = cli }
+provider openai.gpt_5_5 {
+  mode  = api
+  model = "gpt-5.5"
+}
+
+provider openai.codex {
+  mode  = cli
+  model = "gpt-5.5"
+}
 
 surface codex.local {
   kind     = codex

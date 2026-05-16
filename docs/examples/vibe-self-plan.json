@@ -2,6 +2,26 @@
   "name": "vibe-self",
   "source": "examples/vibe-self.vibe",
   "repo": "C:/vibe",
+  "providers": [
+    {
+      "name": "openai.gpt_5_5",
+      "mode": "api",
+      "model": "gpt-5.5",
+      "metadata": {
+        "mode": "api",
+        "model": "gpt-5.5"
+      }
+    },
+    {
+      "name": "openai.codex",
+      "mode": "cli",
+      "model": "gpt-5.5",
+      "metadata": {
+        "mode": "cli",
+        "model": "gpt-5.5"
+      }
+    }
+  ],
   "routes": {
     "resolver": "openai.gpt_5_5",
     "researcher": "openai.gpt_5_5",
