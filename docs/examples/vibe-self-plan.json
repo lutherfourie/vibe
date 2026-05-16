@@ -49,6 +49,22 @@
         "mode": "github_pr",
         "trigger": "@codex"
       }
+    },
+    {
+      "name": "vscode.agent_admin",
+      "kind": "ide",
+      "mode": "vscode",
+      "metadata": {
+        "kind": "ide",
+        "mode": "vscode",
+        "codex_extension": "openai.chatgpt",
+        "claude_extension": "anthropic.claude-code",
+        "tasks": ".vscode/tasks.json",
+        "guidance": [
+          "AGENTS.md",
+          "CLAUDE.md"
+        ]
+      }
     }
   ],
   "agents": [
@@ -64,6 +80,7 @@
         "plugin.execution_surface_lane",
         "plugin.bootstrap_tooling_lane",
         "plugin.local_toolkit_lane",
+        "plugin.vscode_agent_lane",
         "plugin.human_merge_gate"
       ]
     }
@@ -157,6 +174,43 @@
         ],
         "approval": "human.before_commit",
         "emits": "small vibe CLI plan for doctor, lanes, handoff, verify, and memory"
+      }
+    },
+    {
+      "name": "vscode_agent_lane",
+      "impl": "./tools/vscode-agent-lane",
+      "owns": "AGENTS.md CLAUDE.md .vscode/** packages/vscode-extension/** docs/vscode-agent-workflow.md",
+      "emits": "VS Code command palette and Codex/Claude extension administration loop",
+      "target": "surface.vscode.agent_admin",
+      "reads": [
+        "AGENTS.md",
+        "CLAUDE.md",
+        ".vscode/tasks.json",
+        "packages/vscode-extension/src/extension.ts"
+      ],
+      "verify": [
+        "pnpm --filter vibe-vscode test",
+        "pnpm --filter vibe-vscode build",
+        "pnpm run check"
+      ],
+      "approval": "human.before_commit",
+      "metadata": {
+        "impl": "./tools/vscode-agent-lane",
+        "target": "surface.vscode.agent_admin",
+        "reads": [
+          "AGENTS.md",
+          "CLAUDE.md",
+          ".vscode/tasks.json",
+          "packages/vscode-extension/src/extension.ts"
+        ],
+        "owns": "AGENTS.md CLAUDE.md .vscode/** packages/vscode-extension/** docs/vscode-agent-workflow.md",
+        "verify": [
+          "pnpm --filter vibe-vscode test",
+          "pnpm --filter vibe-vscode build",
+          "pnpm run check"
+        ],
+        "approval": "human.before_commit",
+        "emits": "VS Code command palette and Codex/Claude extension administration loop"
       }
     }
   ],

@@ -39,6 +39,23 @@ pnpm run check
 
 Bootstrap setup work is tracked in [`docs/bootstrap-todos.md`](docs/bootstrap-todos.md).
 The proposed local CLI shape is tracked in [`docs/local-toolkit.md`](docs/local-toolkit.md).
+VS Code agent workflow notes are tracked in
+[`docs/vscode-agent-workflow.md`](docs/vscode-agent-workflow.md).
+
+## VS Code Agent Loop
+
+The workspace now includes first-pass integration points for OpenAI Codex and
+Anthropic Claude Code in VS Code:
+
+- `AGENTS.md` gives Codex repo-local operating guidance.
+- `CLAUDE.md` gives Claude Code repo-local operating guidance.
+- `.vscode/extensions.json` recommends the Codex and Claude Code extensions.
+- `.vscode/launch.json` starts the local Vibe VS Code extension in an Extension
+  Development Host.
+- `.vscode/tasks.json` exposes Vibe snapshot, lane, self-plan, and full-check
+  tasks.
+- `packages/vscode-extension` contributes `Vibe: Admin Workspace`, a command
+  palette picker that runs the same Vibe Workbench checks from a terminal.
 
 ## Bootstrap Loop
 

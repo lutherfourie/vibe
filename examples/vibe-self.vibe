@@ -31,6 +31,15 @@ surface codex.github_pr {
   trigger = "@codex"
 }
 
+surface vscode.agent_admin {
+  kind             = ide
+  mode             = vscode
+  codex_extension  = "openai.chatgpt"
+  claude_extension = "anthropic.claude-code"
+  tasks            = ".vscode/tasks.json"
+  guidance         = ["AGENTS.md", "CLAUDE.md"]
+}
+
 route resolver      -> cerebras.glm_4_7
 route researcher    -> cerebras.glm_4_7
 route implementation -> openai.codex
@@ -89,6 +98,16 @@ plugin local_toolkit_lane {
   emits    = "small vibe CLI plan for doctor, lanes, handoff, verify, and memory"
 }
 
+plugin vscode_agent_lane {
+  impl     = "./tools/vscode-agent-lane"
+  target   = surface.vscode.agent_admin
+  reads    = ["AGENTS.md", "CLAUDE.md", ".vscode/tasks.json", "packages/vscode-extension/src/extension.ts"]
+  owns     = "AGENTS.md CLAUDE.md .vscode/** packages/vscode-extension/** docs/vscode-agent-workflow.md"
+  verify   = ["pnpm --filter vibe-vscode test", "pnpm --filter vibe-vscode build", "pnpm run check"]
+  approval = human.before_commit
+  emits    = "VS Code command palette and Codex/Claude extension administration loop"
+}
+
 plugin human_merge_gate {
   impl  = "./tools/human-merge-gate"
   owns  = "review"
@@ -106,6 +125,7 @@ agent vibe_bootstrap {
     plugin.execution_surface_lane,
     plugin.bootstrap_tooling_lane,
     plugin.local_toolkit_lane,
+    plugin.vscode_agent_lane,
     plugin.human_merge_gate
   ]
 }

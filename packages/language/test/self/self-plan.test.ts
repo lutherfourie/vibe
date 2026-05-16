@@ -30,6 +30,7 @@ describe("Vibe self-plan extraction", () => {
       "codex.cli",
       "codex.cloud",
       "codex.github_pr",
+      "vscode.agent_admin",
     ]);
     expect(plan.surfaces[0]).toMatchObject({
       name: "codex.local",
@@ -47,6 +48,7 @@ describe("Vibe self-plan extraction", () => {
       "execution_surface_lane",
       "bootstrap_tooling_lane",
       "local_toolkit_lane",
+      "vscode_agent_lane",
     ]);
     expect(plan.lanes.find((lane) => lane.name === "local_toolkit_lane")).toMatchObject({
       target: "surface.codex.local",
@@ -59,6 +61,21 @@ describe("Vibe self-plan extraction", () => {
         "pnpm run self:plan",
         "pnpm test",
         "pnpm run build",
+      ],
+      approval: "human.before_commit",
+    });
+    expect(plan.lanes.find((lane) => lane.name === "vscode_agent_lane")).toMatchObject({
+      target: "surface.vscode.agent_admin",
+      reads: [
+        "AGENTS.md",
+        "CLAUDE.md",
+        ".vscode/tasks.json",
+        "packages/vscode-extension/src/extension.ts",
+      ],
+      verify: [
+        "pnpm --filter vibe-vscode test",
+        "pnpm --filter vibe-vscode build",
+        "pnpm run check",
       ],
       approval: "human.before_commit",
     });
