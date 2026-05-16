@@ -1,0 +1,44 @@
+{
+  "name": "vibe-workbench",
+  "version": "0.1.0",
+  "description": "Codex integration for Vibe's self-plan, lane, handoff, and verification loop.",
+  "author": {
+    "name": "Vibecade",
+    "url": "https://github.com/lutherfourie/vibe"
+  },
+  "homepage": "https://github.com/lutherfourie/vibe/tree/main/plugins/vibe-workbench",
+  "repository": "https://github.com/lutherfourie/vibe",
+  "license": "MIT",
+  "keywords": [
+    "vibe",
+    "vibecade",
+    "codex",
+    "claude",
+    "mcp",
+    "superpowers",
+    "agentic-iac",
+    "workflow"
+  ],
+  "skills": "./codex-skills/",
+  "interface": {
+    "displayName": "Vibe Workbench",
+    "shortDescription": "Repo-grounded helpers for Vibe bootstrap work.",
+    "longDescription": "Codex integration for C:\\vibe. It packages repo-grounded skills for orientation, self-plan drift checks, lane handoffs, and verification while sharing the same Vibe contract used by the Claude Code plugin.",
+    "developerName": "Vibecade",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write",
+      "Workflow",
+      "Multi-Agent",
+      "Superpowers"
+    ],
+    "websiteURL": "https://github.com/lutherfourie/vibe/tree/main/plugins/vibe-workbench",
+    "defaultPrompt": [
+      "Orient on the Vibe repo and recommend the next slice.",
+      "Prepare a Vibe lane handoff with scope and verification.",
+      "Run the Vibe Superpowers bridge for the current lane."
+    ],
+    "brandColor": "#2563EB"
+  }
+}

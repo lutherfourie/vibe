@@ -1,13 +1,20 @@
 {
-  "name": "vibe-monorepo",
+  "name": "vibe",
   "version": "0.0.0",
   "private": true,
-  "description": "The unified vibecode language (monorepo root).",
+  "description": "Vibecade's Vibe monorepo: language, docs, editor support, and self-describing bootstrap artifacts.",
   "license": "MIT",
   "scripts": {
     "build": "pnpm -r build",
+    "check": "pnpm run self:plan && pnpm run test && pnpm run build",
+    "lint": "echo \"no lint configured yet\"",
+    "self:plan": "pnpm --filter @vibe/language build && pnpm --filter @vibe/language self:plan --out ../../docs/examples/vibe-self-plan.json",
     "test": "pnpm -r test",
-    "lint": "pnpm -r lint",
+    "vibe:doctor": "cd go && go run ./cmd/vibe doctor",
+    "vibe:lanes": "cd go && go run ./cmd/vibe lanes --plan docs/examples/vibe-self-plan.json",
+    "vibe:graph": "cd go && go run ./cmd/vibe graph --plan docs/examples/vibe-self-plan.json --out docs/examples/vibe-lanes.mmd",
+    "vibe:serve": "cd go && go run ./cmd/vibe serve --plan docs/examples/vibe-self-plan.json --addr 127.0.0.1:8787",
+    "vibe:verify": "cd go && go run ./cmd/vibe verify",
     "langium:generate": "pnpm --filter @vibe/language langium:generate"
   },
   "engines": {

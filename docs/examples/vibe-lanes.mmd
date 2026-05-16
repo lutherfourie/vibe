@@ -1,0 +1,36 @@
+flowchart LR
+  plan["vibe-self"]
+  lane_research_lane["research_lane"]
+  plan --> lane_research_lane
+  owns_research_lane["docs/superpowers/research/**"]
+  lane_research_lane -. owns .-> owns_research_lane
+  lane_language_lane["language_lane"]
+  plan --> lane_language_lane
+  owns_language_lane["packages/language/**"]
+  lane_language_lane -. owns .-> owns_language_lane
+  lane_runtime_spike_lane["runtime_spike_lane"]
+  plan --> lane_runtime_spike_lane
+  owns_runtime_spike_lane["go/**"]
+  lane_runtime_spike_lane -. owns .-> owns_runtime_spike_lane
+  lane_execution_surface_lane["execution_surface_lane"]
+  plan --> lane_execution_surface_lane
+  owns_execution_surface_lane["docs/** examples/**"]
+  lane_execution_surface_lane -. owns .-> owns_execution_surface_lane
+  lane_bootstrap_tooling_lane["bootstrap_tooling_lane"]
+  plan --> lane_bootstrap_tooling_lane
+  owns_bootstrap_tooling_lane["docs/bootstrap-todos.md docs/local-toolkit.md"]
+  lane_bootstrap_tooling_lane -. owns .-> owns_bootstrap_tooling_lane
+  lane_local_toolkit_lane["local_toolkit_lane"]
+  plan --> lane_local_toolkit_lane
+  surface_codex_local["surface.codex.local"]
+  lane_local_toolkit_lane --> surface_codex_local
+  owns_local_toolkit_lane["docs/local-toolkit.md go/** packages/**"]
+  lane_local_toolkit_lane -. owns .-> owns_local_toolkit_lane
+  lane_local_toolkit_lane -. verifies .-> verify_local_toolkit_lane["pnpm run self:plan\\npnpm test\\npnpm run build"]
+  lane_vscode_agent_lane["vscode_agent_lane"]
+  plan --> lane_vscode_agent_lane
+  surface_vscode_agent_admin["surface.vscode.agent_admin"]
+  lane_vscode_agent_lane --> surface_vscode_agent_admin
+  owns_vscode_agent_lane["AGENTS.md CLAUDE.md .vscode/** packages/vscode-extension/** docs/vscode-agent-workflow.md"]
+  lane_vscode_agent_lane -. owns .-> owns_vscode_agent_lane
+  lane_vscode_agent_lane -. verifies .-> verify_vscode_agent_lane["pnpm --filter vibe-vscode test\\npnpm --filter vibe-vscode build\\npnpm run check"]

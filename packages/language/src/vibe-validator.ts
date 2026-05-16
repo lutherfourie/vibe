@@ -21,8 +21,8 @@
  *     kicks in.
  *
  *   - Cross-reference resolution. Every `Reference` AST node whose first
- *     segment is one of the nine declaration-kind keywords (`agent`,
- *     `route`, `persona`, `memory`, `harness`, `plugin`, `provider`,
+ *     segment is one of the declaration-kind keywords (`agent`,
+ *     `route`, `persona`, `memory`, `harness`, `plugin`, `provider`, `surface`,
  *     `trigger`, `fallback`) must have its second segment match a declared
  *     name of that kind. Catches the most common authoring typo —
  *     `uses = [plugin.assett_pipeline]` when the real declaration is
@@ -64,6 +64,7 @@ import type {
   Provider,
   Reference as VibeReference,
   Route,
+  Surface,
   VibeAstType,
 } from "./generated/ast.js";
 import type { LangiumServices } from "langium/lsp";
@@ -82,6 +83,7 @@ type NamedDeclaration =
   | Harness
   | Plugin
   | Provider
+  | Surface
   | Route;
 
 /**
@@ -96,6 +98,7 @@ const KIND_LABEL: Record<NamedDeclaration["$type"], string> = {
   Harness: "harness",
   Plugin: "plugin",
   Provider: "provider",
+  Surface: "surface",
   Route: "route",
 };
 
@@ -108,6 +111,7 @@ function isNamedDeclaration(node: unknown): node is NamedDeclaration {
     type === "Harness" ||
     type === "Plugin" ||
     type === "Provider" ||
+    type === "Surface" ||
     type === "Route"
   );
 }
@@ -123,6 +127,7 @@ function isNamedDeclaration(node: unknown): node is NamedDeclaration {
 function declarationKey(decl: NamedDeclaration): string | undefined {
   switch (decl.$type) {
     case "Provider":
+    case "Surface":
       return decl.name?.segments?.join(".");
     case "Route":
       return decl.from;
@@ -271,6 +276,7 @@ export class VibeValidator {
       harness: new Set<string>(),
       plugin: new Set<string>(),
       provider: new Set<string>(),
+      surface: new Set<string>(),
       trigger: new Set<string>(),
       fallback: new Set<string>(),
     };
@@ -298,6 +304,9 @@ export class VibeValidator {
         case "Provider":
           declared.provider.add(decl.name.segments.join("."));
           break;
+        case "Surface":
+          declared.surface.add(decl.name.segments.join("."));
+          break;
         // Trigger and Fallback have no name slot; they're listed in
         // CROSS_REF_KINDS for completeness (the spec lists them as kind
         // keywords) but never accept references back to themselves at v0.
@@ -311,13 +320,13 @@ export class VibeValidator {
         const ref = node as VibeReference;
         const head = ref.segments[0];
         if (head !== undefined && isCrossRefKind(head) && ref.segments.length >= 2) {
-          // Provider declared names are dotted (`cerebras.glm_4_7`), so a
-          // reference like `provider.cerebras.glm_4_7` must join all segments
-          // after the head for lookup. Plugin tool references stay flat
+          // Provider and surface declared names are dotted, so references like
+          // `provider.cerebras.glm_4_7` and `surface.codex.local` must join all
+          // segments after the head for lookup. Plugin tool references stay flat
           // (`plugin.<name>.<tool>`) — segments[2] is the runtime tool and is
           // ignored at v0; only segments[1] (the plugin name) is validated.
           const tail =
-            head === "provider"
+            head === "provider" || head === "surface"
               ? ref.segments.slice(1).join(".")
               : ref.segments[1];
           if (tail !== undefined && !declared[head].has(tail)) {
@@ -383,7 +392,7 @@ export class VibeValidator {
 }
 
 /**
- * The nine declaration-kind keywords that the grammar treats as the head of
+ * The declaration-kind keywords that the grammar treats as the head of
  * a cross-reference path. Trigger and Fallback have no bindable name at v0
  * so their declared-name sets are always empty, but we keep them in the
  * union so the spec's list stays authoritative — any reference like
@@ -398,6 +407,7 @@ const CROSS_REF_KINDS = [
   "harness",
   "plugin",
   "provider",
+  "surface",
   "trigger",
   "fallback",
 ] as const;

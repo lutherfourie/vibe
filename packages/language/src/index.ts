@@ -49,3 +49,18 @@ export { createCerebrasProvider } from "./providers/api/cerebras.js";
 export { createClaudeCliProvider } from "./providers/cli/claude.js";
 export { mergeCorrected } from "./resolver/corrections.js";
 export { runPipeline, type PipelineInput, type PipelineResult } from "./pipeline/run.js";
+
+export {
+  parseVibeSource,
+  type ParsedVibeSource,
+  type ParseVibeSourceOptions,
+} from "./self/parse.js";
+
+export {
+  extractSelfPlan,
+  extractSelfPlanFromSource,
+  type SelfAgent,
+  type SelfGate,
+  type SelfLane,
+  type VibeSelfPlan,
+} from "./self/self-plan.js";

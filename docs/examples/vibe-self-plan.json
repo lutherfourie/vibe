@@ -1,0 +1,235 @@
+{
+  "name": "vibe-self",
+  "source": "examples/vibe-self.vibe",
+  "repo": "C:/vibe",
+  "routes": {
+    "resolver": "cerebras.glm_4_7",
+    "researcher": "cerebras.glm_4_7",
+    "implementation": "openai.codex"
+  },
+  "fallback": "cerebras.glm_4_7",
+  "surfaces": [
+    {
+      "name": "codex.local",
+      "kind": "codex",
+      "mode": "local",
+      "metadata": {
+        "kind": "codex",
+        "mode": "local",
+        "guidance": "AGENTS.md",
+        "skills": "./.agents/skills"
+      }
+    },
+    {
+      "name": "codex.cli",
+      "kind": "codex",
+      "mode": "cli",
+      "metadata": {
+        "kind": "codex",
+        "mode": "cli",
+        "binary": "codex"
+      }
+    },
+    {
+      "name": "codex.cloud",
+      "kind": "codex",
+      "mode": "cloud",
+      "metadata": {
+        "kind": "codex",
+        "mode": "cloud",
+        "environment": "chatgpt.com/codex"
+      }
+    },
+    {
+      "name": "codex.github_pr",
+      "kind": "codex",
+      "mode": "github_pr",
+      "metadata": {
+        "kind": "codex",
+        "mode": "github_pr",
+        "trigger": "@codex"
+      }
+    },
+    {
+      "name": "vscode.agent_admin",
+      "kind": "ide",
+      "mode": "vscode",
+      "metadata": {
+        "kind": "ide",
+        "mode": "vscode",
+        "codex_extension": "openai.chatgpt",
+        "claude_extension": "anthropic.claude-code",
+        "tasks": ".vscode/tasks.json",
+        "guidance": [
+          "AGENTS.md",
+          "CLAUDE.md"
+        ]
+      }
+    }
+  ],
+  "agents": [
+    {
+      "name": "vibe_bootstrap",
+      "persona": "persona.vibe_bootstrap_voice",
+      "memory": "memory.vibe_project",
+      "harness": "harness.self_making",
+      "uses": [
+        "plugin.research_lane",
+        "plugin.language_lane",
+        "plugin.runtime_spike_lane",
+        "plugin.execution_surface_lane",
+        "plugin.bootstrap_tooling_lane",
+        "plugin.local_toolkit_lane",
+        "plugin.vscode_agent_lane",
+        "plugin.human_merge_gate"
+      ]
+    }
+  ],
+  "lanes": [
+    {
+      "name": "research_lane",
+      "impl": "./tools/research-lane",
+      "owns": "docs/superpowers/research/**",
+      "emits": "decision notes and framework maps",
+      "metadata": {
+        "impl": "./tools/research-lane",
+        "owns": "docs/superpowers/research/**",
+        "emits": "decision notes and framework maps"
+      }
+    },
+    {
+      "name": "language_lane",
+      "impl": "./tools/language-lane",
+      "owns": "packages/language/**",
+      "emits": "parser, dispatcher, resolver, and validation changes",
+      "metadata": {
+        "impl": "./tools/language-lane",
+        "owns": "packages/language/**",
+        "emits": "parser, dispatcher, resolver, and validation changes"
+      }
+    },
+    {
+      "name": "runtime_spike_lane",
+      "impl": "./tools/runtime-spike-lane",
+      "owns": "go/**",
+      "emits": "provisional local tooling",
+      "metadata": {
+        "impl": "./tools/runtime-spike-lane",
+        "owns": "go/**",
+        "emits": "provisional local tooling"
+      }
+    },
+    {
+      "name": "execution_surface_lane",
+      "impl": "./tools/execution-surface-lane",
+      "owns": "docs/** examples/**",
+      "emits": "explicit handling for phone, web, IDE, GitHub, local desktop, and cloud-agent control",
+      "metadata": {
+        "impl": "./tools/execution-surface-lane",
+        "owns": "docs/** examples/**",
+        "emits": "explicit handling for phone, web, IDE, GitHub, local desktop, and cloud-agent control"
+      }
+    },
+    {
+      "name": "bootstrap_tooling_lane",
+      "impl": "./tools/bootstrap-tooling-lane",
+      "owns": "docs/bootstrap-todos.md docs/local-toolkit.md",
+      "emits": "tooling and auth checklist for gh, Playwright browsers, jq, yq, fd, and plugins/connectors",
+      "metadata": {
+        "impl": "./tools/bootstrap-tooling-lane",
+        "owns": "docs/bootstrap-todos.md docs/local-toolkit.md",
+        "emits": "tooling and auth checklist for gh, Playwright browsers, jq, yq, fd, and plugins/connectors"
+      }
+    },
+    {
+      "name": "local_toolkit_lane",
+      "impl": "./tools/local-toolkit-lane",
+      "owns": "docs/local-toolkit.md go/** packages/**",
+      "emits": "small vibe CLI plan for doctor, lanes, handoff, verify, and memory",
+      "target": "surface.codex.local",
+      "reads": [
+        "README.md",
+        "docs/fresh-start.md",
+        "examples/vibe-self.vibe"
+      ],
+      "verify": [
+        "pnpm run self:plan",
+        "pnpm test",
+        "pnpm run build"
+      ],
+      "approval": "human.before_commit",
+      "metadata": {
+        "impl": "./tools/local-toolkit-lane",
+        "target": "surface.codex.local",
+        "reads": [
+          "README.md",
+          "docs/fresh-start.md",
+          "examples/vibe-self.vibe"
+        ],
+        "owns": "docs/local-toolkit.md go/** packages/**",
+        "verify": [
+          "pnpm run self:plan",
+          "pnpm test",
+          "pnpm run build"
+        ],
+        "approval": "human.before_commit",
+        "emits": "small vibe CLI plan for doctor, lanes, handoff, verify, and memory"
+      }
+    },
+    {
+      "name": "vscode_agent_lane",
+      "impl": "./tools/vscode-agent-lane",
+      "owns": "AGENTS.md CLAUDE.md .vscode/** packages/vscode-extension/** docs/vscode-agent-workflow.md",
+      "emits": "VS Code command palette and Codex/Claude extension administration loop",
+      "target": "surface.vscode.agent_admin",
+      "reads": [
+        "AGENTS.md",
+        "CLAUDE.md",
+        ".vscode/tasks.json",
+        "packages/vscode-extension/src/extension.ts"
+      ],
+      "verify": [
+        "pnpm --filter vibe-vscode test",
+        "pnpm --filter vibe-vscode build",
+        "pnpm run check"
+      ],
+      "approval": "human.before_commit",
+      "metadata": {
+        "impl": "./tools/vscode-agent-lane",
+        "target": "surface.vscode.agent_admin",
+        "reads": [
+          "AGENTS.md",
+          "CLAUDE.md",
+          ".vscode/tasks.json",
+          "packages/vscode-extension/src/extension.ts"
+        ],
+        "owns": "AGENTS.md CLAUDE.md .vscode/** packages/vscode-extension/** docs/vscode-agent-workflow.md",
+        "verify": [
+          "pnpm --filter vibe-vscode test",
+          "pnpm --filter vibe-vscode build",
+          "pnpm run check"
+        ],
+        "approval": "human.before_commit",
+        "emits": "VS Code command palette and Codex/Claude extension administration loop"
+      }
+    }
+  ],
+  "gates": [
+    {
+      "name": "human_merge_gate",
+      "impl": "./tools/human-merge-gate",
+      "owns": "review",
+      "emits": "approved next slice",
+      "metadata": {
+        "impl": "./tools/human-merge-gate",
+        "owns": "review",
+        "emits": "approved next slice"
+      }
+    }
+  ],
+  "notes": [
+    "This is a provisional self-plan extracted from current Vibe primitives.",
+    "Plugins ending in _lane are treated as lanes until lane syntax exists.",
+    "Plugins ending in _gate are treated as gates until gate syntax exists."
+  ]
+}
