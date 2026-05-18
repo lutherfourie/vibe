@@ -53,3 +53,25 @@ Then read `README.md`, `docs/local-toolkit.md`, and
 - VS Code extension changes: `pnpm --filter vibe-vscode test` and
   `pnpm --filter vibe-vscode build`.
 - Broad repo changes: `pnpm run check`.
+
+## Git Automation Contract
+
+For routine work in this repo, do NOT prompt before:
+
+- Pulling on a clean main or feature branch at the start of a session.
+- Committing changes the user has already approved.
+- Pushing the current feature branch (`git push -u origin HEAD`).
+- Creating a PR via `gh pr create` with a structured summary and test plan.
+- Enabling auto-merge with `gh pr merge <#> --auto --squash`.
+
+After every commit on a non-main branch, push the branch and open a PR if one
+does not already exist, then enable auto-merge with squash. Report the PR URL
+in the assistant response.
+
+Pause and confirm before destructive operations: `git push --force`, branch
+deletion (`git branch -D`, `git push origin --delete`), history rewrites
+(`git rebase -i`, `git reset --hard` past committed work), or anything that
+bypasses the PR flow on `main`.
+
+If CI checks exist on a PR, auto-merge will wait for them to pass; if none are
+required, the PR merges immediately, which is the intended behavior.
