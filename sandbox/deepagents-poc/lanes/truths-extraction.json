@@ -1,0 +1,15 @@
+{
+  "name": "truths-extraction",
+  "description": "Extract binding truths from the Pawfall GDD into a single reference document.",
+  "promptFile": "./truths-extraction.prompt.md",
+  "defaultUserMessage": "Extract the binding truths from /fixtures/pawfall/docs/GDD.md and write them to /outputs/pawfall-binding-truths.md.",
+  "reads": [
+    "/fixtures/pawfall/docs/GDD.md"
+  ],
+  "owns": [
+    "/outputs/**"
+  ],
+  "model": "cerebras",
+  "target": "codex.local",
+  "approval": "human.before_commit"
+}
