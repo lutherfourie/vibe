@@ -15,24 +15,22 @@ or in the integrated terminal.
 
 ## First Moves
 
-1. Run `git status --short --branch`.
-2. Read `README.md`, `docs/local-toolkit.md`, and
-   `plugins/vibe-workbench/shared/vibe-contract.md`.
-3. Run a report-only check:
+The repo-snapshot script runs automatically at SessionStart via
+`.claude/settings.json`. If you need to re-run it mid-session, use the
+`/vibe-workbench:vibe-orient` skill or the script directly:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File plugins\vibe-workbench\scripts\vibe_repo_snapshot.ps1
 ```
 
+Then read `README.md`, `docs/local-toolkit.md`, and
+`plugins/vibe-workbench/shared/vibe-contract.md` if not already loaded.
+
 ## Claude Code VS Code Flow
 
-- Use the Claude Code panel for normal work.
-- Use the integrated terminal for CLI-only features:
-
-```powershell
-claude --plugin-dir .\plugins\vibe-workbench
-```
-
+- Use the Claude Code panel for normal work. The `vibe-workbench` plugin is
+  auto-loaded from the local marketplace declared in
+  `.claude-plugin/marketplace.json` and enabled by `.claude/settings.json`.
 - If launched outside VS Code, run `/ide` inside Claude Code to connect the
   session back to the editor.
 - Prefer Plan mode for broad changes.
