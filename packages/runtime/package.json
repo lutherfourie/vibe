@@ -1,0 +1,38 @@
+{
+  "name": "@vibe/runtime",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Vibe lane runtime: translator + LangGraph chunk-mapper. Consumed by Cockpit's InProcessVibeService and the Vibe daemon.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@langchain/core": "latest",
+    "@langchain/openai": "latest",
+    "deepagents": "latest",
+    "execa": "^9.6.1",
+    "langchain": "latest",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
