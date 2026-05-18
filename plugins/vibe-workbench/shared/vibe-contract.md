@@ -4,7 +4,7 @@ Use this as the shared contract across Codex, Claude Code, MCP, IDE, GitHub, loc
 
 ## Source Of Truth
 
-- `C:\vibe` is the active Vibe repository.
+- The active Vibe repository (typically the project working directory; on Luther's machine, `C:\vibe`).
 - `C:\Hive\vibe` is reference material only unless the user explicitly asks to compare against it.
 - `examples/vibe-self.vibe` is the source for Vibe's current self-plan loop.
 - `docs/examples/vibe-self-plan.json` is generated output. Regenerate it with `pnpm run self:plan`; do not hand-author it.
@@ -23,7 +23,7 @@ Keep these concepts independent of any one assistant's plugin format:
 ## Adapter Boundary
 
 - Codex packaging belongs in `.codex-plugin/`, `.agents/plugins/marketplace.json`, and `codex-skills/`.
-- Claude Code packaging belongs in `.claude-plugin/`, `claude-skills/`, `claude-agents/`, and optional Claude hooks/MCP files.
+- Claude Code packaging belongs in `.claude-plugin/`, `skills/`, `agents/`, and optional `hooks/`/MCP files at the plugin root.
 - MCP servers, VS Code extension files, GitHub workflows, local CLIs, and cloud-agent configuration are adapter layers, not the Vibe source format.
 
 ## Operating Rules

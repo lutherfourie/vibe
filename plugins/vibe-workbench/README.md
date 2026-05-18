@@ -1,32 +1,33 @@
 # Vibe Workbench
 
-Assistant integrations for `C:\vibe`.
+Assistant integrations for the Vibe repository.
 
 This directory packages the same Vibe workflow contract for both Codex and Claude Code. The goal is practical copilot integration, not a generic placeholder plugin.
 
+For disciplined planning, debugging, review, and verification, the plugin relies on the **Superpowers** plugin's skills directly (`superpowers:writing-plans`, `superpowers:systematic-debugging`, `superpowers:requesting-code-review`, `superpowers:verification-before-completion`, etc.) rather than mirroring them.
+
 ## What It Provides
 
-- Codex plugin metadata in `.codex-plugin/plugin.json`.
-- Codex skills in `codex-skills/`:
+- Claude Code plugin manifest in `.claude-plugin/plugin.json`.
+- Claude Code skills in `skills/`, namespaced as `/vibe-workbench:<skill>` when loaded as a plugin:
   - `vibe-orient`
   - `vibe-self-plan`
   - `vibe-handoff`
-  - `vibe-superpowers`
-- Claude Code plugin metadata in `.claude-plugin/plugin.json`.
-- Claude Code skills in `claude-skills/`, namespaced as `/vibe-workbench:<skill>` when loaded as a plugin.
-- A read-only Claude Code subagent in `claude-agents/vibe-lane-reviewer.md`.
+- A read-only Claude Code subagent in `agents/vibe-lane-reviewer.md`.
+- A `SessionStart` hook in `hooks/hooks.json` that runs the repo snapshot.
+- Codex plugin manifest in `.codex-plugin/plugin.json` with mirrored skills in `codex-skills/`.
 - Shared rules in `shared/vibe-contract.md`.
 - Report-only helper scripts in `scripts/`.
 
 ## Useful Commands
 
-From `C:\vibe`:
+From the active Vibe repository:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File plugins\vibe-workbench\scripts\vibe_repo_snapshot.ps1
 powershell -ExecutionPolicy Bypass -File plugins\vibe-workbench\scripts\vibe_lane_inventory.ps1
 powershell -ExecutionPolicy Bypass -File plugins\vibe-workbench\scripts\vibe_self_plan_check.ps1
-powershell -ExecutionPolicy Bypass -File plugins\vibe-workbench\scripts\vibe_superpowers_check.ps1
+powershell -ExecutionPolicy Bypass -File plugins\vibe-workbench\scripts\vibe_skills_drift_check.ps1
 ```
 
 Regenerate the self-plan only when intended:
@@ -47,7 +48,6 @@ Then try:
 /vibe-workbench:vibe-orient
 /vibe-workbench:vibe-self-plan
 /vibe-workbench:vibe-handoff local toolkit lane
-/vibe-workbench:vibe-superpowers plan the next local toolkit slice
 ```
 
 The `vibe-lane-reviewer` agent should also appear in `/agents`.

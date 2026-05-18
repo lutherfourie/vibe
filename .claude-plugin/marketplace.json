@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
-  "name": "vibe",
-  "description": "Local marketplace for the Vibe Workbench plugin.",
+  "name": "vibecade",
+  "description": "Vibecade local marketplace — hosts the Vibe Workbench plugin and other Vibecade plugins.",
   "owner": {
     "name": "Vibecade",
     "email": "lutherfoure@gmail.com"
@@ -10,11 +10,15 @@
     {
       "name": "vibe-workbench",
       "source": "./plugins/vibe-workbench",
-      "description": "Claude Code integration for Vibe's self-plan, lane, handoff, and verification loop.",
+      "description": "Repo-aware Claude Code helpers for the Vibe project: orient on the repo, prepare lane handoffs, check the self-plan, and review lane work read-only.",
       "category": "development",
       "keywords": [
         "vibe",
         "vibecade",
+        "lane",
+        "handoff",
+        "orient",
+        "self-plan",
         "superpowers",
         "agentic-iac",
         "workflow"
