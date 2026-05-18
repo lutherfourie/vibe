@@ -1,0 +1,16 @@
+{
+  "name": "feedback-triage",
+  "description": "Map Pawfall feedback bullets to a docs-only implementation action plan, aligned with the GDD.",
+  "promptFile": "./feedback-triage.prompt.md",
+  "defaultUserMessage": "Process the 2026-05-15 Pawfall feedback. Read /fixtures/pawfall/docs/feedback/2026-05-15.md and /fixtures/pawfall/docs/GDD.md, then write the action plan to /outputs/2026-05-15-action-plan.md.",
+  "reads": [
+    "/fixtures/pawfall/docs/feedback/**",
+    "/fixtures/pawfall/docs/GDD.md"
+  ],
+  "owns": [
+    "/outputs/**"
+  ],
+  "model": "cerebras",
+  "target": "codex.web",
+  "approval": "human.before_commit"
+}

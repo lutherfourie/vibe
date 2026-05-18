@@ -1,0 +1,33 @@
+{
+  "name": "vibe-deepagents-poc",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Vibe Phase-1 proof of fit: run the Pawfall feedback-triage lane through LangChain deepagents with Cerebras GLM.",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "run": "tsx src/run.ts",
+    "run:feedback": "tsx src/run.ts",
+    "run:truths": "tsx src/run-truths.ts",
+    "run:cli-review": "tsx src/run-cli-delegation.ts",
+    "test:cli-tools": "tsx src/test-cli-tools.ts",
+    "lane": "tsx src/run-translated.ts"
+  },
+  "dependencies": {
+    "@langchain/core": "latest",
+    "@langchain/openai": "latest",
+    "deepagents": "latest",
+    "dotenv": "latest",
+    "execa": "^9.6.1",
+    "langchain": "latest",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
