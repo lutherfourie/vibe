@@ -26,5 +26,29 @@
       "Bash(git branch*)",
       "Bash(git remote -v)"
     ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/block-generated.mjs"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/regen-self-plan-reminder.mjs"
+          }
+        ]
+      }
+    ]
   }
 }
