@@ -1,7 +1,7 @@
 {
-  "name": "vibe-local",
+  "name": "vibecade-local",
   "interface": {
-    "displayName": "Vibe Local Plugins"
+    "displayName": "Vibecade Local Plugins"
   },
   "plugins": [
     {

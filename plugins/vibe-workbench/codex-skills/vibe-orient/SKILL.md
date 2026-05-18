@@ -1,11 +1,11 @@
 ---
 name: vibe-orient
-description: Use when Codex needs to orient on C:\vibe, inspect the active Vibe work loop, or summarize current repo/plugin surfaces before planning changes.
+description: Use when Codex needs to orient on the active Vibe repository, inspect the current Vibe work loop, or summarize repo/plugin surfaces before planning changes.
 ---
 
 # Vibe Orient
 
-Use this skill inside `C:\vibe` before broad Vibe planning, plugin work, lane work, or handoff work.
+Use this skill from the active Vibe repository before broad Vibe planning, plugin work, lane work, or handoff work.
 
 ## Start Here
 

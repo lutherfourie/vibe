@@ -29,14 +29,21 @@ Then read `README.md`, `docs/local-toolkit.md`, and
 ## Claude Code VS Code Flow
 
 - Use the Claude Code panel for normal work. The `vibe-workbench` plugin is
-  auto-loaded from the local marketplace declared in
-  `.claude-plugin/marketplace.json` and enabled by `.claude/settings.json`.
+  auto-loaded from the local `vibecade` marketplace declared in
+  `.claude-plugin/marketplace.json` and enabled by `.claude/settings.json`
+  (as `vibe-workbench@vibecade`). The plugin ships its own `SessionStart`
+  hook, so the repo snapshot runs automatically.
 - If launched outside VS Code, run `/ide` inside Claude Code to connect the
   session back to the editor.
 - Prefer Plan mode for broad changes.
 - Use the Vibe Workbench plugin skills when available:
   `/vibe-workbench:vibe-orient`, `/vibe-workbench:vibe-self-plan`,
-  `/vibe-workbench:vibe-handoff`, and `/vibe-workbench:vibe-superpowers`.
+  `/vibe-workbench:vibe-handoff`.
+- For planning, debugging, review, or verification, invoke Superpowers skills
+  directly (`superpowers:writing-plans`,
+  `superpowers:systematic-debugging`, `superpowers:requesting-code-review`,
+  `superpowers:verification-before-completion`). Save Vibe artifacts under
+  `docs/superpowers/{plans,specs,research}/`.
 - Keep implementation scoped to the requested lane or adapter.
 
 ## Verification
