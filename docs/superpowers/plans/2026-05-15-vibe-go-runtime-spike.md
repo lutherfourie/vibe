@@ -88,6 +88,9 @@ go/
 
 ## Verification
 
+> Superseded 2026-05-27: Go 1.26 is installed and `go test ./...` passes. See
+> docs/superpowers/plans/2026-05-27-vibe-go-runtime-harden.md and the CI workflow.
+
 Go is not currently installed in this environment, so compile verification is
 blocked until a Go toolchain is available. Once installed, run:
 
