@@ -98,17 +98,17 @@ func gopher(name string, role Role, inbox <-chan Message, peers map[string]chan 
 			}
 
 			if msg.ReplyTo != nil {
-			reply := Message{
-				ID:      msg.ID,
-				From:    name,
-				To:      msg.From,
-				Topic:   msg.Topic,
-				Payload: fmt.Sprintf("handled by %s (%s)", name, role),
-				Trace:   msg.Trace,
-				Hops:    4,
+				reply := Message{
+					ID:      msg.ID,
+					From:    name,
+					To:      msg.From,
+					Topic:   msg.Topic,
+					Payload: fmt.Sprintf("handled by %s (%s)", name, role),
+					Trace:   msg.Trace,
+					Hops:    4,
+				}
+				sendMsg(msg.ReplyTo, reply, "reply")
 			}
-			sendMsg(msg.ReplyTo, reply, "reply")
-		}
 		case <-heartbeat.C:
 			targets := make([]string, 0, len(peers))
 			for peerName := range peers {
