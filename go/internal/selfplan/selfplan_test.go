@@ -148,6 +148,36 @@ func TestWriteLaneHandoffsExportsMarkdownFiles(t *testing.T) {
 	}
 }
 
+func TestLoadRejectsInvalidSelfPlan(t *testing.T) {
+	// Valid JSON, but missing the schema-required top-level fields. Parse alone
+	// would accept this (it only requires name); Load must reject it via the
+	// canonical schema contract.
+	path := filepath.Join(t.TempDir(), "bad-self-plan.json")
+	if err := os.WriteFile(path, []byte(`{"name":"vibe-self","lanes":[]}`), 0o644); err != nil {
+		t.Fatalf("write bad self-plan: %v", err)
+	}
+	_, err := Load(path)
+	if err == nil {
+		t.Fatal("expected Load to reject a self-plan that violates the schema")
+	}
+	if !strings.Contains(err.Error(), "vibe-self-plan.schema.json") {
+		t.Fatalf("error should name the self-plan schema: %v", err)
+	}
+}
+
+func TestLoadAcceptsCommittedSelfPlan(t *testing.T) {
+	// The committed self-plan is the canonical fixture and must satisfy the
+	// schema Load now enforces.
+	path := filepath.Join("..", "..", "..", "docs", "examples", "vibe-self-plan.json")
+	plan, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load rejected the committed self-plan: %v", err)
+	}
+	if plan.Name == "" {
+		t.Fatalf("expected a named plan, got %#v", plan)
+	}
+}
+
 func TestLaneHandoffUsesFallbacksForSparseLanes(t *testing.T) {
 	handoff := LaneHandoff(Plan{Name: "vibe-self"}, Lane{Name: "research_lane"})
 	for _, want := range []string{
