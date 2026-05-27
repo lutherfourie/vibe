@@ -5,6 +5,7 @@
 package contract
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -60,8 +61,17 @@ func loadSchema(schemaFile string) (*jsonschema.Schema, error) {
 	if err != nil {
 		return nil, err
 	}
-	path := filepath.Join(dir, schemaFile)
-	sch, err := jsonschema.Compile(path)
+	data, err := os.ReadFile(filepath.Join(dir, schemaFile))
+	if err != nil {
+		return nil, fmt.Errorf("read schema %s: %w", schemaFile, err)
+	}
+	// Register the schema under its bare filename so compile/validation errors
+	// reference "vibe-self-plan.schema.json" rather than an absolute path.
+	c := jsonschema.NewCompiler()
+	if err := c.AddResource(schemaFile, bytes.NewReader(data)); err != nil {
+		return nil, fmt.Errorf("add schema %s: %w", schemaFile, err)
+	}
+	sch, err := c.Compile(schemaFile)
 	if err != nil {
 		return nil, fmt.Errorf("compile schema %s: %w", schemaFile, err)
 	}
