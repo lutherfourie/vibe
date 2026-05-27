@@ -23,7 +23,10 @@ func repoFixture(t *testing.T, rel string) string {
 	return abs
 }
 
-// captureStdout redirects os.Stdout for the duration of fn and returns what was written.
+// captureStdout redirects os.Stdout for the duration of fn and returns what was
+// written. The read end is drained concurrently so fn may write more than the OS
+// pipe buffer without deadlocking. Because it mutates the process-global
+// os.Stdout, tests that use this helper must NOT call t.Parallel().
 func captureStdout(t *testing.T, fn func() error) (string, error) {
 	t.Helper()
 	old := os.Stdout
@@ -32,19 +35,33 @@ func captureStdout(t *testing.T, fn func() error) (string, error) {
 		t.Fatalf("pipe: %v", err)
 	}
 	os.Stdout = w
+
+	done := make(chan string, 1)
+	go func() {
+		out, _ := io.ReadAll(r)
+		done <- string(out)
+	}()
+
 	runErr := fn()
 	_ = w.Close()
 	os.Stdout = old
-	out, _ := io.ReadAll(r)
-	return string(out), runErr
+	return <-done, runErr
 }
 
 func TestRunHandoffAcceptsSelfPlan(t *testing.T) {
 	outDir := filepath.Join(t.TempDir(), "handoffs")
 	planPath := repoFixture(t, "docs/examples/vibe-self-plan.json")
 
-	if err := runHandoff(context.Background(), []string{"--self-plan", planPath, "--out", outDir}); err != nil {
+	out, err := captureStdout(t, func() error {
+		return runHandoff(context.Background(), []string{"--self-plan", planPath, "--out", outDir})
+	})
+	if err != nil {
 		t.Fatalf("runHandoff returned error: %v", err)
+	}
+	for _, want := range []string{"self-plan", "local_toolkit_lane"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("handoff manifest missing %q:\n%s", want, out)
+		}
 	}
 
 	handoff, err := os.ReadFile(filepath.Join(outDir, "local_toolkit_lane.md"))
@@ -89,12 +106,33 @@ func TestRunGraphWritesMermaid(t *testing.T) {
 func TestRunHandoffAcceptsLanePlan(t *testing.T) {
 	outDir := filepath.Join(t.TempDir(), "handoffs")
 	planPath := repoFixture(t, "docs/examples/pawfall-feedback-lanes.json")
-	if err := runHandoff(context.Background(), []string{"--plan", planPath, "--out", outDir}); err != nil {
+	out, err := captureStdout(t, func() error {
+		return runHandoff(context.Background(), []string{"--plan", planPath, "--out", outDir})
+	})
+	if err != nil {
 		t.Fatalf("runHandoff --plan returned error: %v", err)
 	}
-	entries, err := os.ReadDir(outDir)
-	if err != nil || len(entries) == 0 {
-		t.Fatalf("expected handoff files in %s (err=%v)", outDir, err)
+
+	// The pawfall fixture declares two lanes; their names sanitize directly to
+	// these filenames (the sanitizer maps non-alphanumerics to "-"). Each mode
+	// renders a different handoff template, so assert each lane's real header.
+	cases := []struct {
+		lane, header string
+	}{
+		{"feedback-triage", "# Codex Web Handoff: feedback-triage"},
+		{"unity-runtime-local", "# Local Lane Checklist: unity-runtime-local"},
+	}
+	for _, tc := range cases {
+		if !strings.Contains(out, tc.lane) {
+			t.Fatalf("handoff manifest missing lane %q:\n%s", tc.lane, out)
+		}
+		body, err := os.ReadFile(filepath.Join(outDir, tc.lane+".md"))
+		if err != nil {
+			t.Fatalf("read %s.md: %v", tc.lane, err)
+		}
+		if !strings.Contains(string(body), tc.header) {
+			t.Fatalf("unexpected handoff for %s:\n%s", tc.lane, string(body))
+		}
 	}
 }
 
