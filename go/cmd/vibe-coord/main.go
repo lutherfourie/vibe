@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -49,9 +48,9 @@ func runEmit(ctx context.Context, args []string) error {
 		return fmt.Errorf("read plan: %w", err)
 	}
 
-	var plan lanes.Plan
-	if err := json.Unmarshal(raw, &plan); err != nil {
-		return fmt.Errorf("parse plan JSON: %w", err)
+	plan, err := lanes.ParsePlan(raw)
+	if err != nil {
+		return err
 	}
 
 	result, err := lanes.EmitHandoffs(ctx, plan, *outDir)

@@ -2,6 +2,7 @@ package lanes
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,6 +10,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/lutherfourie/vibe/go/internal/contract"
 	"github.com/lutherfourie/vibe/go/internal/prompts"
 )
 
@@ -16,6 +18,22 @@ const (
 	ModeCodexWeb = "codex.web"
 	ModeLocal    = "local"
 )
+
+// ParsePlan validates raw JSON against the canonical lane-plan schema and then
+// decodes it into a Plan. It fails fast on contract violations (missing
+// required fields, an out-of-enum mode, unknown properties) before any handoff
+// work, so callers never operate on a malformed plan. The cross-lane
+// write-scope rule remains in ValidatePlan, which EmitHandoffs applies.
+func ParsePlan(raw []byte) (Plan, error) {
+	if err := contract.Validate(contract.LanePlanSchema, raw); err != nil {
+		return Plan{}, fmt.Errorf("invalid lane-plan: %w", err)
+	}
+	var plan Plan
+	if err := json.Unmarshal(raw, &plan); err != nil {
+		return Plan{}, fmt.Errorf("parse lane-plan JSON: %w", err)
+	}
+	return plan, nil
+}
 
 // EmitHandoffs validates a lane plan and writes one markdown handoff per lane.
 func EmitHandoffs(ctx context.Context, plan Plan, outDir string) (EmitResult, error) {
