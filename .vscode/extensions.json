@@ -1,6 +1,7 @@
 {
   "recommendations": [
     "openai.chatgpt",
-    "anthropic.claude-code"
+    "anthropic.claude-code",
+    "lutherfourie.vibe-vscode"
   ]
 }
