@@ -16,8 +16,9 @@ Current scope:
 - Emit Codex cloud handoff prompts.
 - Emit local lane checklists.
 
-Go is not installed in the current development environment, so this spike is
-checked in as source only until a Go toolchain is available.
+The runtime builds and tests under Go 1.22+ (`go/go.mod`). Run `go test ./...`
+from the `go/` directory. CI (`.github/workflows/ci.yml`) gates build, vet,
+gofmt, and tests on every push and pull request.
 
 ## Commands
 

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vibecade.dev/schemas/vibe-lane-plan.schema.json",
+  "title": "Vibe Lane-Plan",
+  "description": "Contract for the lane-plan IR consumed by the Go runtime (internal/lanes) via `vibe handoff --plan` and vibe-coord.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name", "repo", "lanes"],
+  "properties": {
+    "name": { "type": "string", "minLength": 1 },
+    "repo": { "type": "string", "minLength": 1 },
+    "lanes": { "type": "array", "items": { "$ref": "#/$defs/lane" } }
+  },
+  "$defs": {
+    "lane": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "mode"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "mode": { "type": "string", "enum": ["codex.web", "local"] },
+        "branch": { "type": "string" },
+        "reads": { "type": "array", "items": { "type": "string" } },
+        "writes": { "type": "array", "items": { "type": "string" } },
+        "prompt": { "type": "string" },
+        "requires": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

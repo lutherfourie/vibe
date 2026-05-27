@@ -51,6 +51,7 @@
     "@types/mdast": "^4.0.4",
     "@types/node": "^22.10.1",
     "@vitest/coverage-v8": "^2.1.9",
+    "ajv": "^8.17.1",
     "langium-cli": "^4.2.1",
     "rimraf": "^6.0.1",
     "typescript": "^5.6.3",

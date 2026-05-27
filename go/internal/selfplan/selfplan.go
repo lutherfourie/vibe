@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/lutherfourie/vibe/go/internal/contract"
 )
 
 type Plan struct {
@@ -46,6 +48,12 @@ func Load(path string) (Plan, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return Plan{}, fmt.Errorf("read self-plan: %w", err)
+	}
+	// Fail fast on contract violations against the canonical self-plan schema
+	// before the lenient Parse below. Parse stays permissive so in-memory
+	// fixtures in unit tests keep working; Load enforces the full IR contract.
+	if err := contract.Validate(contract.SelfPlanSchema, raw); err != nil {
+		return Plan{}, fmt.Errorf("validate self-plan %s: %w", path, err)
 	}
 	return Parse(raw)
 }

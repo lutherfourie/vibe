@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vibecade.dev/schemas/vibe-self-plan.schema.json",
+  "title": "Vibe Self-Plan",
+  "description": "Contract for the self-plan IR emitted by @vibe/language (extractSelfPlan) and consumed by the Go runtime (internal/selfplan).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name", "source", "providers", "routes", "surfaces", "agents", "lanes", "gates", "notes"],
+  "properties": {
+    "name": { "type": "string", "minLength": 1 },
+    "source": { "type": "string" },
+    "repo": { "type": "string" },
+    "fallback": { "type": "string" },
+    "providers": { "type": "array", "items": { "$ref": "#/$defs/provider" } },
+    "routes": { "type": "object", "additionalProperties": { "type": "string" } },
+    "surfaces": { "type": "array", "items": { "$ref": "#/$defs/surface" } },
+    "agents": { "type": "array", "items": { "$ref": "#/$defs/agent" } },
+    "lanes": { "type": "array", "items": { "$ref": "#/$defs/lane" } },
+    "gates": { "type": "array", "items": { "$ref": "#/$defs/gate" } },
+    "notes": { "type": "array", "items": { "type": "string" } }
+  },
+  "$defs": {
+    "metadata": { "type": "object" },
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "metadata"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "mode": { "type": "string" },
+        "model": { "type": "string" },
+        "metadata": { "$ref": "#/$defs/metadata" }
+      }
+    },
+    "surface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "metadata"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "kind": { "type": "string" },
+        "mode": { "type": "string" },
+        "metadata": { "$ref": "#/$defs/metadata" }
+      }
+    },
+    "agent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "uses"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "persona": { "type": "string" },
+        "memory": { "type": "string" },
+        "harness": { "type": "string" },
+        "uses": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "lane": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "metadata"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "impl": { "type": "string" },
+        "owns": { "type": "string" },
+        "emits": { "type": "string" },
+        "target": { "type": "string" },
+        "reads": { "type": "array", "items": { "type": "string" } },
+        "verify": { "type": "array", "items": { "type": "string" } },
+        "approval": { "type": "string" },
+        "metadata": { "$ref": "#/$defs/metadata" }
+      }
+    },
+    "gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "metadata"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "impl": { "type": "string" },
+        "owns": { "type": "string" },
+        "emits": { "type": "string" },
+        "metadata": { "$ref": "#/$defs/metadata" }
+      }
+    }
+  }
+}

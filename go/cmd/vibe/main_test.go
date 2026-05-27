@@ -2,43 +2,156 @@ package main
 
 import (
 	"context"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
 
-func TestRunHandoffAcceptsSelfPlan(t *testing.T) {
-	planPath := filepath.Join(t.TempDir(), "self-plan.json")
-	outDir := filepath.Join(t.TempDir(), "handoffs")
-	raw := []byte(`{
-	  "name": "vibe-self",
-	  "source": "examples/vibe-self.vibe",
-	  "repo": "C:/vibe",
-	  "lanes": [
-	    {
-	      "name": "local_toolkit_lane",
-	      "target": "surface.codex.local",
-	      "owns": "docs/local-toolkit.md go/** packages/**",
-	      "verify": ["pnpm run self:plan"],
-	      "approval": "human.before_commit"
-	    }
-	  ]
-	}`)
-	if err := os.WriteFile(planPath, raw, 0o644); err != nil {
-		t.Fatalf("write self-plan fixture: %v", err)
+// repoFixture resolves a path relative to the repo root so tests can use the
+// committed (schema-valid) example plans.
+func repoFixture(t *testing.T, rel string) string {
+	t.Helper()
+	abs, err := filepath.Abs(filepath.Join("..", "..", "..", rel))
+	if err != nil {
+		t.Fatalf("resolve fixture %s: %v", rel, err)
 	}
+	if _, err := os.Stat(abs); err != nil {
+		t.Fatalf("fixture not found %s: %v", abs, err)
+	}
+	return abs
+}
 
-	if err := runHandoff(context.Background(), []string{"--self-plan", planPath, "--out", outDir}); err != nil {
+// captureStdout redirects os.Stdout for the duration of fn and returns what was
+// written. The read end is drained concurrently so fn may write more than the OS
+// pipe buffer without deadlocking. Because it mutates the process-global
+// os.Stdout, tests that use this helper must NOT call t.Parallel().
+func captureStdout(t *testing.T, fn func() error) (string, error) {
+	t.Helper()
+	old := os.Stdout
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("pipe: %v", err)
+	}
+	os.Stdout = w
+
+	done := make(chan string, 1)
+	go func() {
+		out, _ := io.ReadAll(r)
+		done <- string(out)
+	}()
+
+	runErr := fn()
+	_ = w.Close()
+	os.Stdout = old
+	return <-done, runErr
+}
+
+func TestRunHandoffAcceptsSelfPlan(t *testing.T) {
+	outDir := filepath.Join(t.TempDir(), "handoffs")
+	planPath := repoFixture(t, "docs/examples/vibe-self-plan.json")
+
+	out, err := captureStdout(t, func() error {
+		return runHandoff(context.Background(), []string{"--self-plan", planPath, "--out", outDir})
+	})
+	if err != nil {
 		t.Fatalf("runHandoff returned error: %v", err)
 	}
+	for _, want := range []string{"self-plan", "local_toolkit_lane"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("handoff manifest missing %q:\n%s", want, out)
+		}
+	}
 
-	handoffPath := filepath.Join(outDir, "local_toolkit_lane.md")
-	handoff, err := os.ReadFile(handoffPath)
+	handoff, err := os.ReadFile(filepath.Join(outDir, "local_toolkit_lane.md"))
 	if err != nil {
 		t.Fatalf("read exported handoff: %v", err)
 	}
 	if !strings.Contains(string(handoff), "# Vibe Lane Handoff: local_toolkit_lane") {
 		t.Fatalf("unexpected exported handoff:\n%s", string(handoff))
+	}
+}
+
+func TestRunLanesPrintsLaneTable(t *testing.T) {
+	planPath := repoFixture(t, "docs/examples/vibe-self-plan.json")
+	out, err := captureStdout(t, func() error {
+		return runLanes([]string{"--plan", planPath})
+	})
+	if err != nil {
+		t.Fatalf("runLanes returned error: %v", err)
+	}
+	for _, want := range []string{"vibe-self", "LANE", "local_toolkit_lane"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("lanes output missing %q:\n%s", want, out)
+		}
+	}
+}
+
+func TestRunGraphWritesMermaid(t *testing.T) {
+	planPath := repoFixture(t, "docs/examples/vibe-self-plan.json")
+	outPath := filepath.Join(t.TempDir(), "lanes.mmd")
+	if err := runGraph([]string{"--plan", planPath, "--out", outPath}); err != nil {
+		t.Fatalf("runGraph returned error: %v", err)
+	}
+	graph, err := os.ReadFile(outPath)
+	if err != nil {
+		t.Fatalf("read mermaid: %v", err)
+	}
+	if !strings.Contains(string(graph), "flowchart LR") {
+		t.Fatalf("unexpected mermaid output:\n%s", string(graph))
+	}
+}
+
+func TestRunHandoffAcceptsLanePlan(t *testing.T) {
+	outDir := filepath.Join(t.TempDir(), "handoffs")
+	planPath := repoFixture(t, "docs/examples/pawfall-feedback-lanes.json")
+	out, err := captureStdout(t, func() error {
+		return runHandoff(context.Background(), []string{"--plan", planPath, "--out", outDir})
+	})
+	if err != nil {
+		t.Fatalf("runHandoff --plan returned error: %v", err)
+	}
+
+	// The pawfall fixture declares two lanes; their names sanitize directly to
+	// these filenames (the sanitizer maps non-alphanumerics to "-"). Each mode
+	// renders a different handoff template, so assert each lane's real header.
+	cases := []struct {
+		lane, header string
+	}{
+		{"feedback-triage", "# Codex Web Handoff: feedback-triage"},
+		{"unity-runtime-local", "# Local Lane Checklist: unity-runtime-local"},
+	}
+	for _, tc := range cases {
+		if !strings.Contains(out, tc.lane) {
+			t.Fatalf("handoff manifest missing lane %q:\n%s", tc.lane, out)
+		}
+		body, err := os.ReadFile(filepath.Join(outDir, tc.lane+".md"))
+		if err != nil {
+			t.Fatalf("read %s.md: %v", tc.lane, err)
+		}
+		if !strings.Contains(string(body), tc.header) {
+			t.Fatalf("unexpected handoff for %s:\n%s", tc.lane, string(body))
+		}
+	}
+}
+
+func TestRunMakePlanWritesJSON(t *testing.T) {
+	outPath := filepath.Join(t.TempDir(), "self-plan.json")
+	out, err := captureStdout(t, func() error {
+		return runMakePlan(context.Background(), []string{"--repo", ".", "--out", outPath})
+	})
+	if err != nil {
+		t.Fatalf("runMakePlan returned error: %v", err)
+	}
+	if !strings.Contains(out, outPath) {
+		t.Fatalf("make-plan did not print output path: %q", out)
+	}
+	raw, err := os.ReadFile(outPath)
+	if err != nil {
+		t.Fatalf("read generated plan: %v", err)
+	}
+	if !strings.Contains(string(raw), "\"lanes\"") {
+		t.Fatalf("generated plan missing lanes:\n%s", string(raw))
 	}
 }
