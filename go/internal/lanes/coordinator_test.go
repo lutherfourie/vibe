@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/lutherfourie/vibe/go/internal/contract"
 )
 
 func TestValidatePlanRejectsOverlappingWriteScopes(t *testing.T) {
@@ -60,10 +62,19 @@ func TestValidatePlanAllowsDisjointWriteScopes(t *testing.T) {
 func TestParsePlanRejectsBadMode(t *testing.T) {
 	// Structurally complete lane-plan whose only defect is an out-of-enum mode,
 	// so the failure pins the mode field rather than some other violation.
+	// (ParsePlan intentionally omits a post-decode name-guard like
+	// selfplan.Parse has — lane-plan semantic checks live in
+	// EmitHandoffs -> ValidatePlan.)
 	raw := []byte(`{"name":"p","repo":"r","lanes":[{"name":"l","mode":"codex.desktop"}]}`)
 	_, err := ParsePlan(raw)
 	if err == nil {
 		t.Fatal("expected ParsePlan to reject a lane with an out-of-enum mode")
+	}
+	// Pin the stable, self-owned schema token (from contract.Validate's wrapper)
+	// so the test stays meaningful even if jsonschema changes its pointer
+	// rendering; keep the "mode" check as an intent signal.
+	if !strings.Contains(err.Error(), contract.LanePlanSchema) {
+		t.Fatalf("error should name the schema %q: %v", contract.LanePlanSchema, err)
 	}
 	if !strings.Contains(err.Error(), "mode") {
 		t.Fatalf("error should cite the offending mode field: %v", err)
