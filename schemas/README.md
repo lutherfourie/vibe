@@ -9,7 +9,9 @@ The self-plan IR.
 
 - **Producer:** `@vibe/language` — `extractSelfPlan` (`packages/language/src/self/self-plan.ts`).
 - **Emitted to:** `docs/examples/vibe-self-plan.json` via `pnpm run self:plan`.
-- **Consumer:** Go `internal/selfplan` (`vibe lanes | graph | serve | continue`).
+- **Consumer:** Go `internal/selfplan` (`vibe lanes | graph | serve | continue | handoff --self-plan`).
+  `vibe continue` treats a schema-invalid self-plan as non-fatal — it skips the plan
+  summary but still prints the resume report, so "what next" works on a dirty repo.
 - **Enforced by:** `packages/language` Vitest conformance test (producer side) and
   `internal/selfplan` Go test + runtime `Load` validation (consumer side).
 
