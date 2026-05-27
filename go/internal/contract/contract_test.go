@@ -25,6 +25,11 @@ func TestValidateRejectsSelfPlanMissingName(t *testing.T) {
 	if !strings.Contains(err.Error(), SelfPlanSchema) {
 		t.Fatalf("error should name the schema %q: %v", SelfPlanSchema, err)
 	}
+	// Pin the violated field so this test keeps guarding the missing-name case
+	// even if a later schema change trips a different required field.
+	if !strings.Contains(err.Error(), "name") {
+		t.Fatalf("error should cite the missing field %q: %v", "name", err)
+	}
 }
 
 func TestValidateRejectsLanePlanBadMode(t *testing.T) {
@@ -42,6 +47,11 @@ func TestValidateRejectsLanePlanBadMode(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), LanePlanSchema) {
 		t.Fatalf("error should name the schema %q: %v", LanePlanSchema, err)
+	}
+	// Pin the violated field so this test keeps guarding the mode-enum case
+	// rather than passing on any unrelated future violation.
+	if !strings.Contains(err.Error(), "mode") {
+		t.Fatalf("error should cite the offending field %q: %v", "mode", err)
 	}
 }
 
