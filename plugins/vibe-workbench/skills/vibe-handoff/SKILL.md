@@ -1,6 +1,6 @@
 ---
 name: vibe-handoff
-description: Prepare a Vibe lane handoff or continuation prompt with source files, write scope, verification, stop conditions, and target assistant surface.
+description: Use when handing off a Vibe lane to another agent, surface (Codex/Claude/MCP/IDE/CLI), or fresh session, or when continuing partially-done lane work without losing scope.
 allowed-tools: Bash(powershell *), Bash(git *)
 ---
 
@@ -8,7 +8,7 @@ allowed-tools: Bash(powershell *), Bash(git *)
 
 Lane inventory:
 
-!`powershell -ExecutionPolicy Bypass -File "${CLAUDE_SKILL_DIR}/../../scripts/vibe_lane_inventory.ps1"`
+!`powershell -ExecutionPolicy Bypass -File "${CLAUDE_PLUGIN_ROOT}/scripts/vibe_lane_inventory.ps1"`
 
 ## Instructions
 

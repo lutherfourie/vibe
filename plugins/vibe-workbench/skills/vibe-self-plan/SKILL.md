@@ -1,6 +1,6 @@
 ---
 name: vibe-self-plan
-description: Check or regenerate Vibe's self-plan loop from examples/vibe-self.vibe to docs/examples/vibe-self-plan.json.
+description: Use when asked about Vibe's self-plan state, when docs/examples/vibe-self-plan.json may be stale relative to examples/vibe-self.vibe, or when explicitly told to regenerate the self-plan.
 allowed-tools: Bash(powershell *), Bash(pnpm *), Bash(git *)
 ---
 
@@ -10,7 +10,7 @@ Use this for the Vibe dogfood loop. `examples/vibe-self.vibe` is source; `docs/e
 
 Current self-plan state:
 
-!`powershell -ExecutionPolicy Bypass -File "${CLAUDE_SKILL_DIR}/../../scripts/vibe_self_plan_check.ps1"`
+!`powershell -ExecutionPolicy Bypass -File "${CLAUDE_PLUGIN_ROOT}/scripts/vibe_self_plan_check.ps1"`
 
 ## Instructions
 
@@ -18,7 +18,7 @@ Current self-plan state:
 - If the user asks to update or regenerate the self-plan, run:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File "${CLAUDE_SKILL_DIR}/../../scripts/vibe_self_plan_check.ps1" -Regenerate
+powershell -ExecutionPolicy Bypass -File "${CLAUDE_PLUGIN_ROOT}/scripts/vibe_self_plan_check.ps1" -Regenerate
 ```
 
 - After regenerating, inspect the diff before reporting.

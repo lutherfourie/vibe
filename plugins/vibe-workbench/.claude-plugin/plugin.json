@@ -1,8 +1,8 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "vibe-workbench",
-  "version": "0.1.0",
-  "description": "Claude Code integration for Vibe's self-plan, lane, handoff, and verification loop.",
+  "version": "0.2.0",
+  "description": "Repo-aware Claude Code helpers for the Vibe project: orient on the repo, prepare lane handoffs, check the self-plan, and review lane work read-only.",
   "author": {
     "name": "Vibecade",
     "url": "https://github.com/lutherfourie/vibe"
@@ -13,13 +13,12 @@
   "keywords": [
     "vibe",
     "vibecade",
-    "claude-code",
-    "codex",
-    "mcp",
+    "lane",
+    "handoff",
+    "orient",
+    "self-plan",
     "superpowers",
     "agentic-iac",
     "workflow"
-  ],
-  "skills": "./claude-skills/",
-  "agents": "./claude-agents/"
+  ]
 }

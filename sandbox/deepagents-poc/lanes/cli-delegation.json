@@ -1,0 +1,16 @@
+{
+  "name": "cli-delegation",
+  "description": "Review the Pawfall action plan by delegating to Codex CLI (priorities) and Claude CLI (risks), then synthesize.",
+  "promptFile": "./cli-delegation.prompt.md",
+  "defaultUserMessage": "Review the action plan at /outputs/2026-05-15-action-plan.md by delegating to Codex CLI and Claude CLI as described in your system prompt. Produce the combined review at /outputs/action-plan-review.md.",
+  "reads": [
+    "/outputs/2026-05-15-action-plan.md"
+  ],
+  "owns": [
+    "/outputs/action-plan-review.md"
+  ],
+  "tools": ["codex_cli", "claude_cli"],
+  "model": "cerebras",
+  "target": "vibe.cockpit",
+  "approval": "human.before_commit"
+}
