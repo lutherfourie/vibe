@@ -11,6 +11,9 @@ coverage/
 packages/language/src/generated/
 packages/vscode-extension/syntaxes/vibe.tmLanguage.json
 
+# Go build cache (codex sandbox sometimes relocates GOCACHE into the repo)
+go/.go-build-cache/
+
 # Logs
 npm-debug.log*
 yarn-debug.log*
