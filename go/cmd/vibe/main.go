@@ -18,6 +18,7 @@ import (
 	"github.com/lutherfourie/vibe/go/internal/doctor"
 	"github.com/lutherfourie/vibe/go/internal/lanes"
 	"github.com/lutherfourie/vibe/go/internal/selfplan"
+	"github.com/lutherfourie/vibe/go/internal/serve"
 )
 
 const (
@@ -71,7 +72,7 @@ func usage(out *os.File) {
 	fmt.Fprintln(out, "  doctor      Check local tool prerequisites")
 	fmt.Fprintln(out, "  lanes       Print self-plan lanes")
 	fmt.Fprintln(out, "  graph       Generate a Mermaid lane graph")
-	fmt.Fprintln(out, "  serve       Host the local Vibe admin dashboard")
+	fmt.Fprintln(out, "  serve       Host the local Vibe admin dashboard and turn API")
 	fmt.Fprintln(out, "  verify      Run the repo verification command")
 	fmt.Fprintln(out, "  make-plan   Emit the bootstrap lane plan JSON")
 	fmt.Fprintln(out, "  handoff     Emit markdown handoffs from a lane-plan or self-plan JSON")
@@ -190,7 +191,8 @@ func runServe(args []string) error {
 	flags := flag.NewFlagSet("serve", flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)
 	planPath := flags.String("plan", defaultSelfPlan, "path to Vibe self-plan JSON")
-	addr := flags.String("addr", "127.0.0.1:8787", "local address to bind")
+	addr := flags.String("addr", serve.DefaultAddr, "local address to bind")
+	provider := flags.String("provider", serve.DefaultProvider, "agent provider for /v1/turn (fake or claude)")
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
@@ -206,7 +208,13 @@ func runServe(args []string) error {
 	}
 	rawPlan = append(rawPlan, '\n')
 
+	daemon, err := serve.NewDaemon(serve.Options{DefaultProvider: *provider})
+	if err != nil {
+		return err
+	}
+
 	mux := http.NewServeMux()
+	daemon.Register(mux)
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)
@@ -240,7 +248,7 @@ func runServe(args []string) error {
 		w.WriteHeader(http.StatusNoContent)
 	})
 
-	log.Printf("Vibe admin dashboard listening on http://%s", *addr)
+	log.Printf("Vibe admin dashboard and turn API listening on http://%s", *addr)
 	return http.ListenAndServe(*addr, mux)
 }
 
