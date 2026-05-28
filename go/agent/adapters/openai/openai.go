@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/lutherfourie/vibe/go/agent"
@@ -55,6 +56,7 @@ func (p *Provider) runTurn(ctx context.Context, turn agent.TurnRequest, out chan
 		Model:    p.cfg.Model,
 		Messages: mapMessages(turn.Messages),
 		Stream:   true,
+		Tools:    mapTools(turn.Tools),
 	}); err != nil {
 		sendEvent(ctx, out, agent.ErrorEvent(err.Error()))
 		return
@@ -91,6 +93,7 @@ func (p *Provider) runTurn(ctx context.Context, turn agent.TurnRequest, out chan
 func (p *Provider) streamResponse(ctx context.Context, resp *http.Response, out chan<- agent.Event) {
 	scanner := bufio.NewScanner(resp.Body)
 	var usage *agent.Usage
+	var toolCalls toolCallAccumulator
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
@@ -103,7 +106,7 @@ func (p *Provider) streamResponse(ctx context.Context, resp *http.Response, out 
 			continue
 		}
 		if data == "[DONE]" {
-			sendUsageAndDone(ctx, out, usage)
+			sendToolCallsUsageAndDone(ctx, out, toolCalls.toolCalls(), usage)
 			return
 		}
 
@@ -121,11 +124,17 @@ func (p *Provider) streamResponse(ctx context.Context, resp *http.Response, out 
 		if len(chunk.Choices) == 0 {
 			continue
 		}
-		content := chunk.Choices[0].Delta.Content
-		if content == "" {
-			continue
+		choice := chunk.Choices[0]
+		toolCalls.add(choice.Delta.ToolCalls)
+
+		content := choice.Delta.Content
+		if content != "" {
+			if !sendEvent(ctx, out, agent.TextDelta(content)) {
+				return
+			}
 		}
-		if !sendEvent(ctx, out, agent.TextDelta(content)) {
+		if choice.FinishReason == "tool_calls" {
+			sendToolCallsUsageAndDone(ctx, out, toolCalls.toolCalls(), usage)
 			return
 		}
 	}
@@ -133,6 +142,15 @@ func (p *Provider) streamResponse(ctx context.Context, resp *http.Response, out 
 	if err := scanner.Err(); err != nil {
 		sendRequestError(ctx, out, err)
 		return
+	}
+	sendToolCallsUsageAndDone(ctx, out, toolCalls.toolCalls(), usage)
+}
+
+func sendToolCallsUsageAndDone(ctx context.Context, out chan<- agent.Event, calls []agent.ToolCall, usage *agent.Usage) {
+	for _, call := range calls {
+		if !sendEvent(ctx, out, agent.ToolCallEvent(call)) {
+			return
+		}
 	}
 	sendUsageAndDone(ctx, out, usage)
 }
@@ -152,6 +170,29 @@ func mapMessages(messages []agent.Message) []chatMessage {
 		mapped = append(mapped, chatMessage{
 			Role:    mapRole(message.Role),
 			Content: message.Content,
+		})
+	}
+	return mapped
+}
+
+func mapTools(tools []agent.ToolSpec) []chatTool {
+	if len(tools) == 0 {
+		return nil
+	}
+
+	mapped := make([]chatTool, 0, len(tools))
+	for _, tool := range tools {
+		parameters := tool.Schema
+		if len(parameters) == 0 {
+			parameters = json.RawMessage(`{"type":"object"}`)
+		}
+		mapped = append(mapped, chatTool{
+			Type: "function",
+			Function: chatToolFunction{
+				Name:        tool.Name,
+				Description: tool.Description,
+				Parameters:  parameters,
+			},
 		})
 	}
 	return mapped
@@ -199,6 +240,7 @@ type chatCompletionRequest struct {
 	Model    string        `json:"model"`
 	Messages []chatMessage `json:"messages"`
 	Stream   bool          `json:"stream"`
+	Tools    []chatTool    `json:"tools,omitempty"`
 }
 
 type chatMessage struct {
@@ -206,14 +248,89 @@ type chatMessage struct {
 	Content string `json:"content"`
 }
 
+type chatTool struct {
+	Type     string           `json:"type"`
+	Function chatToolFunction `json:"function"`
+}
+
+type chatToolFunction struct {
+	Name        string          `json:"name"`
+	Description string          `json:"description"`
+	Parameters  json.RawMessage `json:"parameters"`
+}
+
 type chatCompletionChunk struct {
 	Choices []struct {
 		Delta struct {
-			Content string `json:"content"`
+			Content   string              `json:"content"`
+			ToolCalls []chatToolCallDelta `json:"tool_calls"`
 		} `json:"delta"`
+		FinishReason string `json:"finish_reason"`
 	} `json:"choices"`
 	Usage *struct {
 		PromptTokens     int `json:"prompt_tokens"`
 		CompletionTokens int `json:"completion_tokens"`
 	} `json:"usage"`
+}
+
+type chatToolCallDelta struct {
+	Index    int    `json:"index"`
+	ID       string `json:"id"`
+	Function struct {
+		Name      string `json:"name"`
+		Arguments string `json:"arguments"`
+	} `json:"function"`
+}
+
+type toolCallAccumulator struct {
+	calls map[int]*streamedToolCall
+}
+
+func (a *toolCallAccumulator) add(deltas []chatToolCallDelta) {
+	for _, delta := range deltas {
+		if a.calls == nil {
+			a.calls = make(map[int]*streamedToolCall)
+		}
+		call := a.calls[delta.Index]
+		if call == nil {
+			call = &streamedToolCall{}
+			a.calls[delta.Index] = call
+		}
+		call.id += delta.ID
+		call.name += delta.Function.Name
+		call.arguments += delta.Function.Arguments
+	}
+}
+
+func (a toolCallAccumulator) toolCalls() []agent.ToolCall {
+	if len(a.calls) == 0 {
+		return nil
+	}
+
+	indexes := make([]int, 0, len(a.calls))
+	for index := range a.calls {
+		indexes = append(indexes, index)
+	}
+	sort.Ints(indexes)
+
+	calls := make([]agent.ToolCall, 0, len(indexes))
+	for _, index := range indexes {
+		call := a.calls[index]
+		var args json.RawMessage
+		if call.arguments != "" {
+			args = json.RawMessage(call.arguments)
+		}
+		calls = append(calls, agent.ToolCall{
+			ID:   call.id,
+			Name: call.name,
+			Args: args,
+		})
+	}
+	return calls
+}
+
+type streamedToolCall struct {
+	id        string
+	name      string
+	arguments string
 }
