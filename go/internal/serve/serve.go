@@ -47,7 +47,7 @@ type sessionProvider interface {
 
 // DefaultProviders returns the built-in provider registry.
 func DefaultProviders() map[string]ProviderFactory {
-	return map[string]ProviderFactory{
+	providers := map[string]ProviderFactory{
 		"fake": func() agent.Provider {
 			return agent.FakeProvider{}
 		},
@@ -55,6 +55,10 @@ func DefaultProviders() map[string]ProviderFactory {
 			return claude.New()
 		},
 	}
+	for name, factory := range openAICompatibleProviders() {
+		providers[name] = factory
+	}
+	return providers
 }
 
 // NewDaemon returns a daemon with validated provider configuration.

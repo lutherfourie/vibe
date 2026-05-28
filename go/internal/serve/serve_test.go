@@ -84,6 +84,58 @@ func TestProvidersReturnsRegisteredProvidersAndDefault(t *testing.T) {
 	}
 }
 
+func TestProvidersReturnsDefaultOpenAICompatibleProviders(t *testing.T) {
+	handler, err := NewHandler(Options{})
+	if err != nil {
+		t.Fatalf("NewHandler returned error: %v", err)
+	}
+
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	client := http.Client{Timeout: time.Second}
+	resp, err := client.Get(server.URL + "/v1/providers")
+	if err != nil {
+		t.Fatalf("GET /v1/providers returned error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want %d", resp.StatusCode, http.StatusOK)
+	}
+
+	var got struct {
+		Providers []string `json:"providers"`
+		Default   string   `json:"default"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+
+	wantProviders := []string{"cerebras", "claude", "fake", "openai"}
+	if !reflect.DeepEqual(got.Providers, wantProviders) {
+		t.Fatalf("providers = %#v, want %#v", got.Providers, wantProviders)
+	}
+	if got.Default != "fake" {
+		t.Fatalf("default = %q, want %q", got.Default, "fake")
+	}
+}
+
+func TestCerebrasDefaultProviderConstructsOpenAIProvider(t *testing.T) {
+	daemon, err := NewDaemon(Options{DefaultProvider: "cerebras"})
+	if err != nil {
+		t.Fatalf("NewDaemon returned error: %v", err)
+	}
+
+	provider, err := daemon.newProvider(daemon.defaultProvider)
+	if err != nil {
+		t.Fatalf("newProvider returned error: %v", err)
+	}
+	if got, want := provider.Name(), "openai"; got != want {
+		t.Fatalf("provider.Name() = %q, want %q", got, want)
+	}
+}
+
 func TestTurnRejectsInvalidRequests(t *testing.T) {
 	handler, err := NewHandler(Options{
 		DefaultProvider: "fake",
