@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	"github.com/lutherfourie/vibe/go/agent"
@@ -107,6 +108,150 @@ func TestProviderRunTurnStreamsChatCompletionDeltas(t *testing.T) {
 	}
 }
 
+func TestProviderRunTurnStreamsToolCallFragments(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_123\",\"function\":{\"name\":\"look\",\"arguments\":\"{\\\"query\\\":\\\"vi\"}}]}}]}\n\n"))
+		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"function\":{\"name\":\"up\",\"arguments\":\"be\\\"}\"}}]},\"finish_reason\":\"tool_calls\"}],\"usage\":{\"prompt_tokens\":5,\"completion_tokens\":7}}\n\n"))
+		_, _ = w.Write([]byte("data: [DONE]\n\n"))
+	}))
+	defer server.Close()
+
+	provider := New(Config{
+		BaseURL: server.URL,
+		Model:   "test-model",
+		APIKey:  "test-key",
+		Client:  server.Client(),
+	})
+
+	events, err := provider.RunTurn(context.Background(), agent.TurnRequest{
+		Messages: []agent.Message{
+			{Role: agent.RoleUser, Content: "look up vibe"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("RunTurn returned error: %v", err)
+	}
+
+	var got []agent.Event
+	for event := range events {
+		got = append(got, event)
+	}
+
+	wantKinds := []agent.EventKind{
+		agent.EventKindToolCall,
+		agent.EventKindUsage,
+		agent.EventKindDone,
+	}
+	var gotKinds []agent.EventKind
+	for _, event := range got {
+		gotKinds = append(gotKinds, event.Kind)
+	}
+	if !sameKinds(gotKinds, wantKinds) {
+		t.Fatalf("event kinds = %v, want %v", gotKinds, wantKinds)
+	}
+	if got[0].ToolCall == nil {
+		t.Fatal("tool call event has nil payload")
+	}
+	if got[0].ToolCall.ID != "call_123" {
+		t.Fatalf("tool call id = %q, want call_123", got[0].ToolCall.ID)
+	}
+	if got[0].ToolCall.Name != "lookup" {
+		t.Fatalf("tool call name = %q, want lookup", got[0].ToolCall.Name)
+	}
+	if !jsonEqual(got[0].ToolCall.Args, []byte(`{"query":"vibe"}`)) {
+		t.Fatalf("tool call args = %s, want {\"query\":\"vibe\"}", got[0].ToolCall.Args)
+	}
+	if got[1].Usage == nil {
+		t.Fatal("usage event missing")
+	}
+	if got[1].Usage.InputTokens != 5 || got[1].Usage.OutputTokens != 7 {
+		t.Fatalf("usage = %+v, want input 5 output 7", *got[1].Usage)
+	}
+}
+
+func TestProviderRunTurnIncludesToolsInRequest(t *testing.T) {
+	var requestBody struct {
+		Tools []struct {
+			Type     string `json:"type"`
+			Function struct {
+				Name        string          `json:"name"`
+				Description string          `json:"description"`
+				Parameters  json.RawMessage `json:"parameters"`
+			} `json:"function"`
+		} `json:"tools"`
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+			t.Errorf("decode request body: %v", err)
+		}
+
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("data: [DONE]\n\n"))
+	}))
+	defer server.Close()
+
+	provider := New(Config{
+		BaseURL: server.URL,
+		Model:   "test-model",
+		APIKey:  "test-key",
+		Client:  server.Client(),
+	})
+
+	events, err := provider.RunTurn(context.Background(), agent.TurnRequest{
+		Messages: []agent.Message{
+			{Role: agent.RoleUser, Content: "search"},
+		},
+		Tools: []agent.ToolSpec{
+			{
+				Name:        "search",
+				Description: "Search project docs.",
+				Schema:      json.RawMessage(`{"type":"object","properties":{"query":{"type":"string"}},"required":["query"]}`),
+			},
+			{
+				Name:        "ping",
+				Description: "Ping a service.",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("RunTurn returned error: %v", err)
+	}
+	for range events {
+	}
+
+	if len(requestBody.Tools) != 2 {
+		t.Fatalf("tools length = %d, want 2", len(requestBody.Tools))
+	}
+	if requestBody.Tools[0].Type != "function" {
+		t.Fatalf("first tool type = %q, want function", requestBody.Tools[0].Type)
+	}
+	if requestBody.Tools[0].Function.Name != "search" {
+		t.Fatalf("first tool name = %q, want search", requestBody.Tools[0].Function.Name)
+	}
+	if requestBody.Tools[0].Function.Description != "Search project docs." {
+		t.Fatalf("first tool description = %q, want Search project docs.", requestBody.Tools[0].Function.Description)
+	}
+	if !jsonEqual(requestBody.Tools[0].Function.Parameters, []byte(`{"type":"object","properties":{"query":{"type":"string"}},"required":["query"]}`)) {
+		t.Fatalf("first tool parameters = %s, want provided schema", requestBody.Tools[0].Function.Parameters)
+	}
+	if requestBody.Tools[1].Type != "function" {
+		t.Fatalf("second tool type = %q, want function", requestBody.Tools[1].Type)
+	}
+	if requestBody.Tools[1].Function.Name != "ping" {
+		t.Fatalf("second tool name = %q, want ping", requestBody.Tools[1].Function.Name)
+	}
+	if requestBody.Tools[1].Function.Description != "Ping a service." {
+		t.Fatalf("second tool description = %q, want Ping a service.", requestBody.Tools[1].Function.Description)
+	}
+	if !jsonEqual(requestBody.Tools[1].Function.Parameters, []byte(`{"type":"object"}`)) {
+		t.Fatalf("second tool parameters = %s, want default object schema", requestBody.Tools[1].Function.Parameters)
+	}
+}
+
 func TestProviderRunTurnHTTPErrorEmitsErrorEvent(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "upstream failure", http.StatusInternalServerError)
@@ -151,4 +296,16 @@ func sameKinds(got, want []agent.EventKind) bool {
 		}
 	}
 	return true
+}
+
+func jsonEqual(got, want []byte) bool {
+	var gotValue any
+	var wantValue any
+	if err := json.Unmarshal(got, &gotValue); err != nil {
+		return false
+	}
+	if err := json.Unmarshal(want, &wantValue); err != nil {
+		return false
+	}
+	return reflect.DeepEqual(gotValue, wantValue)
 }
