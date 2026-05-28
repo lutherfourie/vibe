@@ -24,8 +24,9 @@ type Runner interface {
 type Provider struct {
 	runner Runner
 
-	mu        sync.RWMutex
-	sessionID string
+	mu         sync.RWMutex
+	sessionID  string
+	mcpServers []MCPServerSpec
 }
 
 var _ agent.Provider = (*Provider)(nil)
@@ -41,6 +42,14 @@ func NewWithRunner(runner Runner) *Provider {
 		runner = realRunner{}
 	}
 	return &Provider{runner: runner}
+}
+
+// WithMCPServers configures MCP servers for Claude CLI tool access.
+func (p *Provider) WithMCPServers(servers []MCPServerSpec) *Provider {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.mcpServers = cloneMCPServerSpecs(servers)
+	return p
 }
 
 // Name returns the provider name.
@@ -65,18 +74,27 @@ func (p *Provider) RunTurn(ctx context.Context, req agent.TurnRequest) (<-chan a
 		runner = realRunner{}
 	}
 
-	stdout, wait, err := runner.Run(ctx, buildArgs(req), "")
+	mcpConfigPath, cleanupMCPConfig, err := p.writeMCPConfig()
 	if err != nil {
 		return nil, err
 	}
 
+	stdout, wait, err := runner.Run(ctx, buildArgs(req, mcpConfigPath), "")
+	if err != nil {
+		cleanupMCPConfig()
+		return nil, err
+	}
+
 	out := make(chan agent.Event)
-	go p.streamEvents(ctx, stdout, wait, out)
+	go p.streamEvents(ctx, stdout, wait, out, cleanupMCPConfig)
 	return out, nil
 }
 
-func (p *Provider) streamEvents(ctx context.Context, stdout io.ReadCloser, wait func() error, out chan<- agent.Event) {
+func (p *Provider) streamEvents(ctx context.Context, stdout io.ReadCloser, wait func() error, out chan<- agent.Event, cleanup func()) {
 	defer close(out)
+	if cleanup != nil {
+		defer cleanup()
+	}
 	defer stdout.Close()
 
 	terminal := false
@@ -136,10 +154,13 @@ func sendCancellationError(out chan<- agent.Event, err error) {
 	}
 }
 
-func buildArgs(req agent.TurnRequest) []string {
+func buildArgs(req agent.TurnRequest, mcpConfigPath string) []string {
 	args := []string{"-p", buildPrompt(req.Messages), "--output-format", "stream-json", "--verbose"}
 	if req.SessionID != "" {
 		args = append(args, "--resume", req.SessionID)
+	}
+	if mcpConfigPath != "" {
+		args = append(args, "--mcp-config", mcpConfigPath, "--strict-mcp-config")
 	}
 	return args
 }
