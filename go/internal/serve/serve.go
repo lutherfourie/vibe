@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"strings"
 	"sync"
 
@@ -93,6 +94,7 @@ func NewHandler(opts Options) (http.Handler, error) {
 // Register attaches daemon routes to mux.
 func (d *Daemon) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/healthz", d.handleHealthz)
+	mux.HandleFunc("/v1/providers", d.handleProviders)
 	mux.HandleFunc("/v1/turn", d.handleTurn)
 }
 
@@ -100,6 +102,19 @@ func (d *Daemon) handleHealthz(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte("ok\n"))
+}
+
+func (d *Daemon) handleProviders(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.Header().Set("Allow", http.MethodGet)
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"providers": d.providerNames(),
+		"default":   d.defaultProvider,
+	})
 }
 
 func (d *Daemon) handleTurn(w http.ResponseWriter, r *http.Request) {
@@ -112,7 +127,11 @@ func (d *Daemon) handleTurn(w http.ResponseWriter, r *http.Request) {
 	var req turnRequest
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&req); err != nil {
-		http.Error(w, "invalid JSON body", http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if err := validateTurnRequest(req); err != nil {
+		writeJSONError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -122,7 +141,7 @@ func (d *Daemon) handleTurn(w http.ResponseWriter, r *http.Request) {
 	}
 	provider, err := d.newProvider(providerName)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		writeJSONError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -164,6 +183,15 @@ func (d *Daemon) handleTurn(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (d *Daemon) providerNames() []string {
+	names := make([]string, 0, len(d.providers))
+	for name := range d.providers {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
+}
+
 func (d *Daemon) newProvider(name string) (agent.Provider, error) {
 	factory, ok := d.providers[name]
 	if !ok {
@@ -192,6 +220,31 @@ func (d *Daemon) rememberProviderSessionID(clientSessionID, providerSessionID st
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.sessions[clientSessionID] = providerSessionID
+}
+
+func validateTurnRequest(req turnRequest) error {
+	if len(req.Messages) == 0 {
+		return fmt.Errorf("messages must not be empty")
+	}
+	for i, message := range req.Messages {
+		if strings.TrimSpace(string(message.Role)) == "" {
+			return fmt.Errorf("messages[%d].role must not be empty", i)
+		}
+		if strings.TrimSpace(message.Content) == "" {
+			return fmt.Errorf("messages[%d].content must not be empty", i)
+		}
+	}
+	return nil
+}
+
+func writeJSONError(w http.ResponseWriter, status int, message string) {
+	writeJSON(w, status, map[string]string{"error": message})
+}
+
+func writeJSON(w http.ResponseWriter, status int, payload any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(payload)
 }
 
 func writeSSE(w http.ResponseWriter, event agent.Event) error {

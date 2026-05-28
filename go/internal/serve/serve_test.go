@@ -38,6 +38,120 @@ func TestHealthzReturnsOK(t *testing.T) {
 	}
 }
 
+func TestProvidersReturnsRegisteredProvidersAndDefault(t *testing.T) {
+	handler, err := NewHandler(Options{
+		DefaultProvider: "fake",
+		Providers: map[string]ProviderFactory{
+			"claude": func() agent.Provider {
+				t.Fatal("GET /v1/providers should not construct providers")
+				return nil
+			},
+			"fake": func() agent.Provider { return agent.FakeProvider{} },
+		},
+	})
+	if err != nil {
+		t.Fatalf("NewHandler returned error: %v", err)
+	}
+
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	client := http.Client{Timeout: time.Second}
+	resp, err := client.Get(server.URL + "/v1/providers")
+	if err != nil {
+		t.Fatalf("GET /v1/providers returned error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want %d", resp.StatusCode, http.StatusOK)
+	}
+
+	var got struct {
+		Providers []string `json:"providers"`
+		Default   string   `json:"default"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+
+	wantProviders := []string{"claude", "fake"}
+	if !reflect.DeepEqual(got.Providers, wantProviders) {
+		t.Fatalf("providers = %#v, want %#v", got.Providers, wantProviders)
+	}
+	if got.Default != "fake" {
+		t.Fatalf("default = %q, want %q", got.Default, "fake")
+	}
+}
+
+func TestTurnRejectsInvalidRequests(t *testing.T) {
+	handler, err := NewHandler(Options{
+		DefaultProvider: "fake",
+		Providers: map[string]ProviderFactory{
+			"fake": func() agent.Provider { return agent.FakeProvider{} },
+		},
+	})
+	if err != nil {
+		t.Fatalf("NewHandler returned error: %v", err)
+	}
+
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	tests := []struct {
+		name string
+		body string
+	}{
+		{
+			name: "empty messages",
+			body: `{"messages":[]}`,
+		},
+		{
+			name: "empty message role",
+			body: `{"messages":[{"role":"","content":"hello"}]}`,
+		},
+		{
+			name: "empty message content",
+			body: `{"messages":[{"role":"user","content":""}]}`,
+		},
+		{
+			name: "unknown provider",
+			body: `{"provider":"missing","messages":[{"role":"user","content":"hello"}]}`,
+		},
+	}
+
+	client := http.Client{Timeout: time.Second}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, err := http.NewRequest(http.MethodPost, server.URL+"/v1/turn", strings.NewReader(tt.body))
+			if err != nil {
+				t.Fatalf("NewRequest returned error: %v", err)
+			}
+			req.Header.Set("Content-Type", "application/json")
+
+			resp, err := client.Do(req)
+			if err != nil {
+				t.Fatalf("POST /v1/turn returned error: %v", err)
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != http.StatusBadRequest {
+				t.Fatalf("status = %d, want %d", resp.StatusCode, http.StatusBadRequest)
+			}
+
+			var got struct {
+				Error string `json:"error"`
+			}
+			if err := json.NewDecoder(resp.Body).Decode(&got); err != nil {
+				t.Fatalf("decode error body: %v", err)
+			}
+			if got.Error == "" {
+				t.Fatalf("error body missing error message")
+			}
+		})
+	}
+}
+
 func TestTurnStreamsFakeProviderEventsInOrder(t *testing.T) {
 	handler, err := NewHandler(Options{
 		DefaultProvider: "fake",
