@@ -14,6 +14,12 @@ packages/vscode-extension/syntaxes/vibe.tmLanguage.json
 # Go build cache (codex sandbox sometimes relocates GOCACHE into the repo)
 go/.go-build-cache/
 
+# Go binaries & daemon runtime artifacts
+bin/
+*.exe
+*.exe~
+vibe-daemon.*.log
+
 # Logs
 npm-debug.log*
 yarn-debug.log*

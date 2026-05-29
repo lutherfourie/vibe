@@ -7,6 +7,13 @@ type TurnRequest struct {
 	SessionID string     `json:"sessionId,omitempty"`
 	Messages  []Message  `json:"messages"`
 	Tools     []ToolSpec `json:"tools,omitempty"`
+	// Cwd is the working directory the provider should run its turn in.
+	// Empty means the provider's own process directory.
+	Cwd string `json:"cwd,omitempty"`
+	// PermissionMode is a provider-specific tool-permission hint (for the
+	// Claude CLI: acceptEdits, bypassPermissions, plan, default, …). Empty
+	// leaves the provider default.
+	PermissionMode string `json:"permissionMode,omitempty"`
 }
 
 // Provider runs one agent turn and streams provider-neutral events.
