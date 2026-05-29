@@ -36,9 +36,11 @@ type Daemon struct {
 }
 
 type turnRequest struct {
-	SessionID string          `json:"sessionId,omitempty"`
-	Messages  []agent.Message `json:"messages"`
-	Provider  string          `json:"provider,omitempty"`
+	SessionID      string          `json:"sessionId,omitempty"`
+	Messages       []agent.Message `json:"messages"`
+	Provider       string          `json:"provider,omitempty"`
+	Cwd            string          `json:"cwd,omitempty"`
+	PermissionMode string          `json:"permissionMode,omitempty"`
 }
 
 type sessionProvider interface {
@@ -156,8 +158,10 @@ func (d *Daemon) handleTurn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	events, err := provider.RunTurn(r.Context(), agent.TurnRequest{
-		SessionID: d.providerSessionID(req.SessionID),
-		Messages:  req.Messages,
+		SessionID:      d.providerSessionID(req.SessionID),
+		Messages:       req.Messages,
+		Cwd:            req.Cwd,
+		PermissionMode: req.PermissionMode,
 	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

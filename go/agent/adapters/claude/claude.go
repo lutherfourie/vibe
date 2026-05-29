@@ -16,8 +16,10 @@ import (
 const claudeBinary = "claude"
 
 // Runner starts a Claude CLI turn and returns stdout plus a wait function.
+// dir is the working directory for the spawned process; empty uses the
+// current process directory.
 type Runner interface {
-	Run(ctx context.Context, args []string, stdin string) (stdout io.ReadCloser, wait func() error, err error)
+	Run(ctx context.Context, args []string, stdin, dir string) (stdout io.ReadCloser, wait func() error, err error)
 }
 
 // Provider implements agent.Provider by driving the Claude CLI.
@@ -79,7 +81,7 @@ func (p *Provider) RunTurn(ctx context.Context, req agent.TurnRequest) (<-chan a
 		return nil, err
 	}
 
-	stdout, wait, err := runner.Run(ctx, buildArgs(req, mcpConfigPath), "")
+	stdout, wait, err := runner.Run(ctx, buildArgs(req, mcpConfigPath), buildPrompt(req.Messages), req.Cwd)
 	if err != nil {
 		cleanupMCPConfig()
 		return nil, err
@@ -154,8 +156,15 @@ func sendCancellationError(out chan<- agent.Event, err error) {
 	}
 }
 
+// buildArgs builds the Claude CLI flags. The prompt is NOT passed as an
+// argument: on Windows the CLI resolves through claude.cmd, and cmd.exe
+// mangles multi-line argument values (the prompt arrived empty). The prompt
+// is delivered via stdin instead — see RunTurn.
 func buildArgs(req agent.TurnRequest, mcpConfigPath string) []string {
-	args := []string{"-p", buildPrompt(req.Messages), "--output-format", "stream-json", "--verbose"}
+	args := []string{"-p", "--output-format", "stream-json", "--verbose"}
+	if req.PermissionMode != "" {
+		args = append(args, "--permission-mode", req.PermissionMode)
+	}
 	if req.SessionID != "" {
 		args = append(args, "--resume", req.SessionID)
 	}
@@ -187,7 +196,7 @@ func formatRole(role agent.Role) string {
 
 type realRunner struct{}
 
-func (realRunner) Run(ctx context.Context, args []string, stdin string) (io.ReadCloser, func() error, error) {
+func (realRunner) Run(ctx context.Context, args []string, stdin, dir string) (io.ReadCloser, func() error, error) {
 	path, err := exec.LookPath(claudeBinary)
 	if err != nil {
 		return nil, nil, err
@@ -195,6 +204,9 @@ func (realRunner) Run(ctx context.Context, args []string, stdin string) (io.Read
 
 	cmd := exec.CommandContext(ctx, path, args...)
 	cmd.Env = os.Environ()
+	if dir != "" {
+		cmd.Dir = dir
+	}
 	if stdin != "" {
 		cmd.Stdin = strings.NewReader(stdin)
 	}

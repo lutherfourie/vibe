@@ -43,7 +43,7 @@ func TestProviderRunTurnInvokesRunnerAndStreamsParsedEvents(t *testing.T) {
 		"tool:\nfile contents",
 	}, "\n\n")
 	wantArgs := []string{
-		"-p", wantPrompt,
+		"-p",
 		"--output-format", "stream-json",
 		"--verbose",
 		"--resume", "resume-session",
@@ -53,8 +53,8 @@ func TestProviderRunTurnInvokesRunnerAndStreamsParsedEvents(t *testing.T) {
 	}
 	assertArgAbsent(t, runner.args, "--mcp-config")
 	assertArgAbsent(t, runner.args, "--strict-mcp-config")
-	if runner.stdin != "" {
-		t.Fatalf("runner stdin = %q, want empty", runner.stdin)
+	if runner.stdin != wantPrompt {
+		t.Fatalf("runner stdin = %q, want %q", runner.stdin, wantPrompt)
 	}
 
 	if got, want := provider.SessionID(), "claude-session-123"; got != want {
@@ -171,12 +171,14 @@ type fakeRunner struct {
 	err     error
 	args    []string
 	stdin   string
+	dir     string
 	onRun   func(args []string)
 }
 
-func (r *fakeRunner) Run(_ context.Context, args []string, stdin string) (io.ReadCloser, func() error, error) {
+func (r *fakeRunner) Run(_ context.Context, args []string, stdin, dir string) (io.ReadCloser, func() error, error) {
 	r.args = append([]string(nil), args...)
 	r.stdin = stdin
+	r.dir = dir
 	if r.onRun != nil {
 		r.onRun(args)
 	}
