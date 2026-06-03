@@ -111,4 +111,16 @@
 - Ready for wiring dispatch of VibePlan (use createProviderRegistry, register e.g. codex/grok/cerebras, pass to pipeline with AutonomousSessionSchema or VibePlanSchema for prose regions).
 - big-AGI Beam pattern noted for future multi-model fan in autonomous steps (parallel providers then merge).
 
-Continuing autonomously... (update PROGRESS, commit/push/create PR#29, then supabase migrations or resolver wire + use new adapters in test).
+**Supabase autonomous state checkpoint (2026-06-03)**:
+- Created + applied migration supabase/migrations/20260603035257_autonomous_state.sql :
+  - Tables: autonomous_sessions, lanes, checkpoints, self_reviews, research_steps, lane_events (jsonb metadata, fks, indexes, updated trigger).
+  - RLS enabled + basic policies (anon read for dashboard, auth insert events/checkpoints; service_role full bypass for daemon/resolver).
+  - Comments + aligns to Zod + Go progress + local-toolkit planned (vibe_runs -> sessions/events).
+- Verified: supabase db reset applied cleanly; docker psql confirms all 6 tables in public.
+- supabase/README already noted "for agent sessions"; infra ready (local running 544xx, hosted ref).
+- No client code yet (next: wire in resolver/pipeline for persist, or web dashboard + go serve).
+- Seed remains empty (add samples later).
+
+Big momentum: schema + grammar + providers (5) + supabase tables now in place for dispatch+persist.
+
+Continuing... (commit supabase slice + push + PR#30; then wire resolver/pipeline to use VibePlanSchema + new providers + persist via supabase client; or start web Next.js dashboard).
