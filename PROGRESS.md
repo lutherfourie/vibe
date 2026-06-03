@@ -1,6 +1,6 @@
 # Vibe Autonomous Bootstrap - Grok Build Mode
 
-Status: Claude-inspired UI for live autonomous console + artifacts
+Status: Claude-inspired hybrid chat + artifacts console live in dashboard
 Updated: 2026-06-03
 Branch: 
 
@@ -9,6 +9,9 @@ Branch:
 ## Milestones
 
 ## Checkpoint Log
+
+### 2026-06-03 — Claude UI inspiration: implemented sessions sidebar + chat console for remote C&C + artifacts in autonomous dashboard
+- Deep research via tools: Claude artifacts (side panel for live interactive generated content, Cowork live dashboards), chat patterns (projects sidebar, clean messages, streaming/states, per-message actions, @/slash), from setproduct blog, Anthropic news, Cursor/v0 comparisons. Better for Vibe: hybrid chat (for sending remote commands via existing agent C&C, rendered from status API as chat stream) + artifacts (checkpoints, telemetry, plan views as structured 'live' panels). Implemented in page.tsx: selectable sessions sidebar (Claude projects), main console with unified chat from commands/events/responses, natural composer, quick buttons. Added console realtime subs. Tested live: used running dev server API to launch session 27eeb8d3... and queue status cmd; monitor logged POSTs/GETs; status data has commands+events for the 'chat' to display. Console would render it when selected in browser. Matches research on artifacts+chat for agentic UIs. Self-plan has the lane. All contract followed.
 
 ### 2026-06-03 — UI: Claude.ai inspired agent console + artifacts in autonomous dashboard
 - Deep research: Claude artifacts (live interactive previews, side panel, generative UI, Cowork live dashboards), chat anatomy (sidebar projects, streaming, states, per-message actions), patterns from Cursor (context + apply), v0 (UI gen). Better for Vibe: hybrid chat for remote C&C + structured artifacts for declarative plans/checkpoints/telemetry (not pure chat). Implemented: sessions sidebar selectable, main console with chat stream from agent_commands/events/responses (via /api/agent/status), composer for natural cmds (maps to POST /api/agent/command), realtime subs for live updates on agent/telemetry, artifacts area in console (checkpoints, telemetry). Updated overview cards clickable. Self-dogfood with new autonomous-session in .vibe, self:plan. Web hot-reloads on dev server. Works with live poller for full remote control demo. Follows all contracts.
