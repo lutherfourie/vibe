@@ -404,7 +404,7 @@ export default function VibeDashboard() {
 
         {/* Telemetry (usage, decisions, remote activity) */}
         <section className="rounded-2xl border border-white/10 bg-zinc-900 p-6">
-          <h2 className="text-xl font-medium mb-4">Telemetry</h2>
+          <h2 className="text-xl font-medium mb-4">Telemetry {telemetry.length > 0 ? `(${telemetry.length} recent)` : ''}</h2>
           <p className="text-xs text-zinc-400 mb-3">Usage events (launches, plan resolves, remote commands processed, resource decisions, infra syncs, errors). Hosted in the same Supabase as state + C&amp;C (no new infra; reuses RLS/realtime/Go client). Opt-in friendly for self-hosted deployments.</p>
           <div className="flex gap-2 mb-3">
             <button
@@ -435,6 +435,26 @@ export default function VibeDashboard() {
               className="px-4 py-2 rounded bg-zinc-700 text-white text-sm hover:bg-zinc-600"
             >
               Queue Example Command (emits via Go)
+            </button>
+            <button
+              onClick={async () => {
+                if (!sb) { alert('Supabase anon key needed in env for direct telemetry insert demo'); return; }
+                try {
+                  const { error } = await sb.from('telemetry_events').insert({
+                    kind: 'telemetry_example_queued',
+                    source: 'dashboard',
+                    payload: { note: 'manual queue example from UI', via: 'grok-codex-parallel' },
+                    session_id: sessions[0]?.id || null,
+                  });
+                  if (error) throw error;
+                  setStatus('Queued direct telemetry example (will appear on next Load Recent)');
+                } catch (e: any) {
+                  setStatus('Telemetry queue error: ' + (e?.message || e));
+                }
+              }}
+              className="px-4 py-2 rounded bg-emerald-700 text-white text-sm hover:bg-emerald-600"
+            >
+              Queue Telemetry Example
             </button>
           </div>
           {telemetry.length === 0 ? (

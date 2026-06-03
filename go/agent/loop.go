@@ -81,6 +81,7 @@ func runLoop(
 		// (Example hook; production uses bg poller from RemoteControl.StartPoller.)
 		if r := getRemoteFromContext(ctx); r != nil && r.Remote != nil {
 			_ = r.Remote.EmitEvent(ctx, "loop_iteration", map[string]any{"iteration": iteration})
+			_ = r.Remote.EmitTelemetry(ctx, "turn_start", "loop", map[string]any{"iteration": iteration})
 		}
 
 		// Resource-aware: before provider turn (which may delegate externally), consult
@@ -104,6 +105,9 @@ func runLoop(
 		}
 
 		toolCalls, stopped := forwardTurnEvents(ctx, out, turnEvents)
+		if r := getRemoteFromContext(ctx); r != nil && r.Remote != nil {
+			_ = r.Remote.EmitTelemetry(ctx, "turn_end", "loop", map[string]any{"iteration": iteration, "tool_calls": len(toolCalls)})
+		}
 		if stopped {
 			return
 		}
