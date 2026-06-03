@@ -1,6 +1,6 @@
 # Vibe — Autonomous Long-Horizon Work
 
-Status: in-progress — autonomous-lanes M1, PR 1 (core) under construction
+Status: in-progress — autonomous-lanes M1, PR 1 (core) complete & verified; opening PR
 Updated: 2026-06-03
 Branch: feat/vibe-autonomous-lanes
 
@@ -25,11 +25,28 @@ schema → IR → prompt generator → coordinator wiring → example/tests.
 - [x] Research note: base autonomous prompt read as a contract; big-AGI fit.
 - [x] Design spec: `autonomous` mode + lane IR + `PROGRESS.md` contract.
 - [x] TDD plan (T1–T7) sliced into 3 PRs.
-- [ ] PR 1 (core): T1 schema, T2 IR, T3 prompt generator, T4 coordinator + smoke.
+- [x] PR 1 (core): T1 schema, T2 IR, T3 prompt generator, T4 coordinator + smoke.
 - [ ] PR 2 (durable state): T5 `progress` package, T6 `checkpoint`/`resume` verbs.
 - [ ] PR 3 (surfaces): T7 skills, templates, docs.
 
 ## Checkpoint Log
+
+### 2026-06-03 — PR 1 core complete: autonomous lane mode end-to-end
+- T1: schema gains `autonomous` mode + namespaced `autonomous` config object;
+  `docs/examples/vibe-autonomous-lanes.json` fixture; `check-schemas.mjs` asserts
+  it valid + rejects an unknown `autonomous.*` key. Fixed the ajv $id
+  double-compile gotcha (shared schema across two fixtures). `schemas:check` 6/6.
+- T2: `lanes.Lane.Autonomous` + `Autonomous` struct; round-trip test decodes the
+  fixture and asserts non-autonomous lanes carry no block.
+- T3: `prompts.AutonomousHandoff` renders the full operating contract (Core Auth,
+  Startup/Resumption, Explore→…→Commit loop, Multi-Agent Roles, Branching,
+  Persistence, PROGRESS.md Contract) with defaults; 3 tests incl. custom-role +
+  defaults paths.
+- T4: coordinator dispatches `ModeAutonomous`; `cmd/vibe` + coordinator emit
+  smoke tests. Verified the real generated brief by eye — clean, paste-ready.
+- Gates green: `go test ./...`, `go vet`, `gofmt -l` clean; `pnpm run schemas:check`.
+- Next: open PR 1, auto-merge `--squash`; then PR 2 (the `progress` package +
+  `checkpoint`/`resume` verbs).
 
 ### 2026-06-03 — Foundation: design artifacts + branch
 - Startup protocol run: `git pull` (fast-forwarded onto the merged Go agent SDK,
@@ -46,13 +63,13 @@ schema → IR → prompt generator → coordinator wiring → example/tests.
 
 ## Next Moves
 
-1. T1 — extend `schemas/vibe-lane-plan.schema.json` (`autonomous` mode + config
-   object); add `docs/examples/vibe-autonomous-lanes.json`; wire into
-   `scripts/check-schemas.mjs`. Gate: `pnpm run schemas:check`.
-2. T2 — `Lane.Autonomous` + struct in `go/internal/lanes/types.go`; round-trip
-   test.
-3. T3 — `prompts.AutonomousHandoff` + test (operating contract sections).
-4. T4 — coordinator dispatch + `cmd/vibe` smoke test; open PR 1, auto-merge.
+1. Open PR 1 (core), enable auto-merge `--squash`, report the URL.
+2. T5 — `go/internal/progress` package: `Doc`/`Checkpoint`, `Render`/`Parse`,
+   `AppendCheckpoint`, `Scaffold`. Inject the clock; parse this repo's own
+   `PROGRESS.md` as a tolerance fixture.
+3. T6 — `vibe checkpoint` + `vibe resume` CLI verbs over the `progress` package;
+   smoke tests; open PR 2.
+4. T7 — skills (`vibe-autonomous`, `vibe-checkpoint`), templates, docs; PR 3.
 
 ## Decisions
 
