@@ -47,6 +47,11 @@ pnpm run vibe:serve
 `pnpm run vibe:continue` prints the compact resume protocol for future Codex,
 Claude Code, or human sessions.
 
+For **long-horizon autonomous work**, the Go runtime adds `vibe handoff` (emits a
+scoped operating brief for an `autonomous` lane) and `vibe checkpoint` / `vibe
+resume` (the durable `PROGRESS.md` contract). See
+[`docs/autonomous-lanes.md`](docs/autonomous-lanes.md).
+
 The cross-session resume protocol is tracked in
 [`docs/continue.md`](docs/continue.md).
 Bootstrap setup work is tracked in [`docs/bootstrap-todos.md`](docs/bootstrap-todos.md).
@@ -95,6 +100,18 @@ Vibe also needs to know where a lane is being managed from. A lane may be
 started or supervised from a local desktop, phone, web session, IDE, GitHub, or
 cloud agent, but the contract should stay repo-grounded: source, branch,
 handoff, write scope, validation gate, and human approval.
+
+## Autonomous Lanes
+
+A lane can be declared `autonomous` to make long-horizon, durable,
+resume-from-checkpoint work first-class. Vibe then generates the full operating
+brief — the Explore → Research → Plan → Implement → Verify → Test → Commit loop,
+the startup/resumption protocol, multi-agent roles, and the `PROGRESS.md`
+contract — scoped to that lane, with no hand-pasting. `vibe checkpoint` and `vibe
+resume` keep the work recoverable across sessions, agents, and surfaces. The
+`vibe-workbench` plugin surfaces this via the `vibe-autonomous` and
+`vibe-checkpoint` skills (Claude + Codex). See
+[`docs/autonomous-lanes.md`](docs/autonomous-lanes.md).
 
 ## Repo Layout
 

@@ -15,6 +15,8 @@ Current scope:
 - Validate write-scope ownership.
 - Emit Codex cloud handoff prompts.
 - Emit local lane checklists.
+- Emit autonomous long-horizon lane briefs (Explore→…→Commit loop + PROGRESS.md contract).
+- Maintain PROGRESS.md durable state (`vibe checkpoint` / `vibe resume`).
 
 The runtime builds and tests under Go 1.22+ (`go/go.mod`). Run `go test ./...`
 from the `go/` directory. CI (`.github/workflows/ci.yml`) gates build, vet,
@@ -27,6 +29,11 @@ go test ./...
 go run ./cmd/vibe-doctor --json
 go run ./cmd/vibe-make plan --repo C:\vibe --out .out\self-plan.json
 go run ./cmd/vibe-coord emit --plan path\to\lanes.json --out .out
+
+# Autonomous lanes (long-horizon, durable work)
+go run ./cmd/vibe handoff --plan ..\docs\examples\vibe-autonomous-lanes.json --out .out
+go run ./cmd/vibe checkpoint --summary "what changed" --note "next step" --status "phase"
+go run ./cmd/vibe resume
 ```
 
 ## Binaries

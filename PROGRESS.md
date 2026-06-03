@@ -1,8 +1,8 @@
 # Vibe — Autonomous Long-Horizon Work
 
-Status: in-progress — PR 2 verified locally; opening PR
+Status: M1 complete — PR 3 (surfaces) verified locally; opening PR
 Updated: 2026-06-03
-Branch: feat/vibe-progress-checkpoint
+Branch: feat/vibe-autonomous-surfaces
 
 ## Mission
 
@@ -22,9 +22,14 @@ first dogfood of the `PROGRESS.md` contract the feature defines.
 - [x] TDD plan (T1–T7) sliced into 3 PRs.
 - [x] PR 1 (core): T1 schema, T2 IR, T3 prompt generator, T4 coordinator + smoke.
 - [x] PR 2 (durable state): T5 `progress` package, T6 `checkpoint`/`resume` verbs.
-- [ ] PR 3 (surfaces): T7 skills, templates, docs.
+- [x] PR 3 (surfaces): T7 skills, templates, docs.
 
 ## Checkpoint Log
+
+### 2026-06-03 — PR 3: autonomous skills + status script + docs (M1 surfaces)
+- skills vibe-autonomous + vibe-checkpoint for Claude + Codex (drift check: match); vibe_autonomous_status.ps1
+- docs/autonomous-lanes.md guide; updated README, CLAUDE.md, go/README.md, schemas/README.md, vibe-contract.md, plugins README
+- M1 complete on merge: autonomous mode + brief + PROGRESS.md contract + verbs + surfaces
 
 ### 2026-06-03 — PR 2 complete: progress contract package + checkpoint/resume verbs
 - go/internal/progress: Doc/Checkpoint, Render/Parse (idempotent round-trip), surgical AppendCheckpoint, Scaffold, ResumeBrief; clock injected
@@ -63,12 +68,12 @@ first dogfood of the `PROGRESS.md` contract the feature defines.
 
 ## Next Moves
 
-1. Open PR 2 (durable state); confirm it lands on main.
-2. T7 (PR 3) — skills (`vibe-autonomous`, `vibe-checkpoint` for Claude + Codex),
-   `examples/autonomous-lane.vibe` template, and docs (`docs/autonomous-lanes.md`
-   + README / CLAUDE.md / go/README.md / schemas/README.md / vibe-contract.md).
-3. Future (M2): wire autonomous lanes to `vibe serve` so the daemon can *run* the
-   loop (the agent SDK already exists); add a `.vibe` `autonomous` grammar seam.
+1. Open PR 3 (surfaces); confirm it lands on main. M1 complete after that.
+2. Future (M2): wire autonomous lanes to `vibe serve` so the daemon can *run* the
+   loop (the agent SDK already exists); add a `.vibe` `autonomous` grammar seam so
+   `lane … { mode = autonomous }` parses and compiles to the lane-plan JSON.
+3. Optional: a `pnpm run vibe:checkpoint` / `vibe:resume` script alias, and a
+   git hook or VS Code task that nudges a checkpoint before long pauses.
 
 ## Decisions
 

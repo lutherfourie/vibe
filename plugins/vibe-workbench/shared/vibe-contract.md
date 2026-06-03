@@ -19,6 +19,9 @@ Keep these concepts independent of any one assistant's plugin format:
 - Handoff target or execution surface.
 - Validation gate that proves the lane worked.
 - Human approval point before merge, release, or external side effects.
+- Whether the lane is **autonomous** (long-horizon): if so, it carries a durable
+  `PROGRESS.md` (checkpoint/resume) and runs the Explore → Research → Plan →
+  Implement → Verify → Test → Commit loop. See `docs/autonomous-lanes.md`.
 
 ## Adapter Boundary
 
