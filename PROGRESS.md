@@ -133,4 +133,20 @@ Big momentum: schema + grammar + providers (5) + supabase tables now in place fo
 
 Full loop exercised for this slice.
 
-Continuing... (commit wire, push, PR#31 auto; next: enhance web to Next.js dashboard using supabase for launch/monitor + vercel update; or self-use by adding autonomous decl to examples/vibe-self.vibe).
+**Web Next.js + Supabase dashboard checkpoint (2026-06-03)**:
+- Scaffolded real Next.js (app dir, TS, tailwind, eslint) into web/ (replaced static index.html placeholder).
+- Updated vercel.json: framework=nextjs, proper pnpm install/build for workspace.
+- Added @supabase/supabase-js + workspace @vibe/language to web.
+- Full autonomous dashboard in app/page.tsx:
+  - Launch form: creates session + checkpoint + event (simulates resolver dispatch + persist; real path uses pipeline + 5 providers + VibePlanSchema).
+  - Live list sessions + recent checkpoints from Supabase (realtime ready).
+  - Notes real dispatch path, env for local (self hosted supabase keys), big-AGI etc backends.
+  - Styled dark, matches vibe.
+- web/.env.local.example with local supabase + notes for provider keys.
+- pnpm --filter web build green (static prerender + client).
+- Pairs with all prior: now Vercel hosts real UI for launch/monitor autonomous on any backend, backed by Supabase state + langium plans.
+- Workspace: added "web" to pnpm-workspace.yaml.
+
+Self-bootstrapping UI complete for the platform.
+
+Continuing... (commit web, push, PR#32; then self-use: add autonomous-session decl to examples/vibe-self.vibe or new; run self:plan + go vibe handoff; full pnpm run check; final verify).
