@@ -1,0 +1,38 @@
+{
+  "name": "resource-aware-dispatcher",
+  "repo": "C:/vibe",
+  "lanes": [
+    {
+      "name": "resource-economy",
+      "mode": "autonomous",
+      "branch": "feat/resource-aware-dispatcher",
+      "reads": [
+        "go/internal/remote/**",
+        "web/app/api/agent/**",
+        "supabase/migrations/*remote*",
+        "PROGRESS.md",
+        "docs/superpowers/research/*",
+        "go/agent/**"
+      ],
+      "writes": [
+        "go/internal/resource/**",
+        "docs/resource-economy.md",
+        "examples/",
+        "PROGRESS.md"
+      ],
+      "prompt": "Build a ResourceAwareDispatcher that tracks token/quota usage across providers (Claude, Codex, Grok, Cerebras, big-AGI). Score and recommend the most economical viable provider before delegating autonomous work. Add Supabase table for quotas, Go package, integrate into handoff generator and autonomous loop. Use full Explore-Research-Plan-Implement-Verify-Test-Commit, checkpoint PROGRESS.",
+      "requires": [
+        "cd go && go test ./...",
+        "pnpm run self:plan",
+        "human.merge-review"
+      ],
+      "autonomous": {
+        "progress": "PROGRESS.md",
+        "horizon": "long",
+        "checkpointEvery": "every major step or 30-60 minutes",
+        "roles": ["architect", "researcher", "implementer", "tester", "reviewer"],
+        "research": "Survey provider pricing, current vibe usage patterns, quota APIs if available."
+      }
+    }
+  ]
+}

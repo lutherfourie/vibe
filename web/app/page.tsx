@@ -4,8 +4,9 @@ import React, { useEffect, useState } from "react";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 // Vibe Autonomous Dashboard (Next.js + Supabase)
-// Launch agents on any backend (Codex, Claude, Grok, Cerebras, big-AGI), monitor sessions/checkpoints.
+// Launch agents on any backend (Codex, Claude, Grok, Cerebras GLM, big-AGI), monitor sessions/checkpoints.
 // Real dispatch uses @vibe/language pipeline + 5 providers + persist (wired).
+// Cerebras GLM is forced via provider=cerebras param (or FORCE_CEREBRAS env); missing key now errors with notification instead of silent mock.
 
 type Session = {
   id: string;
@@ -75,7 +76,7 @@ export default function VibeDashboard() {
 
   async function launchAutonomous() {
     setLaunching(true);
-    setStatus("Launching via real Vibe resolver + provider (mock for Cerebras GLM) + persist to Supabase...");
+    setStatus("Launching via real Vibe resolver + provider (forcing Cerebras GLM if CEREBRAS_API_KEY present) + persist to Supabase...");
 
     try {
       const res = await fetch('/api/launch', {
@@ -84,6 +85,9 @@ export default function VibeDashboard() {
         body: JSON.stringify({
           name: form.name,
           description: form.desc,
+          // Force real Cerebras GLM (zai-glm-4.7) via parameter. Backend will return clear error (400) + notify
+          // in console if CEREBRAS_API_KEY is missing instead of silently using mock.
+          provider: 'cerebras',
         }),
       });
 
@@ -93,7 +97,8 @@ export default function VibeDashboard() {
         throw new Error(data.error || 'Launch failed');
       }
 
-      setStatus(`Launched via real pipeline! Session persisted (id ${data.sessionId?.slice(0,8) || 'n/a'}). Watch the list update LIVE via Supabase Realtime. Used mock provider simulating Cerebras GLM / any of the 5 backends.`);
+      const backend = data.plan?.metadata?.backend || (data.persisted ? 'cerebras.glm-real (or configured)' : 'unknown');
+      setStatus(`Launched via real pipeline! Session persisted (id ${data.sessionId?.slice(0,8) || 'n/a'}). Watch the list update LIVE via Supabase Realtime. Provider: ${backend}. (Forced Cerebras via param; key presence enforced.)`);
 
       // The API did the real persistVibePlan. Realtime subscription will update the UI.
       // As a fallback / to show initial data, we can still load, but realtime should handle it.
@@ -102,7 +107,7 @@ export default function VibeDashboard() {
         // load(); // usually not needed thanks to realtime
       }, 1500);
     } catch (e: any) {
-      setStatus("Launch error: " + (e?.message || e) + " — falling back to direct insert for demo.");
+      setStatus("Launch error: " + (e?.message || e) + " — falling back to direct insert for demo. (If CEREBRAS_API_KEY missing while forcing, see backend 400 error above.)");
 
       // Fallback to direct insert if API fails (still triggers realtime)
       if (sb) {
@@ -269,6 +274,51 @@ export default function VibeDashboard() {
             {!sb && <span className="text-amber-400">(set env to enable)</span>}
           </div>
           {!sb && <div className="mt-1 text-amber-400 text-xs">Supabase env not set — realtime &amp; live queries disabled (demo mode). Copy web/.env.local.example to .env.local and restart dev server.</div>}
+        </section>
+
+        {/* Infra Sync Control for remote updates to Supabase/Vercel */}
+        <section className="rounded-2xl border border-white/10 bg-zinc-900 p-6">
+          <h2 className="text-xl font-medium mb-4">Infra Sync (for remote control)</h2>
+          <p className="text-xs text-zinc-400 mb-3">Send commands to keep Supabase (migrations) and Vercel (deploy) updated automatically via the C&amp;C plane. The Go runner will ack with instructions to run pnpm scripts (requires clis/auth in runner env). Use on a real session.</p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={async () => {
+                if (!sessions.length) { alert('Load sessions first'); return; }
+                const sid = sessions[0].id;
+                const res = await fetch('/api/agent/command', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ session_id: sid, command: 'sync-supabase', issued_by: 'grok' }) });
+                const d = await res.json();
+                setStatus(`Sent sync-supabase: ${d.success ? 'queued' : d.error}`);
+              }}
+              className="px-4 py-2 rounded bg-blue-600 text-white text-sm hover:bg-blue-500"
+            >
+              Sync Supabase Migrations
+            </button>
+            <button
+              onClick={async () => {
+                if (!sessions.length) { alert('Load sessions first'); return; }
+                const sid = sessions[0].id;
+                const res = await fetch('/api/agent/command', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ session_id: sid, command: 'deploy-vercel', issued_by: 'grok' }) });
+                const d = await res.json();
+                setStatus(`Sent deploy-vercel: ${d.success ? 'queued' : d.error}`);
+              }}
+              className="px-4 py-2 rounded bg-purple-600 text-white text-sm hover:bg-purple-500"
+            >
+              Deploy to Vercel
+            </button>
+            <button
+              onClick={async () => {
+                if (!sessions.length) { alert('Load sessions first'); return; }
+                const sid = sessions[0].id;
+                const res = await fetch('/api/agent/command', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ session_id: sid, command: 'sync-infra', issued_by: 'grok' }) });
+                const d = await res.json();
+                setStatus(`Sent sync-infra: ${d.success ? 'queued' : d.error}`);
+              }}
+              className="px-4 py-2 rounded bg-emerald-600 text-white text-sm hover:bg-emerald-500"
+            >
+              Sync All Infra
+            </button>
+          </div>
+          <p className="mt-2 text-[10px] text-zinc-500">These queue agent_commands. A remote-controlled Go runner (polling via service key) will ProcessCommand and respond with run instructions. Then run the pnpm scripts here or in CI to actually update hosted Supabase + Vercel prod. Ensures remote control always sees latest.</p>
         </section>
 
         {/* Sessions + Checkpoints */}

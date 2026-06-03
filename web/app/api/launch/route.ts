@@ -8,18 +8,40 @@ import {
   type VibePlan,
 } from '@vibe/language';
 
-// This API route allows the dashboard to trigger a *real* Vibe resolve + persist flow.
-// It uses the resolver/pipeline with a provider (mock here representing Cerebras GLM or any of the 5 backends)
+// This API route allows the dashboard (or external callers like Grok) to trigger a *real* Vibe resolve + persist flow.
+// It uses the resolver/pipeline with a provider (Cerebras GLM when configured, else mock representing any of the 5 backends)
 // to turn a prose description into a VibePlan, then persists it to Supabase via the wired persistVibePlan.
 // The Supabase Realtime in the dashboard will then live-update the UI.
+//
+// Cerebras GLM (zai-glm-4.7) is forced via body.provider='cerebras' or env FORCE_CEREBRAS=true / DEFAULT_PROVIDER=cerebras.
+// If forced but CEREBRAS_API_KEY missing, returns clear 400 error (no silent mock fallback).
+// If key present, real provider is used for fast/cheap inference even without explicit force.
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, description } = body;
+    const { name, description, provider } = body;
 
     if (!name) {
       return NextResponse.json({ error: 'name is required' }, { status: 400 });
+    }
+
+    const hasCerebrasKey = !!process.env.CEREBRAS_API_KEY;
+    const requestedProvider = (provider || process.env.DEFAULT_PROVIDER || '').toLowerCase().trim();
+    const forceCerebras = requestedProvider === 'cerebras' || process.env.FORCE_CEREBRAS === 'true';
+
+    if (forceCerebras && !hasCerebrasKey) {
+      console.error('[Vibe Launch API] CEREBRAS_API_KEY is required (FORCE_CEREBRAS or provider=cerebras) but not configured.');
+      return NextResponse.json({
+        error: 'CEREBRAS_API_KEY not configured',
+        message: 'Cannot force real Cerebras GLM. Set CEREBRAS_API_KEY in web/.env.local (for dev) or Vercel Production envs.',
+        hint: 'Add to .env.local or use provider=mock to fall back.',
+        configured: false,
+      }, { status: 400 });
+    }
+
+    if (!hasCerebrasKey) {
+      console.warn('[Vibe Launch API] CEREBRAS_API_KEY not present. Using mock provider (cerebras.glm-demo). For real fast/cheap GLM set the key and use provider=cerebras or FORCE_CEREBRAS=true.');
     }
 
     // Build a prose description that the resolver will turn into a structured VibePlan / AutonomousSession
@@ -35,14 +57,15 @@ Make it suitable for long-horizon self-bootstrapping work using any of the 5 bac
     const registry = createProviderRegistry();
     let usedProviderId = 'cerebras.glm-demo';
 
-    // Prefer real Cerebras GLM (fast/cheap inference for autonomous plans) if key is available
-    // (found in shell env, .env, or Vercel env for the project prj_77Z3Gn0buAjqGHXYMvKAbbaR3Rtl).
-    // Falls back to mock provider that still produces a valid VibePlan.
-    if (process.env.CEREBRAS_API_KEY) {
+    // Force or prefer real Cerebras GLM (fast/cheap inference for autonomous plans).
+    // - Use body.provider=cerebras or env FORCE_CEREBRAS=true to force (errors if no key).
+    // - If key present, prefer real even without force (for cheap inference).
+    // - Otherwise use mock. Never fails silently on force.
+    if (forceCerebras || hasCerebrasKey) {
       const { createCerebrasProvider } = await import('@vibe/language');
       registry.register(
         createCerebrasProvider({
-          apiKey: process.env.CEREBRAS_API_KEY,
+          apiKey: process.env.CEREBRAS_API_KEY!,
           baseUrl: process.env.CEREBRAS_BASE_URL || 'https://api.cerebras.ai/v1',
           model: process.env.CEREBRAS_MODEL || 'zai-glm-4.7',
           id: 'cerebras.glm-real',

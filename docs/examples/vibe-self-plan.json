@@ -331,6 +331,202 @@
           }
         ]
       }
+    },
+    {
+      "name": "supabase_remote_control",
+      "description": "Build Supabase as central C&C plane: agent_commands/responses/events tables + RLS/realtime. Go client + RemoteControl poller/processor for listening/handling (instruct, pause, status, etc.). Web API routes for easy calls from Grok/Claude/Codex. Integrate into autonomous loop. E2E demo via live server + poller.",
+      "laneCount": 4,
+      "checkpointCount": 1,
+      "metadata": {
+        "name": "supabase_remote_control",
+        "description": "Build Supabase as central C&C plane: agent_commands/responses/events tables + RLS/realtime. Go client + RemoteControl poller/processor for listening/handling (instruct, pause, status, etc.). Web API routes for easy calls from Grok/Claude/Codex. Integrate into autonomous loop. E2E demo via live server + poller.",
+        "lanes": [
+          {
+            "name": "schema",
+            "steps": [
+              {
+                "type": "implement",
+                "id": "s1",
+                "description": "migration + RLS"
+              }
+            ]
+          },
+          {
+            "name": "go-runner",
+            "steps": [
+              {
+                "type": "implement",
+                "id": "g1",
+                "description": "client + RemoteControl + ProcessCommand"
+              },
+              {
+                "type": "checkpoint",
+                "id": "g2"
+              }
+            ]
+          },
+          {
+            "name": "web-api",
+            "steps": [
+              {
+                "type": "implement",
+                "id": "w1",
+                "description": " /api/agent/command and /status"
+              }
+            ]
+          },
+          {
+            "name": "integration",
+            "steps": [
+              {
+                "type": "implement",
+                "id": "i1",
+                "description": "hook in loop.go + E2E test"
+              },
+              {
+                "type": "self-review",
+                "id": "i2",
+                "criteria": [
+                  "poller acks commands",
+                  "API works on live server"
+                ]
+              }
+            ]
+          }
+        ],
+        "checkpoints": [
+          {
+            "id": "rc1",
+            "name": "infra+demo",
+            "resumeStrategy": "last-checkpoint"
+          }
+        ]
+      }
+    },
+    {
+      "name": "resource_economy",
+      "description": "Make autonomous delegation resource-aware: track quotas in Supabase, dispatcher recommends cheapest viable provider, log choices, update handoffs and loop.",
+      "laneCount": 3,
+      "checkpointCount": 1,
+      "metadata": {
+        "name": "resource_economy",
+        "description": "Make autonomous delegation resource-aware: track quotas in Supabase, dispatcher recommends cheapest viable provider, log choices, update handoffs and loop.",
+        "lanes": [
+          {
+            "name": "quotas",
+            "steps": [
+              {
+                "type": "implement",
+                "id": "q1",
+                "description": "migration + seed + update after use"
+              }
+            ]
+          },
+          {
+            "name": "dispatcher",
+            "steps": [
+              {
+                "type": "implement",
+                "id": "d1",
+                "description": "ResourceAwareDispatcher with score/recommend/log"
+              },
+              {
+                "type": "self-review",
+                "id": "d2",
+                "criteria": [
+                  "recommends correctly from live quotas"
+                ]
+              }
+            ]
+          },
+          {
+            "name": "integration",
+            "steps": [
+              {
+                "type": "implement",
+                "id": "i1",
+                "description": "handoff generator Resource Strategy + wire loop consult"
+              }
+            ]
+          }
+        ],
+        "checkpoints": [
+          {
+            "id": "re1",
+            "name": "core dispatcher + wiring",
+            "resumeStrategy": "last-checkpoint"
+          }
+        ]
+      }
+    },
+    {
+      "name": "infra_sync_for_remote",
+      "description": "Ensure Supabase and Vercel are always updated at the right time automatically as a prerequisite for reliable remote control of Vibe (Grok/Claude/Codex can command launches, instructions, and also 'sync-infra' so the C&C tables, dashboard, APIs, and provider logic stay current without manual local steps on the control machine).",
+      "laneCount": 4,
+      "checkpointCount": 1,
+      "metadata": {
+        "name": "infra_sync_for_remote",
+        "description": "Ensure Supabase and Vercel are always updated at the right time automatically as a prerequisite for reliable remote control of Vibe (Grok/Claude/Codex can command launches, instructions, and also 'sync-infra' so the C&C tables, dashboard, APIs, and provider logic stay current without manual local steps on the control machine).",
+        "lanes": [
+          {
+            "name": "automation",
+            "steps": [
+              {
+                "type": "implement",
+                "id": "a1",
+                "description": "pnpm infra:* scripts + os/exec auto-run inside RemoteControl.ProcessCommand for sync-supabase/deploy-vercel/sync-infra (capture output in acks)"
+              }
+            ]
+          },
+          {
+            "name": "poller-cmd",
+            "steps": [
+              {
+                "type": "implement",
+                "id": "p1",
+                "description": "vibe remote --session subcommand (main.go) that starts RemoteControl.StartPoller wired to ProcessCommand so queued commands auto-apply infra updates"
+              }
+            ]
+          },
+          {
+            "name": "ci-fallback",
+            "steps": [
+              {
+                "type": "implement",
+                "id": "c1",
+                "description": ".github/workflows/infra-sync.yml (workflow_dispatch) + update vercel script to npx for portability"
+              }
+            ]
+          },
+          {
+            "name": "surface-docs",
+            "steps": [
+              {
+                "type": "implement",
+                "id": "s1",
+                "description": "dashboard Infra Sync buttons (page.tsx) queue via /api/agent/command; docs/local-toolkit.md section; self-record in vibe-self.vibe"
+              },
+              {
+                "type": "self-review",
+                "id": "s2",
+                "criteria": [
+                  "vibe remote can be started",
+                  "sending command auto execs or dispatches",
+                  "hosted Supabase/Vercel reflect after",
+                  "self:plan + checkpoint used"
+                ]
+              }
+            ]
+          }
+        ],
+        "checkpoints": [
+          {
+            "id": "is1",
+            "name": "auto infra sync for remote control",
+            "resumeStrategy": "last-checkpoint"
+          }
+        ]
+      }
     }
   ],
   "notes": [

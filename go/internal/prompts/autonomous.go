@@ -144,6 +144,17 @@ func writeAutonomousOperatingContract(b *strings.Builder, progress string, roles
 	b.WriteString("- **Decisions** — each decision with its rationale.\n")
 	b.WriteString("- **Risks / Blockers** — open risks (may be empty).\n")
 	b.WriteString("- **Resume** — exact files to read first and commands to run.\n\n")
+
+	b.WriteString("### Resource Strategy (economy & smart delegation)\n\n")
+	b.WriteString("Before any significant external delegation (CLI calls to Claude, Codex, Grok, Cerebras, big-AGI, etc.), consult the ResourceAwareDispatcher (see go/internal/resource/dispatcher.go).\n\n")
+	b.WriteString("- Query current `provider_quotas` from Supabase (remaining, cost_per_million, reset_at, priority).\n")
+	b.WriteString("- Estimate rough token cost of the upcoming task using EstimateTaskCost (prompt length + type heuristics).\n")
+	b.WriteString("- Call Recommend() to get the lowest-score provider. Log the choice + reasoning with LogDecision().\n")
+	b.WriteString("- Prefer the recommended provider for the next step unless it would exhaust quota or exceed risk tolerance.\n")
+	b.WriteString("- Record the decision in the next PROGRESS.md checkpoint under 'Decisions'.\n")
+	b.WriteString("- If no viable provider, fall back to cheapest local simulation or human escalation and note it.\n\n")
+	b.WriteString("Audit log format example:\n")
+	b.WriteString("[ResourceDispatcher] For task \"implement X\" chose grok (score=0.0123, est_cost=$0.0045, reason: lowest cost + high remaining, left=950000)\n\n")
 }
 
 // roleLine renders one multi-agent role as a bolded name plus a one-line charter.

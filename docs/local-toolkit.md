@@ -154,3 +154,46 @@ dogfood loop: make `Vibe: Init Project` create a useful `.vibe/` workspace,
 parse it into `.vibe/state.json`, and show it in the Vibe tree. Keep
 installation side effects out of the CLI until the report format and human
 approval flow are clearer.
+
+## Infra Sync for Remote Control of Supabase + Vercel
+
+To enable full remote control of Vibe (you can launch, instruct, pause, and also keep the backing infra current from external surfaces like this chat, Claude, or Codex), Supabase (hosted tables for autonomous_sessions, agent_commands etc) and Vercel (the dashboard + /api/launch + /api/agent/* ) must be updated when code/migrations change.
+
+### Local / Runner Path (automatic when poller active)
+- `pnpm run infra:sync-supabase` — runs `supabase db push --linked --yes` (applies new migrations to the gknrdzkdgmuozhtaonst hosted project).
+- `pnpm run infra:deploy-vercel` — runs `npx vercel deploy --prod --yes` (deploys latest web/ code + APIs).
+- `pnpm run infra:sync-supabase && pnpm run infra:deploy-vercel` for both.
+
+From a running Go autonomous agent that has the CLIs + auth in its environment:
+
+```powershell
+vibe remote --session <session-uuid-from-dashboard-or-launch>
+```
+
+This starts `RemoteControl` poller (3s) that watches agent_commands for that session. When you (or Grok) POST to web `/api/agent/command` (or use the dashboard "Infra Sync" buttons which do exactly that for the first loaded session), the poller receives it and `ProcessCommand` **auto-execs** the matching pnpm infra script via os/exec. Output is captured, acked to agent_responses + agent_events (realtime visible), so remote control plane and dashboard stay current without you SSHing or running locally.
+
+The infra commands are: `sync-supabase`, `deploy-vercel`, `sync-infra`.
+
+See: go/agent/remote.go (ProcessCommand + runPnpmInfra), go/cmd/vibe/main.go (the remote subcommand), web/app/api/agent/command/route.ts, web/app/page.tsx (Infra Sync section).
+
+### CI / Dispatch Path (no local runner needed)
+`.github/workflows/infra-sync.yml` is triggered via `workflow_dispatch` (choice: sync-supabase | deploy-vercel | sync-infra).
+
+From terminal (with gh auth):
+
+```powershell
+gh workflow run infra-sync.yml --repo lutherfourie/vibe -f action=sync-infra
+```
+
+The workflow checks out, installs CLIs, links supabase using `SUPABASE_ACCESS_TOKEN` secret, runs the pushes/deploys using `VERCEL_TOKEN` secret.
+
+Configure in GitHub repo → Settings → Secrets and variables → Actions:
+- SUPABASE_ACCESS_TOKEN (from supabase dashboard / access tokens, needs write on the project)
+- VERCEL_TOKEN (vercel.com → tokens, scoped to the vibe project)
+
+The remote command handlers and dashboard notes mention the gh command as fallback.
+
+### Why this satisfies the request
+You can now control Vibe remotely end-to-end: send a command (even "sync-infra") from outside, and (with a `vibe remote` poller running against the control session, or via GH dispatch) the hosted Supabase schema and Vercel deployment update at the right time automatically. New remote features, resource dispatcher, cerebras force logic etc are immediately live for the control plane without manual steps on the dev machine.
+
+This was implemented as part of the autonomous lane for remote control + resource economy (self-recorded via checkpoints, self-plan, vibe handoff).
