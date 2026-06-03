@@ -41,16 +41,16 @@ powershell -ExecutionPolicy Bypass -File plugins\vibe-workbench\scripts\vibe_sel
 
 ## Claude Code Local Test
 
+**Temporarily disabled** (claude CLI is being used by another local project; do not interfere from here).
+See `.claude.disabled/`, commented entry in `.vscode/extensions.json`, disabled 'claude' provider registration in Go serve, and notes in `docs/local-toolkit.md`.
+
+When re-enabled for this project, the test command will be:
+
 ```powershell
 claude --plugin-dir .\plugins\vibe-workbench
 ```
 
-Then try:
+Then try the /vibe-workbench:* skills etc.
 
-```text
-/vibe-workbench:vibe-orient
-/vibe-workbench:vibe-self-plan
-/vibe-workbench:vibe-handoff local toolkit lane
-```
-
-The `vibe-lane-reviewer` agent should also appear in `/agents`.
+**Preferred now: use Codex + Grok extensively** (codex-skills/ in the plugin, `codex exec`, and this Grok session for parallel development of recommended features per self-plan lanes).
+Codex skills (vibe-orient, vibe-checkpoint, vibe-handoff, vibe-self-plan, vibe-autonomous) are available via Codex plugin surface.

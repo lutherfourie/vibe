@@ -19,7 +19,7 @@ Implemented as `pnpm run vibe:doctor`.
 Checks local readiness:
 
 - Required tools: `git`, `node`, `pnpm`, `go`.
-- Optional agent tools: `codex`, `claude`, `obsidian`.
+- Optional agent tools: `codex`, `claude` (temporarily disabled in this project -- claude cli active in another local project to avoid interference; see .claude.disabled/, commented in .vscode/extensions.json, disabled registration in go/internal/serve/serve.go + guard in claude adapter, and non-auto-register of createClaudeCliProvider in TS. Use codex + grok extensively instead for parallel feature work. Set VIBE_DISABLE_CLAUDE_CLI=1 to force-disable even direct use.).
 
 ### `vibe lanes`
 
@@ -96,7 +96,7 @@ The current best local host is the stdlib Go HTTP server in `vibe serve`.
 
 Containers, Kubernetes, Puppet, Chef, or heavier IaC are not the first move for
 this repo because the useful artifact is still a local, repo-derived admin
-surface. The first invariant should be "can Codex, Claude Code, and VS Code all
+surface. The first invariant should be "can Codex, (Claude Code temporarily disabled to avoid claude CLI interference with sibling project), and VS Code all
 see the same lanes and verification gates from the same source file?" The Go
 server gives that without introducing registry, image build, cluster, or secret
 management overhead.
@@ -115,7 +115,7 @@ preview URLs. Keep the first Vercel shape static or serverless:
   `docs/examples/vibe-lanes.mmd` during build.
 - Serve a read-only dashboard from Vercel.
 - Use Vercel AI Gateway or AI SDK only when Vibe adds a hosted model-facing
-  route; keep local Codex and Claude extension administration local for now.
+  route; keep local Codex (and Claude extension administration, currently disabled) local for now. Use Codex/Grok for this project's agent work.
 
 Supabase becomes useful when Vibe needs durable shared state:
 

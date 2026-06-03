@@ -1,6 +1,6 @@
 # Vibe Autonomous Bootstrap - Grok Build Mode
 
-Status: Claude-inspired console complete, live demoed on dev server
+Status: in_progress
 Updated: 2026-06-03
 Branch: 
 
@@ -9,6 +9,9 @@ Branch:
 ## Milestones
 
 ## Checkpoint Log
+
+### 2026-06-03 — Temporarily disable claude CLI (VSCode rec, .claude->.claude.disabled, Go serve registration+guard with VIBE_DISABLE_CLAUDE_CLI, TS provider note, docs/README/doctor updates). Use Grok (this) + Codex extensively in parallel for recommended features (codex already enhanced console chat/artifacts; launched more for telemetry emitters + remote cmd handlers incl checkpoint-via-binary). Small Grok polish on generative suggest button. Live dev server + poller active. Go build+tests pass, language claude test pass.
+- Followed AGENTS/CLAUDE first moves + git contract. No claude binary spawned in this work. Self-use via vibe binary for this checkpoint. Parallel codex tasks running for depth on self-plan recs (claude_inspired_ui followups, telemetry, remote). Next: let codex finish, run more gates, commit+PR per automation contract.
 
 ### 2026-06-03 — Claude console fully demoed live: 3 cmds in chat (monitor logged), artifacts show real cps (1 'start'), button fixed, cps load ensured. Server hot-reloading the polished UI.
 - User can now open localhost:3000, select demo sid 27eeb8d3... in sidebar to see Claude-like chat with 3 entries + artifacts with checkpoint. Composer (input+button) works to queue more (will show in stream). Realtime should update. Research fully realized in hybrid console+artifacts.
