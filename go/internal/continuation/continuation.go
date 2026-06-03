@@ -10,6 +10,16 @@ type Command struct {
 	Value   string `json:"value"`
 }
 
+// Progress summarizes the durable PROGRESS.md state (the lane-grain resume
+// spine) so the repo-grain continue report can surface it. It is populated by
+// the caller, which parses PROGRESS.md; the continuation package stays free of
+// that dependency.
+type Progress struct {
+	Status           string `json:"status,omitempty"`
+	Updated          string `json:"updated,omitempty"`
+	LatestCheckpoint string `json:"latestCheckpoint,omitempty"`
+}
+
 type Report struct {
 	RepoRoot     string    `json:"repoRoot"`
 	Branch       string    `json:"branch"`
@@ -19,6 +29,7 @@ type Report struct {
 	PlanName     string    `json:"planName,omitempty"`
 	PlanSource   string    `json:"planSource,omitempty"`
 	LaneCount    int       `json:"laneCount,omitempty"`
+	Progress     *Progress `json:"progress,omitempty"`
 	ReadFirst    []string  `json:"readFirst"`
 	Commands     []Command `json:"commands"`
 	NextMoves    []string  `json:"nextMoves"`
@@ -80,6 +91,19 @@ func Markdown(report Report) string {
 			fmt.Fprintf(&b, " (%d lanes)", report.LaneCount)
 		}
 		b.WriteString("\n")
+	}
+
+	if report.Progress != nil {
+		if report.Progress.Status != "" {
+			fmt.Fprintf(&b, "Progress: `%s`", report.Progress.Status)
+			if report.Progress.Updated != "" {
+				fmt.Fprintf(&b, " (updated %s)", report.Progress.Updated)
+			}
+			b.WriteString("\n")
+		}
+		if report.Progress.LatestCheckpoint != "" {
+			fmt.Fprintf(&b, "Latest checkpoint: %s\n", report.Progress.LatestCheckpoint)
+		}
 	}
 
 	writeList(&b, "Read First", report.ReadFirst)

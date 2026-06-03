@@ -45,6 +45,37 @@ func TestMarkdownGivesACompactResumeProtocol(t *testing.T) {
 	}
 }
 
+func TestMarkdownIncludesProgressWhenPresent(t *testing.T) {
+	report := Report{
+		RepoRoot: "C:/vibe",
+		Branch:   "main",
+		Clean:    true,
+		Progress: &Progress{
+			Status:           "M1 complete",
+			Updated:          "2026-06-03",
+			LatestCheckpoint: "2026-06-03 — PR 3 merged",
+		},
+		ReadFirst: DefaultReadFirst(),
+	}
+
+	out := Markdown(report)
+	for _, want := range []string{
+		"Progress: `M1 complete` (updated 2026-06-03)",
+		"Latest checkpoint: 2026-06-03 — PR 3 merged",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("expected markdown to contain %q\n\n%s", want, out)
+		}
+	}
+}
+
+func TestMarkdownOmitsProgressWhenAbsent(t *testing.T) {
+	out := Markdown(Report{RepoRoot: "C:/vibe", Clean: true})
+	if strings.Contains(out, "Progress:") || strings.Contains(out, "Latest checkpoint:") {
+		t.Fatalf("did not expect a Progress line when none is set:\n%s", out)
+	}
+}
+
 func TestDefaultNextMovesDoNotPointAtMergedTransferPRs(t *testing.T) {
 	moves := strings.Join(DefaultNextMoves(), "\n")
 	for _, stale := range []string{
