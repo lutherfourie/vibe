@@ -92,4 +92,23 @@
 - Grammar now supports native autonomous primitives in .vibe source, aligned to Zod shapes (via objects for steps). Self-extract now surfaces them. Validator dups + cross-refs work for new kinds.
 - Next in loop: wire to resolver/pipeline (use schemas for prose->VibePlan or structured->build plan), expand providers (next todo), etc. Update this after each.
 
-Continuing autonomously... (commit this slice, push, new PR or continue #27? , then providers expand or supabase, use big-AGI patterns in research)
+**Post-grammar-slice (2026-06-03)**: 
+- Committed grammar feat (828efab), pushed, created PR#28, auto-merged immediately (state MERGED, https://github.com/lutherfourie/vibe/pull/28 ; no required checks).
+- PROGRESS updated with slice details + verification.
+- Big progress: now .vibe can declare autonomous primitives natively -> self-plan extracts them -> schema valid. Syntax highlighting in VSCode too. Foundation for self-bootstrapping Vibe plans.
+- Momentum high; next slice: providers expansion (add codex, start grok/big-agi using multi-model beam pattern from big-AGI research).
+
+**Providers expansion checkpoint (2026-06-03)**:
+- Added full set of 5 backend adapters in packages/language/src/providers/ (for dispatch in resolver/pipeline):
+  - Codex CLI: new cli/codex.ts (modeled on claude, uses base exec+json protocol, default "openai.codex").
+  - Grok (Grok Build/Heavy / xAI): new api/grok.ts (openai-compatible via ai-sdk, default grok-3 on https://api.x.ai/v1).
+  - big-AGI: new api/big-agi.ts (stub per survey research: delegates or throws; docstring explains Beam multi-model parallel+merge borrow for autonomous research/verify/self-review, drop hosted UI. Can pass delegate for interim).
+  - Existing: Cerebras (api), OpenAI (api), Claude Code CLI (cli).
+- Updated providers/index.ts + language/src/index.ts (exports + types for new).
+- Added test/providers/cli/codex.test.ts (symmetric to claude.test).
+- Build green, providers tests 23/23 green (incl new codex).
+- Now 5 backends covered in TS language layer (cli for codex/claude; api for openai/cerebras/grok; bigagi for orchestration pattern). Go side already had codex/claude/openai/cerebras.
+- Ready for wiring dispatch of VibePlan (use createProviderRegistry, register e.g. codex/grok/cerebras, pass to pipeline with AutonomousSessionSchema or VibePlanSchema for prose regions).
+- big-AGI Beam pattern noted for future multi-model fan in autonomous steps (parallel providers then merge).
+
+Continuing autonomously... (update PROGRESS, commit/push/create PR#29, then supabase migrations or resolver wire + use new adapters in test).

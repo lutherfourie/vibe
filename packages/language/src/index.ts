@@ -53,6 +53,12 @@ export {
   type OpenAIProviderOptions,
 } from "./providers/api/openai.js";
 export { createClaudeCliProvider } from "./providers/cli/claude.js";
+export { createCodexCliProvider } from "./providers/cli/codex.js";
+export {
+  createGrokProvider,
+  type GrokProviderOptions,
+} from "./providers/api/grok.js";
+export { createBigAgiProvider } from "./providers/api/big-agi.js";
 export { mergeCorrected } from "./resolver/corrections.js";
 export { runPipeline, type PipelineInput, type PipelineResult } from "./pipeline/run.js";
 
