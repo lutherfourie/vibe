@@ -124,6 +124,7 @@ Supabase becomes useful when Vibe needs durable shared state:
 - `agent_handoffs` for generated prompts and ownership records.
 - `memory_entries` later, potentially with `pgvector`, if semantic project
   memory moves out of repo docs.
+- `telemetry_events` for usage/metrics (launches, provider choices via resource dispatcher, remote C&C processing, infra syncs, errors). Hosted on the *same* Supabase instance (no new services) so remote/Go agents, web dashboard, and resolver all use the existing client + RLS + realtime without extra auth or billing. Opt-in, best-effort emission.
 
 Do not introduce Supabase just to read the self-plan. The repo file is still the
 source of truth.

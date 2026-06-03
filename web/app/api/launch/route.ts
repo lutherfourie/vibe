@@ -5,6 +5,7 @@ import {
   createMockProvider,
   VibePlanSchema,
   persistVibePlan,
+  getSupabaseClient,
   type VibePlan,
 } from '@vibe/language';
 
@@ -170,6 +171,21 @@ ${prose}
 
     // Persist to Supabase (this is what feeds the live dashboard via Realtime)
     const persistResult = await persistVibePlan(plan);
+
+    // Telemetry for the launch action (best effort, non-blocking). Complements the plan_resolved
+    // emitted inside persistVibePlan. All hosted in Supabase alongside C&C and state.
+    if (persistResult.sessionId) {
+      const sb = getSupabaseClient();
+      if (sb) {
+        const ins = sb.from("telemetry_events").insert({
+          session_id: persistResult.sessionId,
+          kind: "launch",
+          source: "web",
+          payload: { provider: usedProviderId || "unknown", name, description: description || null },
+        });
+        Promise.resolve(ins).catch(() => {});
+      }
+    }
 
     return NextResponse.json({
       success: true,

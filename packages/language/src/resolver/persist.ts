@@ -100,6 +100,16 @@ export async function persistVibePlan(plan: VibePlan): Promise<{ persisted: bool
       payload: { version: plan.version, sourceFile: plan.sourceFile, generatedAt: plan.generatedAt },
     });
 
+    // Telemetry (best effort). Hosted in same Supabase as C&C/state (simplest + dogfoods the platform).
+    // Opt-in can be added later via env or plan flag; for now emit on every resolved plan so we get data.
+    const telem = client.from("telemetry_events").insert({
+      session_id: sessionId,
+      kind: "plan_resolved",
+      source: "resolver",
+      payload: { version: plan.version, sourceFile: plan.sourceFile, generatedAt: plan.generatedAt },
+    });
+    Promise.resolve(telem).catch(() => {});
+
     return { persisted: true, sessionId };
   } catch (e: any) {
     console.error("[vibe persist] error:", e?.message || e);

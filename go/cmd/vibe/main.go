@@ -501,6 +501,8 @@ func runRemote(ctx context.Context, args []string) error {
 	fmt.Println("Infra sync commands (sync-supabase, deploy-vercel, sync-infra) will AUTO-EXEC the pnpm scripts if this process has the CLIs+auth.")
 	fmt.Println("Press Ctrl+C to stop. Events and acks will appear here + in Supabase agent_events/responses.")
 
+	_ = ctrl.EmitTelemetry(ctx, "poller_started", "cli", map[string]any{"interval": interval.String()})
+
 	// Use ProcessCommand as the handler so all built-in commands (incl new auto-exec infra) work.
 	handler := func(cmd remote.AgentCommand) {
 		fmt.Printf("[remote] received command %s id=%s\n", cmd.Command, cmd.ID)
