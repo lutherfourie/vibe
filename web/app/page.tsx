@@ -523,6 +523,7 @@ export default function VibeDashboard() {
                       </div>
                       <div className="flex gap-2">
                         <input
+                          id="console-input"
                           type="text"
                           placeholder="Type command (status, instruct, pause, resume, sync-supabase...) or natural instruction"
                           className="flex-1 bg-black border border-white/20 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-emerald-500"
@@ -536,7 +537,16 @@ export default function VibeDashboard() {
                             }
                           }}
                         />
-                        <button onClick={() => { /* trigger via ref or simple */ alert('Use Enter in the input or quick buttons'); }} className="px-4 py-1.5 rounded bg-emerald-600 text-sm">Send</button>
+                        <button onClick={() => {
+                          const input = document.querySelector('#console-input') as HTMLInputElement;
+                          if (input && input.value) {
+                            const val = input.value;
+                            const cmd = val.startsWith('instruct') || val.length > 20 ? 'instruct' : val;
+                            const payload = cmd === 'instruct' ? { instruction: val.replace(/^instruct\s*/i, '') } : {};
+                            sendCommand(cmd, payload);
+                            input.value = '';
+                          }
+                        }} className="px-4 py-1.5 rounded bg-emerald-600 text-sm">Send</button>
                       </div>
                       <div className="text-[10px] text-zinc-500 mt-1">Sends via /api/agent/command → live Go poller (if running for this session) processes with ProcessCommand + telemetry emission.</div>
                     </div>
