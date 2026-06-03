@@ -51,3 +51,5 @@ Thumbs.db
 # Claude Code per-user overrides (settings.json is committed, .local is not)
 .claude/settings.local.json
 .claude/worktrees/
+
+.vercel
