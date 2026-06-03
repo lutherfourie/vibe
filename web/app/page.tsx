@@ -495,6 +495,11 @@ export default function VibeDashboard() {
                       {consoleLoading && <div className="text-[10px] text-amber-400">Loading console data…</div>}
                     </div>
 
+                    {/* Artifacts panel (Claude Artifacts / side panel inspiration): structured views of declarative state + telemetry for the session, live via realtime. Better than pure chat for agent OS. */}
+                    <div className="text-[10px] border-t border-white/10 pt-2 mb-2">
+                      <span className="font-medium">Artifacts:</span> {(checkpoints[selectedId] || []).length} checkpoints • telemetry for session (load via button above or console refresh). Plan previews / resource decisions can render here in future (Claude-like live editable output).
+                    </div>
+
                     {/* Composer - natural language command input, Claude style */}
                     <div className="mt-auto">
                       <div className="flex gap-2 mb-2">
