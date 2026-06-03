@@ -119,6 +119,24 @@ func runContinue(ctx context.Context, args []string) error {
 		report.LaneCount = len(plan.Lanes)
 	}
 
+	// Surface the durable PROGRESS.md state (lane-grain) inside the repo-grain
+	// continue report so the orient command shows where long-horizon work stands.
+	if raw, err := os.ReadFile(resolveRepoPath("PROGRESS.md")); err == nil {
+		if doc, perr := progress.Parse(string(raw)); perr == nil {
+			p := &continuation.Progress{Status: doc.Status, Updated: doc.Updated}
+			if len(doc.Checkpoints) > 0 {
+				latest := strings.TrimSpace(doc.Checkpoints[0].Time)
+				if s := strings.TrimSpace(doc.Checkpoints[0].Summary); s != "" {
+					latest += " — " + s
+				}
+				p.LatestCheckpoint = latest
+			}
+			if p.Status != "" || p.LatestCheckpoint != "" {
+				report.Progress = p
+			}
+		}
+	}
+
 	if *jsonOut {
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")

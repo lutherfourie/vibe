@@ -1,8 +1,8 @@
 # Vibe — Autonomous Long-Horizon Work
 
-Status: M1 complete — PR 3 (surfaces) verified locally; opening PR
+Status: M1 shipped; PR 4 (continue integration) verified locally
 Updated: 2026-06-03
-Branch: feat/vibe-autonomous-surfaces
+Branch: feat/vibe-continue-progress
 
 ## Mission
 
@@ -23,8 +23,13 @@ first dogfood of the `PROGRESS.md` contract the feature defines.
 - [x] PR 1 (core): T1 schema, T2 IR, T3 prompt generator, T4 coordinator + smoke.
 - [x] PR 2 (durable state): T5 `progress` package, T6 `checkpoint`/`resume` verbs.
 - [x] PR 3 (surfaces): T7 skills, templates, docs.
+- [x] PR 4 (integration): PROGRESS.md surfaced inside `vibe continue`.
 
 ## Checkpoint Log
+
+### 2026-06-03 — PR 4: PROGRESS.md-aware vibe continue (resume layers compose)
+- continuation.Report gains an optional Progress block; Markdown renders Status/Updated/Latest checkpoint
+- runContinue parses PROGRESS.md and populates it; continuation package stays dependency-free
 
 ### 2026-06-03 — PR 3: autonomous skills + status script + docs (M1 surfaces)
 - skills vibe-autonomous + vibe-checkpoint for Claude + Codex (drift check: match); vibe_autonomous_status.ps1
@@ -68,12 +73,19 @@ first dogfood of the `PROGRESS.md` contract the feature defines.
 
 ## Next Moves
 
-1. Open PR 3 (surfaces); confirm it lands on main. M1 complete after that.
-2. Future (M2): wire autonomous lanes to `vibe serve` so the daemon can *run* the
-   loop (the agent SDK already exists); add a `.vibe` `autonomous` grammar seam so
-   `lane … { mode = autonomous }` parses and compiles to the lane-plan JSON.
-3. Optional: a `pnpm run vibe:checkpoint` / `vibe:resume` script alias, and a
-   git hook or VS Code task that nudges a checkpoint before long pauses.
+M1 is shipped (PRs #19, #20, #21, + continue integration). Next chunks — each
+deserves a fresh session per the one-repo-at-a-time rule:
+
+1. **M2 — daemon runs the loop.** Wire autonomous lanes to `vibe serve` so the
+   Go daemon (which already has the agent SDK) can *execute* the Explore→…→Commit
+   loop and auto-checkpoint PROGRESS.md, not just emit the brief.
+2. **`.vibe` grammar seam.** Add a real `lane` primitive to the Langium grammar
+   so `lane x { mode = autonomous; autonomous { … } }` parses and compiles to the
+   lane-plan JSON. Touches `packages/language` (keep the 242 TS tests green).
+3. **Polish (optional, small):** `vibe checkpoint` could refresh the `Branch:`
+   front-block from the live git branch (today it leaves it; hand-fixed per
+   slice). A `pnpm run vibe:resume` alias for parity with the other `vibe:*`
+   scripts. A git hook / VS Code task that nudges a checkpoint before long pauses.
 
 ## Decisions
 
