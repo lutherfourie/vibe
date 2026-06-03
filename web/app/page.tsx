@@ -330,9 +330,15 @@ export default function VibeDashboard() {
             <button
               onClick={async () => {
                 if (!sb) { alert('Supabase anon key needed in env'); return; }
-                const { data } = await sb.from('telemetry_events').select('*').order('created_at', { ascending: false }).limit(30);
-                setTelemetry(data || []);
-                setStatus(`Loaded ${data?.length || 0} telemetry events`);
+                try {
+                  const { data, error } = await sb.from('telemetry_events').select('*').order('created_at', { ascending: false }).limit(30);
+                  if (error) throw error;
+                  setTelemetry(data || []);
+                  setStatus(`Loaded ${data?.length || 0} telemetry events (table must exist: apply the new migration via supabase db reset or infra sync)`);
+                } catch (e: any) {
+                  setStatus('Telemetry query error (table may not be created yet): ' + (e?.message || e));
+                  setTelemetry([]);
+                }
               }}
               className="px-4 py-2 rounded bg-amber-600 text-white text-sm hover:bg-amber-500"
             >
