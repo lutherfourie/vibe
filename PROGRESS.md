@@ -10,6 +10,9 @@ Branch:
 
 ## Checkpoint Log
 
+### 2026-06-03 — Credentials setup complete for Supabase (local .env.local with keys from status for dev realtime, hosted keys added to Vercel Production envs for gknrdzkdgmuozhtaonst live prod), Vercel project linked and envs set, GLM/Cerebras placeholder in .env (no secret key found in searches, launch uses mock but persist real). Dev server running clean on 3000 with monitor and .env.local. API/launch triggers real Vibe resolve + persist, realtime live events proven and captured in monitor. Deployed prebuilt to Vercel (ready URLs use hosted Supabase live; fixed monorepo issues by removing sub vercel.json). Used Vibe self:plan, handoff, checkpoint autonomously to record. All git/deploy approved. Dashboard at localhost:3000 ready for live updates; prod ready URLs for hosted live.
+- While sleeping: the dev server is up for live demo (open http://localhost:3000, launch to see realtime updates from local Supabase). For prod, use ready Vercel URL with hosted Supabase. Continue autonomous: review generated handoffs in .vibe-out, run pnpm run check + go test, enhance dashboard (e.g. support hosted toggle or real GLM when key added), update self.vibe source with new autonomous-session for this work, checkpoint, commit, push, PR per contract. Use vibe resume on wake.
+
 ### 2026-06-03 — Ran pnpm run check as autonomous verify (self:plan, language/vscode tests passed  , web build compiled, all green). Credentials and live Supabase dashboard setup complete and verified. Deployed to Vercel with hosted Supabase (ready URLs). Dev server on 3000 with local for realtime demo. All per Vibe contract and handoff.
 - Autonomous loop while sleeping: review .vibe-out handoffs, enhance dashboard (e.g. show real sessions from hosted), add GLM key support/docs, self-update more .vibe source, full pnpm check + go test, checkpoint, commit, push, PR. Use vibe resume next session.
 
