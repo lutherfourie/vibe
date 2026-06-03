@@ -50,7 +50,7 @@ function getValidator(schema) {
 
 // Negative self-test: the self-plan schema must reject a plan missing `name`.
 const selfValidate = getValidator(selfPlanSchema);
-const missingName = { source: "x", providers: [], routes: {}, surfaces: [], agents: [], lanes: [], gates: [], notes: [] };
+const missingName = { source: "x", providers: [], routes: {}, surfaces: [], agents: [], lanes: [], gates: [], autonomousSessions: [], notes: [] };
 if (selfValidate(missingName)) {
   failed = true;
   console.error("FAIL: self-plan schema accepted an object missing `name`");

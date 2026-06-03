@@ -74,4 +74,22 @@
 
 **Current phase**: Starting Phase 1+ self-orchestrate immediately. Momentum: audit complete.
 
-Continuing autonomously... (next: update todos, explore grammar for extend, implement first slice, checkpoint, commit, push/PR)
+**Post-audit checkpoint (2026-06-03)**: 
+- PR #27 created (https://github.com/lutherfourie/vibe/pull/27) + pushed per contract. (Repo disallows squash merges so used default; it merged immediately as no required CI on PRs — "intended behavior". Branch continues for ongoing work.)
+- Audit exhaustive, state captured. Remote clean.
+- Now self-orchestrating: entering Explore→Plan for grammar extension slice using autonomous loop.
+- Will use existing Zod Autonomous* schemas to validate emitted plans from new syntax.
+- Next actions logged in todos; update this file after each slice/impl/verify.
+- big-AGI Beam pattern: for future research steps, fan parallel providers (cerebras+openai+grok) then merge findings via self-review into PROGRESS.
+
+**Slice checkpoint 2026-06-03 (grammar extend)**: 
+- Extended vibe.langium: added AutonomousSession, Lane, Checkpoint, SelfReview, ResearchStep decl rules (fields-based for config + nested via list/object expr for steps). Added keywords to Name and Declaration. Updated comment.
+- langium:generate (and build) succeeded, updated src/generated/ast.ts (new is* , Declaration union), and vscode-extension/syntaxes/vibe.tmLanguage.json (keywords now highlighted).
+- Updated src: vibe-validator.ts (NamedDeclaration union + KIND_LABEL + isNamed + declared sets + switch cases + CROSS_REF_KINDS + docs) + imports; self/self-plan.ts (imports all new is*, added SelfAutonomousSession + autonomousSessions to VibeSelfPlan + extract + readAutonomousSession helper using list len from fields).
+- Fixed schemas/vibe-self-plan.schema.json (added autonomousSessions prop + def, required update) + negative case in scripts/check-schemas.mjs.
+- Ran pnpm --filter @vibe/language build (green), test (242/242 green, incl self-plan-schema), schemas:check (all ok, incl updated self-plan fixture), pnpm run self:plan (regenerated docs/examples/vibe-self-plan.json with autonomousSessions:[] + note).
+- Smoke parse via dist: `autonomous-session demo {...} lane build { steps = [ {type=..., ...}, ... ] }` -> 0 parse errors, decls recognized as AutonomousSession/Lane.
+- Grammar now supports native autonomous primitives in .vibe source, aligned to Zod shapes (via objects for steps). Self-extract now surfaces them. Validator dups + cross-refs work for new kinds.
+- Next in loop: wire to resolver/pipeline (use schemas for prose->VibePlan or structured->build plan), expand providers (next todo), etc. Update this after each.
+
+Continuing autonomously... (commit this slice, push, new PR or continue #27? , then providers expand or supabase, use big-AGI patterns in research)

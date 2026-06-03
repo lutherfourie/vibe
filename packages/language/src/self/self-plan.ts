@@ -1,7 +1,10 @@
 import {
   isAgent,
+  isAutonomousSession,
   isBooleanLiteral,
+  isCheckpoint,
   isFallback,
+  isLane,
   isListExpression,
   isMemory,
   isNullLiteral,
@@ -10,18 +13,25 @@ import {
   isPlugin,
   isProvider,
   isReference,
+  isResearchStep,
   isRoute,
+  isSelfReview,
   isStringLiteral,
   isSurface,
   type Agent,
+  type AutonomousSession,
+  type Checkpoint,
   type Expression,
   type Field,
+  type Lane,
   type Memory,
   type Plugin,
   type Project,
   type Provider,
   type QualifiedName,
   type Reference,
+  type ResearchStep,
+  type SelfReview,
   type Surface,
 } from "../generated/ast.js";
 import { parseVibeSource } from "./parse.js";
@@ -37,7 +47,16 @@ export interface VibeSelfPlan {
   agents: SelfAgent[];
   lanes: SelfLane[];
   gates: SelfGate[];
+  autonomousSessions: SelfAutonomousSession[];
   notes: string[];
+}
+
+export interface SelfAutonomousSession {
+  name: string;
+  description?: string;
+  laneCount: number;
+  checkpointCount: number;
+  metadata: Record<string, unknown>;
 }
 
 export interface SelfSurface {
@@ -109,6 +128,9 @@ export function extractSelfPlan(
   const gates = plugins
     .filter((plugin) => plugin.name.endsWith("_gate"))
     .map(readGate);
+  const autonomousSessions = project.declarations
+    .filter(isAutonomousSession)
+    .map(readAutonomousSession);
 
   return {
     name: options.name ?? "vibe-self",
@@ -121,10 +143,12 @@ export function extractSelfPlan(
     agents,
     lanes,
     gates,
+    autonomousSessions,
     notes: [
       "This is a provisional self-plan extracted from current Vibe primitives.",
       "Plugins ending in _lane are treated as lanes until lane syntax exists.",
       "Plugins ending in _gate are treated as gates until gate syntax exists.",
+      "Native autonomous-session/lane/checkpoint/self-review/research-step are now first-class (Langium + Zod).",
     ],
   };
 }
@@ -184,6 +208,30 @@ function readGate(plugin: Plugin): SelfGate {
     emits: stringValue(metadata.emits),
     metadata,
   };
+}
+
+function readAutonomousSession(sess: AutonomousSession): SelfAutonomousSession {
+  const metadata = readMetadataForAny(sess);
+  // Count nested via fields if present (prose objects or future structured); fallback 0
+  const lanesField = sess.fields.find((f) => f.name === "lanes");
+  const checkpointsField = sess.fields.find((f) => f.name === "checkpoints");
+  const laneCount = lanesField && isListExpression(lanesField.value) ? lanesField.value.items.length : 0;
+  const checkpointCount = checkpointsField && isListExpression(checkpointsField.value) ? checkpointsField.value.items.length : 0;
+  return {
+    name: sess.name,
+    description: stringValue(metadata.description),
+    laneCount,
+    checkpointCount,
+    metadata,
+  };
+}
+
+function readMetadataForAny(source: { fields: Field[] }): Record<string, unknown> {
+  const metadata: Record<string, unknown> = {};
+  for (const field of source.fields) {
+    metadata[field.name] = expressionValue(field.value);
+  }
+  return metadata;
 }
 
 function readMetadata(source: Plugin | Provider | Surface): Record<string, unknown> {
