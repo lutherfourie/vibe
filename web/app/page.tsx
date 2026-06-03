@@ -94,6 +94,13 @@ export default function VibeDashboard() {
       // also refresh telemetry for this session
       const { data: telem } = await sb.from('telemetry_events').select('*').eq('session_id', sid).order('created_at', { ascending: false }).limit(20);
       setTelemetry(telem || []);
+      // ensure checkpoints for this sid (in case loaded after initial global load)
+      if (!checkpoints[sid] || checkpoints[sid].length === 0) {
+        const { data: cp } = await sb.from('checkpoints').select('id,name,created_at').eq('session_id', sid).order('created_at', { ascending: false }).limit(5);
+        if (cp) {
+          setCheckpoints((prev) => ({ ...prev, [sid]: cp as Checkpoint[] }));
+        }
+      }
     } catch (e) {
       console.error(e);
     }
@@ -471,33 +478,40 @@ export default function VibeDashboard() {
                       <button onClick={() => loadSessionData(selectedId!)} disabled={consoleLoading} className="text-xs px-2 py-1 border border-white/20 rounded hover:bg-white/5 disabled:opacity-50">Refresh</button>
                     </div>
 
-                    {/* Chat-like message stream (inspired by Claude messages + streaming feel) */}
-                    <div className="flex-1 overflow-auto space-y-3 text-sm mb-3 pr-1 max-h-[320px] bg-black/30 p-3 rounded">
+                    {/* Chat-like message stream (Claude-inspired: clean bubbles, user right, system left, timestamps, kind labels. Feels like chatting with the autonomous agent via C&C.) */}
+                    <div className="flex-1 overflow-auto space-y-2 text-sm mb-3 pr-1 max-h-[280px] bg-black/40 p-3 rounded border border-white/5">
                       {sessionData && (sessionData.commands.length + sessionData.events.length + sessionData.responses.length > 0) ? (
                         [...(sessionData.commands || []), ...(sessionData.events || []), ...(sessionData.responses || [])]
                           .sort((a,b) => new Date(a.created_at || a.created_at).getTime() - new Date(b.created_at || b.created_at).getTime())
                           .map((item, idx) => {
-                            const isUser = item.issued_by || (item.kind && item.kind.includes('command'));
+                            const isUser = !!item.issued_by;
                             const kind = item.command || item.kind || (item.status ? 'response' : 'event');
-                            const msg = item.message || JSON.stringify(item.payload || item.result || {}).slice(0, 180);
+                            const msg = item.message || (item.payload ? JSON.stringify(item.payload) : (item.result ? JSON.stringify(item.result) : '(no details)'));
+                            const time = new Date(item.created_at || item.created_at).toLocaleTimeString();
                             return (
-                              <div key={idx} className={`flex ${isUser ? 'justify-end' : ''}`}>
-                                <div className={`max-w-[85%] rounded-xl px-3 py-1.5 ${isUser ? 'bg-emerald-600 text-black' : 'bg-zinc-900 border border-white/10'}`}>
-                                  <div className="text-[10px] opacity-60 mb-0.5">{kind} • {new Date(item.created_at || item.created_at).toLocaleTimeString()}</div>
-                                  <div className="whitespace-pre-wrap break-words">{msg || '(no payload)'}</div>
+                              <div key={idx} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`max-w-[80%] rounded-2xl px-3 py-1.5 shadow-sm ${isUser ? 'bg-emerald-600 text-black' : 'bg-zinc-800 border border-white/10 text-zinc-200'}`}>
+                                  <div className="flex items-center gap-2 text-[9px] opacity-70 mb-0.5">
+                                    <span>{isUser ? 'You' : 'Agent'}</span>
+                                    <span className="font-mono">· {kind}</span>
+                                    <span>{time}</span>
+                                  </div>
+                                  <div className="whitespace-pre-wrap break-words text-xs leading-snug">{msg.slice(0, 220)}{msg.length > 220 ? '…' : ''}</div>
                                 </div>
                               </div>
                             );
                           })
                       ) : (
-                        <div className="text-zinc-500 text-xs">No activity yet for this session. Send a command below or launch work that emits events/telemetry. (The live `vibe remote` poller will process queued remote commands and emit telemetry.)</div>
+                        <div className="text-zinc-500 text-xs italic">No activity yet. Use the composer below to send remote commands (like Claude chat). The live poller (if active for this session) will process & emit telemetry/events for the stream to update live via realtime.</div>
                       )}
-                      {consoleLoading && <div className="text-[10px] text-amber-400">Loading console data…</div>}
+                      {consoleLoading && <div className="text-[10px] text-amber-400 animate-pulse">Loading console…</div>}
                     </div>
 
-                    {/* Artifacts panel (Claude Artifacts / side panel inspiration): structured views of declarative state + telemetry for the session, live via realtime. Better than pure chat for agent OS. */}
-                    <div className="text-[10px] border-t border-white/10 pt-2 mb-2">
-                      <span className="font-medium">Artifacts:</span> {(checkpoints[selectedId] || []).length} checkpoints • telemetry for session (load via button above or console refresh). Plan previews / resource decisions can render here in future (Claude-like live editable output).
+                    {/* Artifacts (Claude Artifacts inspiration): side-panel style live/structured views for the session's declarative state. Checkpoints as "steps", telemetry as "insights". Can be extended to preview plans, render interactive previews, etc. */}
+                    <div className="mb-2 p-2 bg-zinc-900/60 rounded border border-white/10 text-[10px]">
+                      <div className="font-medium mb-1 flex items-center gap-1">📦 Artifacts for this session <span className="text-emerald-400">(Claude-like live previews)</span></div>
+                      <div>Checkpoints: {(checkpoints[selectedId] || []).length ? (checkpoints[selectedId] || []).map(c => c.name).join(' → ') : 'none yet'}</div>
+                      <div className="text-amber-400">Telemetry events for session: see global Telemetry section or refresh console (loads per-session). Future: render VibePlan previews, resource decisions, or generated UI artifacts here.</div>
                     </div>
 
                     {/* Composer - natural language command input, Claude style */}
