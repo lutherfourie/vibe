@@ -38,7 +38,12 @@ Then read `README.md`, `docs/local-toolkit.md`, and
 - Prefer Plan mode for broad changes.
 - Use the Vibe Workbench plugin skills when available:
   `/vibe-workbench:vibe-orient`, `/vibe-workbench:vibe-self-plan`,
-  `/vibe-workbench:vibe-handoff`.
+  `/vibe-workbench:vibe-handoff`, `/vibe-workbench:vibe-autonomous`,
+  `/vibe-workbench:vibe-checkpoint`.
+- For long-horizon, durable work, use **autonomous lanes**: declare a lane as
+  `mode: autonomous` (lane-plan JSON), generate its scoped brief with
+  `vibe handoff --plan`, and keep `PROGRESS.md` current with `vibe checkpoint` /
+  `vibe resume`. See `docs/autonomous-lanes.md`.
 - For planning, debugging, review, or verification, invoke Superpowers skills
   directly (`superpowers:writing-plans`,
   `superpowers:systematic-debugging`, `superpowers:requesting-code-review`,

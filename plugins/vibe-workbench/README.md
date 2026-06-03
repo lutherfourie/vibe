@@ -13,6 +13,8 @@ For disciplined planning, debugging, review, and verification, the plugin relies
   - `vibe-orient`
   - `vibe-self-plan`
   - `vibe-handoff`
+  - `vibe-autonomous` — start or resume a long-horizon autonomous lane
+  - `vibe-checkpoint` — record a durable `PROGRESS.md` checkpoint
 - A read-only Claude Code subagent in `agents/vibe-lane-reviewer.md`.
 - A `SessionStart` hook in `hooks/hooks.json` that runs the repo snapshot.
 - Codex plugin manifest in `.codex-plugin/plugin.json` with mirrored skills in `codex-skills/`.
@@ -28,6 +30,7 @@ powershell -ExecutionPolicy Bypass -File plugins\vibe-workbench\scripts\vibe_rep
 powershell -ExecutionPolicy Bypass -File plugins\vibe-workbench\scripts\vibe_lane_inventory.ps1
 powershell -ExecutionPolicy Bypass -File plugins\vibe-workbench\scripts\vibe_self_plan_check.ps1
 powershell -ExecutionPolicy Bypass -File plugins\vibe-workbench\scripts\vibe_skills_drift_check.ps1
+powershell -ExecutionPolicy Bypass -File plugins\vibe-workbench\scripts\vibe_autonomous_status.ps1
 ```
 
 Regenerate the self-plan only when intended:

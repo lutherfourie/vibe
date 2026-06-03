@@ -21,6 +21,10 @@ The lane-plan IR.
 
 - **Producer:** hand-authored or `bootstrap.SelfMakingPlan` (e.g. `docs/examples/pawfall-feedback-lanes.json`).
 - **Consumer:** Go `internal/lanes` via `vibe handoff --plan` and `vibe-coord emit`.
+- **Modes:** `codex.web`, `local`, `autonomous`. An `autonomous` lane carries an
+  optional, closed `autonomous` config object (`progress`, `horizon`,
+  `checkpointEvery`, `roles`, `research`) and renders the long-horizon operating
+  brief. See `docs/autonomous-lanes.md` and `docs/examples/vibe-autonomous-lanes.json`.
 
 ## Rules
 
