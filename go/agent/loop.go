@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+
+	"github.com/lutherfourie/vibe/go/internal/resource"
 )
 
 const defaultMaxLoopIterations = 8
@@ -78,6 +81,17 @@ func runLoop(
 		// (Example hook; production uses bg poller from RemoteControl.StartPoller.)
 		if r := getRemoteFromContext(ctx); r != nil && r.Remote != nil {
 			_ = r.Remote.EmitEvent(ctx, "loop_iteration", map[string]any{"iteration": iteration})
+		}
+
+		// Resource-aware: before provider turn (which may delegate externally), consult
+		// dispatcher and log recommended provider. This ensures CLI delegations are
+		// quota/cost conscious per the resource-economy lane.
+		if len(conversation) > 0 {
+			est := resource.EstimateTaskCost("", "autonomous-turn")
+			disp := resource.NewResourceAwareDispatcher()
+			if rec, err := disp.Recommend(ctx, est); err == nil && rec.Provider != "" && rec.Provider != "none" {
+				resource.LogDecision(rec, fmt.Sprintf("loop-iteration-%d", iteration))
+			}
 		}
 
 		turnEvents, err := provider.RunTurn(ctx, TurnRequest{

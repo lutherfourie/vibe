@@ -143,6 +143,21 @@ func (c *Client) CreateEvent(ctx context.Context, e AgentEvent) error {
 	return c.do(ctx, "POST", path, e, nil)
 }
 
+// Query runs a generic GET on a table with query params (for quotas etc).
+func (c *Client) Query(ctx context.Context, table string, q url.Values, out any) error {
+	path := "/" + table
+	if q != nil && len(q) > 0 {
+		path += "?" + q.Encode()
+	}
+	return c.do(ctx, "GET", path, nil, out)
+}
+
+// Update runs a generic PATCH on table with filter and body.
+func (c *Client) Update(ctx context.Context, table string, filter string, body any) error {
+	path := "/" + table + "?" + filter
+	return c.do(ctx, "PATCH", path, body, nil)
+}
+
 // PollForCommands is a simple blocking poller useful inside an autonomous runner loop.
 // Calls handler for each pending command; handler should call Update + CreateResponse.
 func (c *Client) PollForCommands(ctx context.Context, sessionID string, interval time.Duration, handler func(AgentCommand) error) error {
