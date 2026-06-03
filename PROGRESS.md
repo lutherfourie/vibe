@@ -10,6 +10,9 @@ Branch:
 
 ## Checkpoint Log
 
+### 2026-06-03 — Processed telemetry codex timeout (300s). Completed the rec: more emitters (turn_start/end in loop.go), UI 'Recent Telemetry' count + exact 'Queue Telemetry Example' button. Prior codex work + this advances telemetry lane. vibe binary only. Pushed to branch/PR.
+- grok + codex parallel in action for recommended features.
+
 ### 2026-06-03 — Telemetry codex parallel task (019e8ead-8836...) timed out at 300s. Partial progress from run (test enhancements, emitter wiring) already landed in prior commits. Completed missing pieces as Grok: added turn_start/turn_end telemetry emits in go/agent/loop.go (using remote hook), enhanced web telemetry section with live count badge + exact 'Queue Telemetry Example' button (direct sb insert demo). Existing Load Recent, emitters for remote_command_processed/resource_decision/plan_resolved/launch/poller etc. already solid. UI uses realtime. Matches codex prompt for more emitters + minimal 'Recent Telemetry' surfacing + queue button. Dev server hot-reloaded. Clade CLI disabled; grok+codex parallel for recs (console, telemetry, remote) ongoing.
 - Followed self-use: binary for this checkpoint only. No hand edits to self-plan. Gates: will run go test etc next. Live poller+server for verification.
 
