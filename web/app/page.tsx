@@ -41,6 +41,9 @@ export default function VibeDashboard() {
   const [status, setStatus] = useState<string>("");
   const [realtimeStatus, setRealtimeStatus] = useState<string>("disconnected");
   const [telemetry, setTelemetry] = useState<any[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [sessionData, setSessionData] = useState<{commands: any[], events: any[], responses: any[]} | null>(null);
+  const [consoleLoading, setConsoleLoading] = useState(false);
 
   const sb = getSupabase();
 
@@ -73,6 +76,46 @@ export default function VibeDashboard() {
     }
     setCheckpoints(cps);
     setLoading(false);
+  }
+
+  async function loadSessionData(sid: string) {
+    if (!sb) return;
+    setConsoleLoading(true);
+    try {
+      const res = await fetch(`/api/agent/status?session_id=${sid}`);
+      const data = await res.json();
+      if (res.ok) {
+        setSessionData({
+          commands: data.commands || [],
+          events: data.events || [],
+          responses: data.responses || [],
+        });
+      }
+      // also refresh telemetry for this session
+      const { data: telem } = await sb.from('telemetry_events').select('*').eq('session_id', sid).order('created_at', { ascending: false }).limit(20);
+      setTelemetry(telem || []);
+    } catch (e) {
+      console.error(e);
+    }
+    setConsoleLoading(false);
+  }
+
+  function selectSession(sid: string) {
+    setSelectedId(sid);
+    loadSessionData(sid);
+  }
+
+  async function sendCommand(command: string, payload: any = {}) {
+    if (!selectedId) { alert('Select a session first'); return; }
+    const res = await fetch('/api/agent/command', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: selectedId, command, issued_by: 'grok', payload }),
+    });
+    const d = await res.json();
+    setStatus(`Sent ${command}: ${d.success ? 'queued' : d.error}`);
+    // refresh console after short delay (poller will process)
+    setTimeout(() => loadSessionData(selectedId), 1500);
   }
 
   async function launchAutonomous() {
@@ -226,6 +269,21 @@ export default function VibeDashboard() {
     };
   }, [sb]);
 
+  // Console realtime for selected session (agent events + telemetry) - Claude live feel
+  useEffect(() => {
+    if (!sb || !selectedId) return;
+    const ch = sb
+      .channel(`console-${selectedId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'agent_events', filter: `session_id=eq.${selectedId}` }, () => {
+        loadSessionData(selectedId);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'telemetry_events', filter: `session_id=eq.${selectedId}` }, () => {
+        loadSessionData(selectedId);
+      })
+      .subscribe();
+    return () => { sb.removeChannel(ch); };
+  }, [sb, selectedId]);
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-200 p-8 font-sans">
       <header className="max-w-5xl mx-auto mb-8">
@@ -371,10 +429,109 @@ export default function VibeDashboard() {
           <p className="mt-2 text-[10px] text-zinc-500">Add VIBE_TELEMETRY=1 in envs + wire more emitters (resource decisions, turns, CLI) for richer data. All events go through the same Supabase the rest of Vibe uses.</p>
         </section>
 
-        {/* Sessions + Checkpoints */}
+        {/* Sessions list (Claude Projects inspired sidebar) + Agent Console (chat + artifacts) */}
         <section>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xl font-medium">Active Autonomous Sessions</h2>
+            <h2 className="text-xl font-medium">Autonomous Sessions (select for console)</h2>
+            <button onClick={load} className="text-xs px-3 py-1 border border-white/20 rounded hover:bg-white/5">Refresh</button>
+          </div>
+
+          {loading ? (
+            <div className="text-zinc-500">Loading from Supabase…</div>
+          ) : sessions.length === 0 ? (
+            <div className="text-zinc-500 border border-white/10 rounded-xl p-8 text-center">No sessions yet. Launch one above (or via .vibe + resolver).</div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Sessions sidebar - like Claude projects/chats */}
+              <div className="lg:col-span-1 space-y-2">
+                {sessions.map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => selectSession(s.id)}
+                    className={`w-full text-left rounded-xl border p-3 transition ${selectedId === s.id ? 'border-emerald-500 bg-zinc-950' : 'border-white/10 bg-zinc-900 hover:bg-zinc-800'}`}
+                  >
+                    <div className="font-medium truncate">{s.name}</div>
+                    <div className="text-[10px] text-zinc-500 mt-0.5">{s.id.slice(0,8)} • {new Date(s.updated_at).toLocaleTimeString()}</div>
+                    <div className="mt-1 text-xs text-zinc-400 line-clamp-1">{s.description || '—'}</div>
+                  </button>
+                ))}
+              </div>
+
+              {/* Main console area - Claude chat + artifacts hybrid */}
+              <div className="lg:col-span-2 border border-white/10 rounded-2xl bg-zinc-950 p-4 min-h-[420px] flex flex-col">
+                {!selectedId ? (
+                  <div className="flex-1 flex items-center justify-center text-zinc-500 text-sm">Select a session to open the agent console (chat for remote commands + artifacts for plans, checkpoints, telemetry).</div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between mb-3 border-b border-white/10 pb-2">
+                      <div>
+                        <div className="font-semibold">Console for {sessions.find(s => s.id === selectedId)?.name}</div>
+                        <div className="text-[10px] text-zinc-500">{selectedId}</div>
+                      </div>
+                      <button onClick={() => loadSessionData(selectedId!)} disabled={consoleLoading} className="text-xs px-2 py-1 border border-white/20 rounded hover:bg-white/5 disabled:opacity-50">Refresh</button>
+                    </div>
+
+                    {/* Chat-like message stream (inspired by Claude messages + streaming feel) */}
+                    <div className="flex-1 overflow-auto space-y-3 text-sm mb-3 pr-1 max-h-[320px] bg-black/30 p-3 rounded">
+                      {sessionData && (sessionData.commands.length + sessionData.events.length + sessionData.responses.length > 0) ? (
+                        [...(sessionData.commands || []), ...(sessionData.events || []), ...(sessionData.responses || [])]
+                          .sort((a,b) => new Date(a.created_at || a.created_at).getTime() - new Date(b.created_at || b.created_at).getTime())
+                          .map((item, idx) => {
+                            const isUser = item.issued_by || (item.kind && item.kind.includes('command'));
+                            const kind = item.command || item.kind || (item.status ? 'response' : 'event');
+                            const msg = item.message || JSON.stringify(item.payload || item.result || {}).slice(0, 180);
+                            return (
+                              <div key={idx} className={`flex ${isUser ? 'justify-end' : ''}`}>
+                                <div className={`max-w-[85%] rounded-xl px-3 py-1.5 ${isUser ? 'bg-emerald-600 text-black' : 'bg-zinc-900 border border-white/10'}`}>
+                                  <div className="text-[10px] opacity-60 mb-0.5">{kind} • {new Date(item.created_at || item.created_at).toLocaleTimeString()}</div>
+                                  <div className="whitespace-pre-wrap break-words">{msg || '(no payload)'}</div>
+                                </div>
+                              </div>
+                            );
+                          })
+                      ) : (
+                        <div className="text-zinc-500 text-xs">No activity yet for this session. Send a command below or launch work that emits events/telemetry. (The live `vibe remote` poller will process queued remote commands and emit telemetry.)</div>
+                      )}
+                      {consoleLoading && <div className="text-[10px] text-amber-400">Loading console data…</div>}
+                    </div>
+
+                    {/* Composer - natural language command input, Claude style */}
+                    <div className="mt-auto">
+                      <div className="flex gap-2 mb-2">
+                        <button onClick={() => sendCommand('status')} className="text-[10px] px-2 py-0.5 border border-white/20 rounded hover:bg-white/5">status</button>
+                        <button onClick={() => sendCommand('instruct', {instruction: 'continue the main lane work'})} className="text-[10px] px-2 py-0.5 border border-white/20 rounded hover:bg-white/5">instruct: continue</button>
+                        <button onClick={() => sendCommand('sync-infra')} className="text-[10px] px-2 py-0.5 border border-white/20 rounded hover:bg-white/5">sync-infra</button>
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="Type command (status, instruct, pause, resume, sync-supabase...) or natural instruction"
+                          className="flex-1 bg-black border border-white/20 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-emerald-500"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && (e.target as HTMLInputElement).value) {
+                              const val = (e.target as HTMLInputElement).value;
+                              const cmd = val.startsWith('instruct') || val.length > 20 ? 'instruct' : val;
+                              const payload = cmd === 'instruct' ? { instruction: val.replace(/^instruct\s*/i, '') } : {};
+                              sendCommand(cmd, payload);
+                              (e.target as HTMLInputElement).value = '';
+                            }
+                          }}
+                        />
+                        <button onClick={() => { /* trigger via ref or simple */ alert('Use Enter in the input or quick buttons'); }} className="px-4 py-1.5 rounded bg-emerald-600 text-sm">Send</button>
+                      </div>
+                      <div className="text-[10px] text-zinc-500 mt-1">Sends via /api/agent/command → live Go poller (if running for this session) processes with ProcessCommand + telemetry emission.</div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* Sessions + Checkpoints (kept for overview, now secondary) */}
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xl font-medium">All Sessions Overview</h2>
             <button onClick={load} className="text-xs px-3 py-1 border border-white/20 rounded hover:bg-white/5">Refresh</button>
           </div>
 
@@ -385,7 +542,7 @@ export default function VibeDashboard() {
           ) : (
             <div className="grid gap-3">
               {sessions.map((s) => (
-                <div key={s.id} className="rounded-xl border border-white/10 bg-zinc-900 p-4">
+                <div key={s.id} onClick={() => selectSession(s.id)} className="rounded-xl border border-white/10 bg-zinc-900 p-4 cursor-pointer hover:border-emerald-500/50">
                   <div className="flex justify-between">
                     <div>
                       <div className="font-medium">{s.name}</div>

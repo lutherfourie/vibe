@@ -126,6 +126,8 @@ Supabase becomes useful when Vibe needs durable shared state:
   memory moves out of repo docs.
 - `telemetry_events` for usage/metrics (launches, provider choices via resource dispatcher, remote C&C processing, infra syncs, errors). Hosted on the *same* Supabase instance (no new services) so remote/Go agents, web dashboard, and resolver all use the existing client + RLS + realtime without extra auth or billing. Opt-in, best-effort emission.
 
+The web autonomous dashboard (the main live surface) was evolved with strong inspiration from Claude.ai (artifacts side panels for live structured content like plans/checkpoints/telemetry, chat-style console for natural/remote command input to agents via the C&C bus, projects-style sidebar for sessions, honest realtime streaming of events, clean minimalist cards). This hybrid (conversational control + declarative artifacts) is better than pure chat or pure dashboard for an agent OS. See web/app/page.tsx console + artifacts. The `vibe serve` HTML surface remains for self-plan lanes/handoffs.
+
 Do not introduce Supabase just to read the self-plan. The repo file is still the
 source of truth.
 

@@ -585,6 +585,65 @@
           }
         ]
       }
+    },
+    {
+      "name": "claude_inspired_ui",
+      "description": "Evolve the autonomous dashboard (web/) to feel like Claude.ai: chat-like console for remote commands (using agent C&C), artifacts panel for plans/checkpoints/telemetry/resource decisions, projects-style sidebar for sessions, live realtime, honest states. Take inspiration from Claude artifacts (live previews), streaming, clean chat, context. Better than pure chat: structured declarative views + natural control. Update self-plan, implement in page.tsx + realtime.",
+      "laneCount": 3,
+      "checkpointCount": 1,
+      "metadata": {
+        "name": "claude_inspired_ui",
+        "description": "Evolve the autonomous dashboard (web/) to feel like Claude.ai: chat-like console for remote commands (using agent C&C), artifacts panel for plans/checkpoints/telemetry/resource decisions, projects-style sidebar for sessions, live realtime, honest states. Take inspiration from Claude artifacts (live previews), streaming, clean chat, context. Better than pure chat: structured declarative views + natural control. Update self-plan, implement in page.tsx + realtime.",
+        "lanes": [
+          {
+            "name": "research",
+            "steps": [
+              {
+                "type": "research",
+                "id": "r1",
+                "topic": "Claude artifacts, Cowork, generative UI, chat patterns from Cursor/v0"
+              }
+            ]
+          },
+          {
+            "name": "design",
+            "steps": [
+              {
+                "type": "plan",
+                "id": "d1",
+                "description": "layout: sidebar sessions + main chat console + right artifacts; map events to messages, status to actions"
+              }
+            ]
+          },
+          {
+            "name": "implement",
+            "steps": [
+              {
+                "type": "implement",
+                "id": "i1",
+                "description": "refactor page.tsx with select, load status, sendCommand, realtime subs for agent/telemetry, render chat + artifacts using existing data"
+              },
+              {
+                "type": "self-review",
+                "id": "i2",
+                "criteria": [
+                  "feels conversational + structured",
+                  "realtime updates",
+                  "works with live poller",
+                  "self:plan updated"
+                ]
+              }
+            ]
+          }
+        ],
+        "checkpoints": [
+          {
+            "id": "c1",
+            "name": "Claude-inspired live agent console + artifacts",
+            "resumeStrategy": "last-checkpoint"
+          }
+        ]
+      }
     }
   ],
   "notes": [

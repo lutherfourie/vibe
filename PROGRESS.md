@@ -1,6 +1,6 @@
 # Vibe Autonomous Bootstrap - Grok Build Mode
 
-Status: telemetry added (Supabase-hosted)
+Status: Claude-inspired UI for live autonomous console + artifacts
 Updated: 2026-06-03
 Branch: 
 
@@ -9,6 +9,12 @@ Branch:
 ## Milestones
 
 ## Checkpoint Log
+
+### 2026-06-03 — UI: Claude.ai inspired agent console + artifacts in autonomous dashboard
+- Deep research: Claude artifacts (live interactive previews, side panel, generative UI, Cowork live dashboards), chat anatomy (sidebar projects, streaming, states, per-message actions), patterns from Cursor (context + apply), v0 (UI gen). Better for Vibe: hybrid chat for remote C&C + structured artifacts for declarative plans/checkpoints/telemetry (not pure chat). Implemented: sessions sidebar selectable, main console with chat stream from agent_commands/events/responses (via /api/agent/status), composer for natural cmds (maps to POST /api/agent/command), realtime subs for live updates on agent/telemetry, artifacts area in console (checkpoints, telemetry). Updated overview cards clickable. Self-dogfood with new autonomous-session in .vibe, self:plan. Web hot-reloads on dev server. Works with live poller for full remote control demo. Follows all contracts.
+
+### 2026-06-03 — telemetry: robust dashboard load + final verification
+- Made telemetry load in page.tsx safe (try/catch for when migration not yet applied locally). Web hot-reloaded (monitor saw compile). All gates passed. PR #41 open with the feature + hosting rationale.
 
 ### 2026-06-03 — add telemetry hosted on existing Supabase (table + emitters + basic dashboard UI)
 - Decided Supabase is best host: reuses Go pure-REST client, web client, RLS, realtime pub, no new services/billing (critical for autonomous/remote agents). New migration for telemetry_events (kind, source, payload, session_id). Extended client.EmitTelemetry + RemoteControl wrapper. Wired in ProcessCommand (remote_command_processed), resource LogDecision, persistVibePlan (plan_resolved), launch route (launch). Added Telemetry section in page.tsx with load + example queue. Updated self.vibe + self:plan. gofmt/build/test clean, web build ok. Best-effort, opt-in friendly.
