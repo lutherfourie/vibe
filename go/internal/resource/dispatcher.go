@@ -131,9 +131,28 @@ func (d *ResourceAwareDispatcher) Recommend(ctx context.Context, est TaskEstimat
 }
 
 // LogDecision records the choice (for now just fmt; later could write to DB log).
+// Also emits telemetry (best effort) so we can analyze provider economy over time.
 func LogDecision(rec Recommendation, task string) {
 	fmt.Printf("[ResourceDispatcher] For task %q chose %s (score=%.4f, est_cost=$%.4f, reason: %s, left=%.0f)\n",
 		task, rec.Provider, rec.Score, rec.EstCost, rec.Reason, rec.QuotaLeft)
+
+	// Telemetry emission (reuses the Supabase client; safe if no key, no-op).
+	c := remote.NewClient()
+	_ = c.EmitTelemetry(context.Background(), remote.TelemetryEvent{
+		Kind:   "resource_decision",
+		Source: "go",
+		Payload: func() json.RawMessage {
+			b, _ := json.Marshal(map[string]any{
+				"task":       task,
+				"provider":   rec.Provider,
+				"score":      rec.Score,
+				"est_cost":   rec.EstCost,
+				"reason":     rec.Reason,
+				"quota_left": rec.QuotaLeft,
+			})
+			return b
+		}(),
+	})
 }
 
 // UpdateQuotaAfterUse is called after a delegation to deduct the actual or estimated usage.

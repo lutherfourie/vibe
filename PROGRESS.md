@@ -1,6 +1,6 @@
 # Vibe Autonomous Bootstrap - Grok Build Mode
 
-Status: Go runtime verified live and working (poller + CLI tools active)
+Status: telemetry added (Supabase-hosted)
 Updated: 2026-06-03
 Branch: 
 
@@ -9,6 +9,9 @@ Branch:
 ## Milestones
 
 ## Checkpoint Log
+
+### 2026-06-03 — add telemetry hosted on existing Supabase (table + emitters + basic dashboard UI)
+- Decided Supabase is best host: reuses Go pure-REST client, web client, RLS, realtime pub, no new services/billing (critical for autonomous/remote agents). New migration for telemetry_events (kind, source, payload, session_id). Extended client.EmitTelemetry + RemoteControl wrapper. Wired in ProcessCommand (remote_command_processed), resource LogDecision, persistVibePlan (plan_resolved), launch route (launch). Added Telemetry section in page.tsx with load + example queue. Updated self.vibe + self:plan. gofmt/build/test clean, web build ok. Best-effort, opt-in friendly.
 
 ### 2026-06-03 — Go runtime surprisingly solid (pure stdlib Supabase C&C + live poller + auto infra exec)
 - vibe doctor/continue/lanes all green via the Go binary. go test/build/vet/gofmt clean (fixed 2 files). The background 'vibe remote' (started via service key from web/.env.local) is actively polling and processed real queued commands from the web API (sync-supabase auto-exec + status). DB confirms completed + responses. internal/remote/client.go is tiny stdlib net/http + PostgREST (no SDK) yet handles the full remote control plane live alongside the TS dashboard + resolver. The fact the Go side can drive infra updates and bridge everything is wild.

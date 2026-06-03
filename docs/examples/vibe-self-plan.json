@@ -527,6 +527,64 @@
           }
         ]
       }
+    },
+    {
+      "name": "telemetry",
+      "description": "Add usage telemetry (launches, remote commands, resource decisions, infra syncs, errors) so we can observe and improve the autonomous system. Host on existing Supabase (tables + RLS + realtime + reuse of Go/TS clients) for zero new infra. Opt-in, privacy-respecting, dogfoods the platform.",
+      "laneCount": 3,
+      "checkpointCount": 1,
+      "metadata": {
+        "name": "telemetry",
+        "description": "Add usage telemetry (launches, remote commands, resource decisions, infra syncs, errors) so we can observe and improve the autonomous system. Host on existing Supabase (tables + RLS + realtime + reuse of Go/TS clients) for zero new infra. Opt-in, privacy-respecting, dogfoods the platform.",
+        "lanes": [
+          {
+            "name": "schema",
+            "steps": [
+              {
+                "type": "implement",
+                "id": "s1",
+                "description": "supabase migration for telemetry_events + RLS + realtime pub"
+              }
+            ]
+          },
+          {
+            "name": "emitters",
+            "steps": [
+              {
+                "type": "implement",
+                "id": "e1",
+                "description": "Go client EmitTelemetry + wire in RemoteControl/ProcessCommand + Resource LogDecision + TS persist/launch"
+              }
+            ]
+          },
+          {
+            "name": "surface",
+            "steps": [
+              {
+                "type": "implement",
+                "id": "u1",
+                "description": "dashboard section to view recent telemetry events (query + list)"
+              },
+              {
+                "type": "self-review",
+                "id": "u2",
+                "criteria": [
+                  "events appear on launch and remote cmd",
+                  "no new services",
+                  "self:plan updated"
+                ]
+              }
+            ]
+          }
+        ],
+        "checkpoints": [
+          {
+            "id": "t1",
+            "name": "basic telemetry on Supabase",
+            "resumeStrategy": "last-checkpoint"
+          }
+        ]
+      }
     }
   ],
   "notes": [

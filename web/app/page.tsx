@@ -40,6 +40,7 @@ export default function VibeDashboard() {
   const [form, setForm] = useState({ name: "self-build-lane", desc: "Extend Vibe autonomous with web dashboard" });
   const [status, setStatus] = useState<string>("");
   const [realtimeStatus, setRealtimeStatus] = useState<string>("disconnected");
+  const [telemetry, setTelemetry] = useState<any[]>([]);
 
   const sb = getSupabase();
 
@@ -319,6 +320,49 @@ export default function VibeDashboard() {
             </button>
           </div>
           <p className="mt-2 text-[10px] text-zinc-500">These queue agent_commands. A remote-controlled Go runner (polling via service key) will ProcessCommand and respond with run instructions. Then run the pnpm scripts here or in CI to actually update hosted Supabase + Vercel prod. Ensures remote control always sees latest.</p>
+        </section>
+
+        {/* Telemetry (usage, decisions, remote activity) */}
+        <section className="rounded-2xl border border-white/10 bg-zinc-900 p-6">
+          <h2 className="text-xl font-medium mb-4">Telemetry</h2>
+          <p className="text-xs text-zinc-400 mb-3">Usage events (launches, plan resolves, remote commands processed, resource decisions, infra syncs, errors). Hosted in the same Supabase as state + C&amp;C (no new infra; reuses RLS/realtime/Go client). Opt-in friendly for self-hosted deployments.</p>
+          <div className="flex gap-2 mb-3">
+            <button
+              onClick={async () => {
+                if (!sb) { alert('Supabase anon key needed in env'); return; }
+                const { data } = await sb.from('telemetry_events').select('*').order('created_at', { ascending: false }).limit(30);
+                setTelemetry(data || []);
+                setStatus(`Loaded ${data?.length || 0} telemetry events`);
+              }}
+              className="px-4 py-2 rounded bg-amber-600 text-white text-sm hover:bg-amber-500"
+            >
+              Load Recent Telemetry
+            </button>
+            <button
+              onClick={() => {
+                // Queue a status command on first session as example of something that will emit telemetry via the Go poller
+                if (!sessions.length) { alert('Launch a session first'); return; }
+                const sid = sessions[0].id;
+                fetch('/api/agent/command', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ session_id: sid, command: 'status', issued_by: 'grok', payload: { note: 'telemetry demo' } }) })
+                  .then(r => r.json()).then(d => setStatus(`Queued status (will emit telemetry when poller processes): ${d.success ? 'ok' : d.error}`));
+              }}
+              className="px-4 py-2 rounded bg-zinc-700 text-white text-sm hover:bg-zinc-600"
+            >
+              Queue Example Command (emits via Go)
+            </button>
+          </div>
+          {telemetry.length === 0 ? (
+            <div className="text-xs text-zinc-500">No telemetry loaded yet. Click the button (or launch sessions / send remote cmds while a `vibe remote` poller is running).</div>
+          ) : (
+            <div className="max-h-64 overflow-auto text-xs font-mono bg-black/50 p-2 rounded">
+              {telemetry.map((t, i) => (
+                <div key={i} className="border-b border-white/10 py-1">
+                  {new Date(t.created_at).toLocaleTimeString()} — <span className="text-amber-400">{t.kind}</span> @ {t.source} {t.session_id ? `sess:${t.session_id.slice(0,8)}` : ''} {JSON.stringify(t.payload).slice(0,120)}
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="mt-2 text-[10px] text-zinc-500">Add VIBE_TELEMETRY=1 in envs + wire more emitters (resource decisions, turns, CLI) for richer data. All events go through the same Supabase the rest of Vibe uses.</p>
         </section>
 
         {/* Sessions + Checkpoints */}

@@ -74,12 +74,29 @@ func (r *RemoteControl) Ack(ctx context.Context, cmdID, status string, result an
 	return r.client.CreateEvent(ctx, evt)
 }
 
-// SendInstruction is a helper an external can use, but from runner side it's for emitting.
+// EmitEvent is a helper an external can use, but from runner side it's for emitting.
 func (r *RemoteControl) EmitEvent(ctx context.Context, kind string, payload any) error {
 	b, _ := json.Marshal(payload)
 	return r.client.CreateEvent(ctx, remote.AgentEvent{
 		SessionID: r.sessionID,
 		Kind:      kind,
+		Payload:   b,
+	})
+}
+
+// EmitTelemetry is a thin wrapper so autonomous code (loop, resource dispatcher, providers)
+// can emit usage telemetry without caring about the underlying client. Telemetry is best-effort
+// and opt-in (controlled at the call sites via VIBE_TELEMETRY or plan config).
+// Hosted on the same Supabase as everything else for simplicity and dogfooding.
+func (r *RemoteControl) EmitTelemetry(ctx context.Context, kind, source string, payload any) error {
+	if r == nil || r.client == nil {
+		return nil
+	}
+	b, _ := json.Marshal(payload)
+	return r.client.EmitTelemetry(ctx, remote.TelemetryEvent{
+		SessionID: r.sessionID,
+		Kind:      kind,
+		Source:    source,
 		Payload:   b,
 	})
 }
@@ -185,6 +202,13 @@ func (r *RemoteControl) ProcessCommand(ctx context.Context, cmd remote.AgentComm
 	default:
 		msg = "unknown command, acked as no-op"
 	}
+
+	// Telemetry for remote command processing (best effort). This is one of the core
+	// places we want metrics: how often remote control is used, which commands, success.
+	_ = r.EmitTelemetry(ctx, "remote_command_processed", "go", map[string]any{
+		"command":   cmd.Command,
+		"issued_by": cmd.IssuedBy,
+	})
 
 	return r.Ack(ctx, cmd.ID, "completed", result, msg)
 }

@@ -187,3 +187,23 @@ func (c *Client) PollForCommands(ctx context.Context, sessionID string, interval
 		}
 	}
 }
+
+// TelemetryEvent for usage/metrics (launches, provider choices, remote cmds processed,
+// infra syncs, errors, resource decisions, CLI invocations, etc.).
+// Separate from agent_events (which are for C&C flow) and lane_events (plan history).
+// Hosted in the same Supabase (best choice: reuses auth, RLS model, Go client, realtime,
+// no new services). Opt-in via VIBE_TELEMETRY=1 env (or future per-plan config).
+type TelemetryEvent struct {
+	SessionID string          `json:"session_id,omitempty"`
+	Kind      string          `json:"kind"`   // e.g. "plan_resolved", "provider_used", "remote_command_processed", "infra_sync_executed", "resource_decision", "error", "cli_command"
+	Source    string          `json:"source"` // "go", "cli", "web", "resolver"
+	Payload   json.RawMessage `json:"payload"`
+}
+
+// EmitTelemetry inserts a telemetry event. Callers should treat as best-effort / fire-and-forget
+// (telemetry must never block or fail the main operation). The table uses RLS allowing anon insert
+// for easy emission; service key for full access from runners.
+func (c *Client) EmitTelemetry(ctx context.Context, e TelemetryEvent) error {
+	path := "/telemetry_events"
+	return c.do(ctx, "POST", path, e, nil)
+}
