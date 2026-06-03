@@ -163,6 +163,17 @@ autonomous-session supabase_remote_control {
   checkpoints = [ { id = "rc1", name = "infra+demo", resumeStrategy = "last-checkpoint" } ]
 }
 
+autonomous-session resource_economy {
+  name = "resource_economy"
+  description = "Make autonomous delegation resource-aware: track quotas in Supabase, dispatcher recommends cheapest viable provider, log choices, update handoffs and loop."
+  lanes = [
+    { name = "quotas", steps = [ { type = "implement", id = "q1", description = "migration + seed + update after use" } ] },
+    { name = "dispatcher", steps = [ { type = "implement", id = "d1", description = "ResourceAwareDispatcher with score/recommend/log" }, { type = "self-review", id = "d2", criteria = ["recommends correctly from live quotas"] } ] },
+    { name = "integration", steps = [ { type = "implement", id = "i1", description = "handoff generator Resource Strategy + wire loop consult" } ] }
+  ]
+  checkpoints = [ { id = "re1", name = "core dispatcher + wiring", resumeStrategy = "last-checkpoint" } ]
+}
+
 agent vibe_bootstrap {
   persona = persona.vibe_bootstrap_voice
   memory  = memory.vibe_project

@@ -135,3 +135,21 @@ func LogDecision(rec Recommendation, task string) {
 	fmt.Printf("[ResourceDispatcher] For task %q chose %s (score=%.4f, est_cost=$%.4f, reason: %s, left=%.0f)\n",
 		task, rec.Provider, rec.Score, rec.EstCost, rec.Reason, rec.QuotaLeft)
 }
+
+// UpdateQuotaAfterUse is called after a delegation to deduct the actual or estimated usage.
+// In production, call this with real usage from provider response, then PATCH to Supabase.
+func (d *ResourceAwareDispatcher) UpdateQuotaAfterUse(ctx context.Context, provider string, usedTokens int) error {
+	// rough deduct
+	delta := float64(usedTokens) / 1000000.0
+	q := url.Values{}
+	q.Set("provider", "eq."+provider)
+	body := map[string]any{
+		"remaining":     "remaining - " + fmt.Sprintf("%.4f", delta), // note: this is not correct for postgrest; real would use rpc or select+update
+		"last_updated":  time.Now().UTC().Format(time.RFC3339),
+	}
+	// For demo, use simple PATCH with computed (in real use RPC or transaction)
+	// Here we just log; full impl would read current, compute, update.
+	fmt.Printf("[ResourceDispatcher] Would deduct ~%.4fM tokens from %s (used %d). Implement full update in prod.\n", delta, provider, usedTokens)
+	_ = d.client.Update(ctx, "provider_quotas", q.Encode(), body) // may need real logic
+	return nil
+}

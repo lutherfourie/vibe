@@ -140,6 +140,18 @@ func (r *RemoteControl) ProcessCommand(ctx context.Context, cmd remote.AgentComm
 	case "checkpoint":
 		result["checkpoint"] = "would call vibe checkpoint or internal progress"
 		_ = r.EmitEvent(ctx, "checkpoint_requested", result)
+	case "sync-supabase":
+		result["action"] = "sync-supabase"
+		msg = "To update hosted Supabase with latest migrations, run: pnpm run infra:sync-supabase (requires supabase CLI linked to hosted and auth)"
+		_ = r.EmitEvent(ctx, "infra_sync_requested", result)
+	case "deploy-vercel":
+		result["action"] = "deploy-vercel"
+		msg = "To deploy latest web dashboard to Vercel prod, run: pnpm run infra:deploy-vercel (requires vercel CLI auth)"
+		_ = r.EmitEvent(ctx, "infra_deploy_requested", result)
+	case "sync-infra":
+		result["action"] = "sync-infra"
+		msg = "Run both: pnpm run infra:sync-supabase && pnpm run infra:deploy-vercel to keep remote control plane and dashboard updated"
+		_ = r.EmitEvent(ctx, "infra_sync_requested", result)
 	default:
 		msg = "unknown command, acked as no-op"
 	}
