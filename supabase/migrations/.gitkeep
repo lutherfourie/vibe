@@ -1,0 +1,2 @@
+# Keeps the migrations directory tracked while it is empty.
+# Create the first migration with: supabase migration new <name>
