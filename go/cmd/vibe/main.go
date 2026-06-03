@@ -12,11 +12,13 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/lutherfourie/vibe/go/internal/bootstrap"
 	"github.com/lutherfourie/vibe/go/internal/continuation"
 	"github.com/lutherfourie/vibe/go/internal/doctor"
 	"github.com/lutherfourie/vibe/go/internal/lanes"
+	"github.com/lutherfourie/vibe/go/internal/progress"
 	"github.com/lutherfourie/vibe/go/internal/selfplan"
 	"github.com/lutherfourie/vibe/go/internal/serve"
 )
@@ -56,6 +58,10 @@ func run(ctx context.Context, args []string) error {
 		return runMakePlan(ctx, args[1:])
 	case "handoff":
 		return runHandoff(ctx, args[1:])
+	case "checkpoint":
+		return runCheckpoint(args[1:])
+	case "resume":
+		return runResume(ctx, args[1:])
 	case "help", "-h", "--help":
 		usage(os.Stdout)
 		return nil
@@ -76,6 +82,8 @@ func usage(out *os.File) {
 	fmt.Fprintln(out, "  verify      Run the repo verification command")
 	fmt.Fprintln(out, "  make-plan   Emit the bootstrap lane plan JSON")
 	fmt.Fprintln(out, "  handoff     Emit markdown handoffs from a lane-plan or self-plan JSON")
+	fmt.Fprintln(out, "  checkpoint  Append a timestamped checkpoint to PROGRESS.md")
+	fmt.Fprintln(out, "  resume      Print a resume brief from PROGRESS.md + live git state")
 }
 
 func runContinue(ctx context.Context, args []string) error {
@@ -358,6 +366,89 @@ func runHandoff(ctx context.Context, args []string) error {
 	for _, handoff := range result.Handoffs {
 		fmt.Printf("%s\t%s\t%s\n", handoff.Mode, handoff.LaneName, handoff.Path)
 	}
+	return nil
+}
+
+// stringSliceFlag collects a repeatable string flag (e.g. --note a --note b).
+type stringSliceFlag []string
+
+func (s *stringSliceFlag) String() string { return strings.Join(*s, ", ") }
+func (s *stringSliceFlag) Set(v string) error {
+	*s = append(*s, v)
+	return nil
+}
+
+// runCheckpoint appends a timestamped checkpoint to PROGRESS.md (the durable
+// state spine of a long-horizon lane), scaffolding the file if it is absent and
+// preserving its existing shape otherwise.
+func runCheckpoint(args []string) error {
+	flags := flag.NewFlagSet("checkpoint", flag.ContinueOnError)
+	flags.SetOutput(os.Stderr)
+	summary := flags.String("summary", "", "short checkpoint summary (required)")
+	status := flags.String("status", "", "optional new front-block Status")
+	progressPath := flags.String("progress", "PROGRESS.md", "path to the PROGRESS.md file")
+	date := flags.String("date", "", "checkpoint stamp (default: today, YYYY-MM-DD)")
+	var notes stringSliceFlag
+	flags.Var(&notes, "note", "a checkpoint note (repeatable)")
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
+	if strings.TrimSpace(*summary) == "" {
+		return fmt.Errorf("--summary is required")
+	}
+
+	stamp := strings.TrimSpace(*date)
+	if stamp == "" {
+		stamp = time.Now().Format("2006-01-02")
+	}
+
+	target := resolveRepoPathForWrite(*progressPath)
+	existing := ""
+	if raw, err := os.ReadFile(target); err == nil {
+		existing = string(raw)
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("read %s: %w", target, err)
+	}
+
+	updated, err := progress.AppendCheckpoint(existing, progress.Checkpoint{
+		Time:    stamp,
+		Summary: strings.TrimSpace(*summary),
+		Notes:   notes,
+	}, strings.TrimSpace(*status))
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(target, []byte(updated), 0o644); err != nil {
+		return fmt.Errorf("write %s: %w", target, err)
+	}
+	fmt.Println(target)
+	return nil
+}
+
+// runResume prints a compact resume brief from PROGRESS.md combined with live git
+// state — the lane-grain counterpart to `vibe continue` (which is repo-grain).
+func runResume(ctx context.Context, args []string) error {
+	flags := flag.NewFlagSet("resume", flag.ContinueOnError)
+	flags.SetOutput(os.Stderr)
+	progressPath := flags.String("progress", "PROGRESS.md", "path to the PROGRESS.md file")
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
+
+	target := resolveRepoPath(*progressPath)
+	raw, err := os.ReadFile(target)
+	if err != nil {
+		return fmt.Errorf("read %s: %w (run `vibe checkpoint` to create it)", target, err)
+	}
+	doc, err := progress.Parse(string(raw))
+	if err != nil {
+		return err
+	}
+
+	liveBranch := strings.TrimSpace(gitOutput(ctx, "branch", "--show-current"))
+	dirty := strings.TrimSpace(gitOutput(ctx, "status", "--short")) != ""
+
+	fmt.Print(progress.ResumeBrief(doc, liveBranch, dirty))
 	return nil
 }
 

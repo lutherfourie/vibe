@@ -169,6 +169,85 @@ func TestRunHandoffEmitsAutonomousLane(t *testing.T) {
 	}
 }
 
+func TestRunCheckpointCreatesThenAppends(t *testing.T) {
+	target := filepath.Join(t.TempDir(), "PROGRESS.md")
+
+	out1, err := captureStdout(t, func() error {
+		return runCheckpoint([]string{
+			"--progress", target, "--summary", "first", "--note", "did A",
+			"--date", "2026-06-03", "--status", "started",
+		})
+	})
+	if err != nil {
+		t.Fatalf("first checkpoint: %v", err)
+	}
+	if !strings.Contains(out1, target) {
+		t.Fatalf("checkpoint did not print the path: %q", out1)
+	}
+	body, err := os.ReadFile(target)
+	if err != nil {
+		t.Fatalf("read created PROGRESS.md: %v", err)
+	}
+	for _, want := range []string{"Status: started", "Updated: 2026-06-03", "### 2026-06-03 — first", "- did A"} {
+		if !strings.Contains(string(body), want) {
+			t.Fatalf("created PROGRESS.md missing %q:\n%s", want, string(body))
+		}
+	}
+
+	if _, err := captureStdout(t, func() error {
+		return runCheckpoint([]string{"--progress", target, "--summary", "second", "--date", "2026-06-04"})
+	}); err != nil {
+		t.Fatalf("second checkpoint: %v", err)
+	}
+	body2, err := os.ReadFile(target)
+	if err != nil {
+		t.Fatalf("re-read PROGRESS.md: %v", err)
+	}
+	s := string(body2)
+	if !strings.Contains(s, "Updated: 2026-06-04") {
+		t.Errorf("Updated not refreshed on append:\n%s", s)
+	}
+	// Newest entry must precede the older one in the file (head-of-log insert).
+	if strings.Index(s, "### 2026-06-04 — second") > strings.Index(s, "### 2026-06-03 — first") {
+		t.Errorf("second checkpoint should be inserted at the head of the log:\n%s", s)
+	}
+}
+
+func TestRunResumePrintsBrief(t *testing.T) {
+	target := filepath.Join(t.TempDir(), "PROGRESS.md")
+	if _, err := captureStdout(t, func() error {
+		return runCheckpoint([]string{
+			"--progress", target, "--summary", "seed", "--note", "n1",
+			"--date", "2026-06-03", "--status", "going",
+		})
+	}); err != nil {
+		t.Fatalf("seed checkpoint: %v", err)
+	}
+
+	out, err := captureStdout(t, func() error {
+		return runResume(context.Background(), []string{"--progress", target})
+	})
+	if err != nil {
+		t.Fatalf("resume: %v", err)
+	}
+	for _, want := range []string{"# Resume:", "Status: going", "## Latest Checkpoint", "### 2026-06-03 — seed", "- n1"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("resume brief missing %q:\n%s", want, out)
+		}
+	}
+}
+
+func TestRunCheckpointRequiresSummary(t *testing.T) {
+	target := filepath.Join(t.TempDir(), "PROGRESS.md")
+	err := runCheckpoint([]string{"--progress", target})
+	if err == nil {
+		t.Fatal("expected an error when --summary is omitted")
+	}
+	if _, statErr := os.Stat(target); statErr == nil {
+		t.Fatal("no PROGRESS.md should be written when --summary is missing")
+	}
+}
+
 func TestRunMakePlanWritesJSON(t *testing.T) {
 	outPath := filepath.Join(t.TempDir(), "self-plan.json")
 	out, err := captureStdout(t, func() error {
