@@ -175,7 +175,7 @@ vibe remote --session <session-uuid-from-dashboard-or-launch>
 
 This starts `RemoteControl` poller (3s) that watches agent_commands for that session. When you (or Grok) POST to web `/api/agent/command` (or use the dashboard "Infra Sync" buttons which do exactly that for the first loaded session), the poller receives it and `ProcessCommand` **auto-execs** the matching pnpm infra script via os/exec. Output is captured, acked to agent_responses + agent_events (realtime visible), so remote control plane and dashboard stay current without you SSHing or running locally.
 
-The infra commands are: `sync-supabase`, `deploy-vercel`, `sync-infra`.
+The supported remote C&C commands (via agent_commands + ProcessCommand) include infra: `sync-supabase`, `deploy-vercel`, `sync-infra`; plus `checkpoint` (execs local `vibe checkpoint` binary for self-recording, output captured), `pause`/`resume` (simulated events for runner control), `launch` (stub/queue), `status`, `instruct`. All emit telemetry. See go/agent/remote.go.
 
 See: go/agent/remote.go (ProcessCommand + runPnpmInfra), go/cmd/vibe/main.go (the remote subcommand), web/app/api/agent/command/route.ts, web/app/page.tsx (Infra Sync section).
 

@@ -10,6 +10,9 @@ Branch:
 
 ## Checkpoint Log
 
+### 2026-06-03 — Remote C&C codex task timed out at 300s. Codex produced handlers for checkpoint (real vibe bin exec via os/exec), launch/pause/resume + telemetry. Grok completed tests (from codex log) + UI buttons + light docs. Tests pass. vibe binary only for record.
+- Parallel codex + Grok for recs. claude disabled.
+
 ### 2026-06-03 — Processed telemetry codex timeout (300s). Completed the rec: more emitters (turn_start/end in loop.go), UI 'Recent Telemetry' count + exact 'Queue Telemetry Example' button. Prior codex work + this advances telemetry lane. vibe binary only. Pushed to branch/PR.
 - grok + codex parallel in action for recommended features.
 
