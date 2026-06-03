@@ -1,8 +1,8 @@
 # Vibe — Autonomous Long-Horizon Work
 
-Status: in-progress — autonomous-lanes M1, PR 1 (core) complete & verified; opening PR
+Status: in-progress — PR 2 verified locally; opening PR
 Updated: 2026-06-03
-Branch: feat/vibe-autonomous-lanes
+Branch: feat/vibe-progress-checkpoint
 
 ## Mission
 
@@ -14,11 +14,6 @@ Commit loop, and (b) a durable `PROGRESS.md` discipline (`checkpoint`/`resume`)
 that survives session boundaries. This file is both the project tracker and the
 first dogfood of the `PROGRESS.md` contract the feature defines.
 
-## Status
-
-Design artifacts written (research, spec, plan). Implementing PR 1 (core):
-schema → IR → prompt generator → coordinator wiring → example/tests.
-
 ## Milestones
 
 - [x] Explore the repo; locate the integration seam (lane modes → handoffs).
@@ -26,10 +21,15 @@ schema → IR → prompt generator → coordinator wiring → example/tests.
 - [x] Design spec: `autonomous` mode + lane IR + `PROGRESS.md` contract.
 - [x] TDD plan (T1–T7) sliced into 3 PRs.
 - [x] PR 1 (core): T1 schema, T2 IR, T3 prompt generator, T4 coordinator + smoke.
-- [ ] PR 2 (durable state): T5 `progress` package, T6 `checkpoint`/`resume` verbs.
+- [x] PR 2 (durable state): T5 `progress` package, T6 `checkpoint`/`resume` verbs.
 - [ ] PR 3 (surfaces): T7 skills, templates, docs.
 
 ## Checkpoint Log
+
+### 2026-06-03 — PR 2 complete: progress contract package + checkpoint/resume verbs
+- go/internal/progress: Doc/Checkpoint, Render/Parse (idempotent round-trip), surgical AppendCheckpoint, Scaffold, ResumeBrief; clock injected
+- vibe checkpoint + vibe resume verbs; smoke tests; verified surgical append on a copy of this file
+- dogfood: this very entry was written by 'vibe checkpoint'
 
 ### 2026-06-03 — PR 1 core complete: autonomous lane mode end-to-end
 - T1: schema gains `autonomous` mode + namespaced `autonomous` config object;
@@ -63,13 +63,12 @@ schema → IR → prompt generator → coordinator wiring → example/tests.
 
 ## Next Moves
 
-1. Open PR 1 (core), enable auto-merge `--squash`, report the URL.
-2. T5 — `go/internal/progress` package: `Doc`/`Checkpoint`, `Render`/`Parse`,
-   `AppendCheckpoint`, `Scaffold`. Inject the clock; parse this repo's own
-   `PROGRESS.md` as a tolerance fixture.
-3. T6 — `vibe checkpoint` + `vibe resume` CLI verbs over the `progress` package;
-   smoke tests; open PR 2.
-4. T7 — skills (`vibe-autonomous`, `vibe-checkpoint`), templates, docs; PR 3.
+1. Open PR 2 (durable state); confirm it lands on main.
+2. T7 (PR 3) — skills (`vibe-autonomous`, `vibe-checkpoint` for Claude + Codex),
+   `examples/autonomous-lane.vibe` template, and docs (`docs/autonomous-lanes.md`
+   + README / CLAUDE.md / go/README.md / schemas/README.md / vibe-contract.md).
+3. Future (M2): wire autonomous lanes to `vibe serve` so the daemon can *run* the
+   loop (the agent SDK already exists); add a `.vibe` `autonomous` grammar seam.
 
 ## Decisions
 
@@ -101,4 +100,5 @@ Commands:
 - Orient: `git status` · `git log --oneline -8`
 - Verify Go: `cd go && go test ./... && go vet ./... && gofmt -l .`
 - Verify schemas: `pnpm run schemas:check`
-- Branch: `feat/vibe-autonomous-lanes` (push + PR per the git-automation contract)
+- Branch: per-slice `feat/vibe-*`; `main` is unprotected so PRs land on merge.
+  CI is billing-locked — verify gates locally (see memory `ci_billing_lock`).
