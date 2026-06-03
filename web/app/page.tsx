@@ -38,6 +38,7 @@ export default function VibeDashboard() {
   const [launching, setLaunching] = useState(false);
   const [form, setForm] = useState({ name: "self-build-lane", desc: "Extend Vibe autonomous with web dashboard" });
   const [status, setStatus] = useState<string>("");
+  const [realtimeStatus, setRealtimeStatus] = useState<string>("disconnected");
 
   const sb = getSupabase();
 
@@ -73,44 +74,61 @@ export default function VibeDashboard() {
   }
 
   async function launchAutonomous() {
-    if (!sb) {
-      setStatus("Supabase not configured — demo insert skipped. Wire real launch via @vibe/language pipeline + providers.");
-      return;
-    }
     setLaunching(true);
-    setStatus("Launching autonomous session (simulated resolve + persist via wired pipeline)...");
+    setStatus("Launching via real Vibe resolver + provider (mock for Cerebras GLM) + persist to Supabase...");
+
     try {
-      // Simulate: in real would do import { runPipeline, createProviderRegistry, VibePlanSchema } from '@vibe/language'
-      // then registry.register one of 5, runPipeline with prose describing autonomous, then persist.
-      // Here: direct insert to prove end-to-end tables + UI.
-      const { data: newSess, error } = await sb
-        .from("autonomous_sessions")
-        .insert({
+      const res = await fetch('/api/launch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           name: form.name,
           description: form.desc,
-          metadata: { backend: "multi (codex|claude|grok|cerebras|big-agi)", source: "web-dashboard" },
-        })
-        .select()
-        .single();
-      if (error) throw error;
-
-      // seed a checkpoint + event (as if resolver + checkpoint step ran)
-      await sb.from("checkpoints").insert({
-        session_id: newSess.id,
-        name: "web-launch",
-        resume_strategy: "last-checkpoint",
-        metadata: { via: "dashboard" },
-      });
-      await sb.from("lane_events").insert({
-        session_id: newSess.id,
-        kind: "launch",
-        payload: { from: "web", plan: form.name },
+        }),
       });
 
-      setStatus(`Launched ${newSess.name} (id ${newSess.id.slice(0,8)}). Persisted to Supabase. Refresh to see. Real dispatch uses 5 providers.`);
-      await load();
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Launch failed');
+      }
+
+      setStatus(`Launched via real pipeline! Session persisted (id ${data.sessionId?.slice(0,8) || 'n/a'}). Watch the list update LIVE via Supabase Realtime. Used mock provider simulating Cerebras GLM / any of the 5 backends.`);
+
+      // The API did the real persistVibePlan. Realtime subscription will update the UI.
+      // As a fallback / to show initial data, we can still load, but realtime should handle it.
+      // Give realtime a moment, then optional refresh.
+      setTimeout(() => {
+        // load(); // usually not needed thanks to realtime
+      }, 1500);
     } catch (e: any) {
-      setStatus("Launch error: " + (e?.message || e));
+      setStatus("Launch error: " + (e?.message || e) + " — falling back to direct insert for demo.");
+
+      // Fallback to direct insert if API fails (still triggers realtime)
+      if (sb) {
+        try {
+          const { data: newSess } = await sb
+            .from("autonomous_sessions")
+            .insert({
+              name: form.name,
+              description: form.desc,
+              metadata: { backend: "multi (codex|claude|grok|cerebras|big-agi via fallback)", source: "web-dashboard" },
+            })
+            .select()
+            .single();
+
+          if (newSess) {
+            await sb.from("checkpoints").insert({
+              session_id: newSess.id,
+              name: "web-launch-fallback",
+              resume_strategy: "last-checkpoint",
+            });
+            setStatus(`Launched (fallback direct). ${newSess.name} should appear live via Realtime.`);
+          }
+        } catch (fbErr: any) {
+          setStatus("Fallback also failed: " + fbErr.message);
+        }
+      }
     } finally {
       setLaunching(false);
     }
@@ -119,6 +137,88 @@ export default function VibeDashboard() {
   useEffect(() => {
     load();
   }, []);
+
+  // Supabase Realtime subscriptions for live dashboard updates
+  // When data changes in autonomous_sessions or checkpoints (e.g. via dashboard launch,
+  // future pipeline persistVibePlan calls, or even external `vibe` actions if wired to Supabase),
+  // the UI will update automatically without manual refresh.
+  useEffect(() => {
+    if (!sb) return;
+
+    const channel = sb
+      .channel('vibe-autonomous-live')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'autonomous_sessions' },
+        (payload: any) => {
+          const newSession = payload.new as Session;
+          const oldSession = payload.old as Session | null;
+
+          if (payload.eventType === 'INSERT') {
+            setSessions((prev) => {
+              const exists = prev.some((s) => s.id === newSession.id);
+              if (exists) return prev;
+              return [newSession, ...prev].slice(0, 20);
+            });
+            // Fetch initial checkpoints for the new session so the card populates immediately
+            sb
+              .from('checkpoints')
+              .select('id,name,created_at')
+              .eq('session_id', newSession.id)
+              .order('created_at', { ascending: false })
+              .limit(5)
+              .then(({ data }) => {
+                if (data) {
+                  setCheckpoints((prev) => ({
+                    ...prev,
+                    [newSession.id]: data as Checkpoint[],
+                  }));
+                }
+              });
+          } else if (payload.eventType === 'UPDATE') {
+            setSessions((prev) =>
+              prev.map((s) => (s.id === newSession.id ? newSession : s))
+            );
+          } else if (payload.eventType === 'DELETE' && oldSession) {
+            setSessions((prev) => prev.filter((s) => s.id !== oldSession.id));
+            setCheckpoints((prev) => {
+              const copy = { ...prev };
+              delete copy[oldSession.id];
+              return copy;
+            });
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'checkpoints' },
+        (payload: any) => {
+          const newCp = payload.new as Checkpoint & { session_id: string };
+          if (newCp.session_id) {
+            setCheckpoints((prev) => {
+              const existing = prev[newCp.session_id] || [];
+              const exists = existing.some((c) => c.id === newCp.id);
+              if (exists) return prev;
+              const updated = [newCp as Checkpoint, ...existing].slice(0, 5);
+              return { ...prev, [newCp.session_id]: updated };
+            });
+          }
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          setRealtimeStatus('connected');
+          // Realtime connected – dashboard will now live-update on Supabase changes
+          console.log('[Vibe Dashboard] Subscribed to Supabase Realtime for autonomous sessions & checkpoints');
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          setRealtimeStatus('error');
+        }
+      });
+
+    return () => {
+      sb.removeChannel(channel);
+    };
+  }, [sb]);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-200 p-8 font-sans">
@@ -160,9 +260,15 @@ export default function VibeDashboard() {
               {launching ? "Launching..." : "Launch on 5 backends"}
             </button>
           </div>
-          <p className="mt-2 text-xs text-zinc-500">Uses wired resolver/pipeline + persist (VibePlanSchema + any registered provider). Checkpoints + events logged for resume.</p>
+          <p className="mt-2 text-xs text-zinc-500">Uses wired resolver/pipeline + persist (VibePlanSchema + any registered provider). Checkpoints + events logged for resume. <strong>Supabase Realtime enabled</strong> — inserts from dashboard, future pipeline calls, or external tools will update this view live.</p>
           {status && <div className="mt-3 text-emerald-400 text-sm">{status}</div>}
-          {!sb && <div className="mt-2 text-amber-400 text-xs">Supabase env not set — live queries disabled (demo mode).</div>}
+          <div className="mt-1 text-[10px] flex items-center gap-2">
+            <span className={realtimeStatus === 'connected' ? 'text-emerald-400' : 'text-amber-400'}>
+              ● Supabase Realtime: {realtimeStatus}
+            </span>
+            {!sb && <span className="text-amber-400">(set env to enable)</span>}
+          </div>
+          {!sb && <div className="mt-1 text-amber-400 text-xs">Supabase env not set — realtime &amp; live queries disabled (demo mode). Copy web/.env.local.example to .env.local and restart dev server.</div>}
         </section>
 
         {/* Sessions + Checkpoints */}
