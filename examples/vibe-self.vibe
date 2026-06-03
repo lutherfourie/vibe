@@ -142,6 +142,15 @@ plugin human_merge_gate {
   emits = "approved next slice"
 }
 
+autonomous-session self_bootstrap {
+  name = "self_bootstrap"
+  description = "Use Vibe primitives to build/extend the unified autonomous platform itself (langium, providers, supabase, web, dispatch)."
+  lanes = [
+    { name = "language", steps = [ { type = "checkpoint", id = "c1", name = "grammar+resolver" }, { type = "self-review", id = "r1", criteria = ["tests green", "schema valid"] } ] }
+  ]
+  checkpoints = [ { id = "cp1", name = "post-audit", resumeStrategy = "last-checkpoint" } ]
+}
+
 agent vibe_bootstrap {
   persona = persona.vibe_bootstrap_voice
   memory  = memory.vibe_project
