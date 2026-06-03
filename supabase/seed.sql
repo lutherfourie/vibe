@@ -1,0 +1,5 @@
+-- Vibe local Supabase seed.
+--
+-- Runs after migrations on `supabase db reset` (see [db.seed] in config.toml).
+-- Add INSERT statements here once the schema exists. Empty for now — Vibe has
+-- no committed schema yet (see supabase/README.md "Next steps").
