@@ -1,0 +1,22 @@
+{
+  "name": "vibe-self-bootstrap-autonomous",
+  "repo": "C:/vibe",
+  "lanes": [
+    {
+      "name": "continue-self-build",
+      "mode": "autonomous",
+      "branch": "feature/autonomous-langium-zod",
+      "reads": ["examples/vibe-self.vibe", "docs/examples/vibe-self-plan.json", "PROGRESS.md", "packages/language/**", "web/**", ".vibe-out/handoffs/**"],
+      "writes": ["PROGRESS.md", "examples/vibe-self.vibe", "docs/examples/vibe-self-plan.json", "web/**"],
+      "prompt": "Continue using Vibe's own primitives (autonomous-session in .vibe, handoff/checkpoint/resume CLI, self-plan) to finish any remaining integration/polish for the declarative agent OS (dashboard usability, full pnpm run check, Go/TS parity, self-use examples). Follow the full loop and keep PROGRESS.md current via the checkpoint tool.",
+      "requires": ["pnpm run check", "cd go && go test ./...", "pnpm run self:plan"],
+      "autonomous": {
+        "progress": "PROGRESS.md",
+        "horizon": "long",
+        "checkpointEvery": "after every major self-invocation (handoff, verify, checkpoint)",
+        "roles": ["architect", "implementer", "researcher", "tester", "reviewer"],
+        "research": "docs/superpowers/research"
+      }
+    }
+  ]
+}
