@@ -14,28 +14,28 @@ import (
 
 // ProviderQuota mirrors the DB row.
 type ProviderQuota struct {
-	Provider        string    `json:"provider"`
-	Remaining       float64   `json:"remaining"`
-	TotalQuota      float64   `json:"total_quota"`
-	CostPerMillion  float64   `json:"cost_per_million"`
-	ResetAt         time.Time `json:"reset_at"`
-	Priority        int       `json:"priority"`
-	Metadata        json.RawMessage `json:"metadata"`
+	Provider       string          `json:"provider"`
+	Remaining      float64         `json:"remaining"`
+	TotalQuota     float64         `json:"total_quota"`
+	CostPerMillion float64         `json:"cost_per_million"`
+	ResetAt        time.Time       `json:"reset_at"`
+	Priority       int             `json:"priority"`
+	Metadata       json.RawMessage `json:"metadata"`
 }
 
 // TaskEstimate rough cost estimate for a task (in tokens or 'units').
 type TaskEstimate struct {
-	EstimatedTokens int     // rough total tokens (prompt + completion)
-	Complexity      string  // "low", "medium", "high"
+	EstimatedTokens int    // rough total tokens (prompt + completion)
+	Complexity      string // "low", "medium", "high"
 }
 
 // Recommendation from the dispatcher.
 type Recommendation struct {
-	Provider   string  `json:"provider"`
-	Score      float64 `json:"score"` // lower better (cost + priority adjusted)
-	EstCost    float64 `json:"est_cost_usd"`
-	Reason     string  `json:"reason"`
-	QuotaLeft  float64 `json:"quota_left"`
+	Provider  string  `json:"provider"`
+	Score     float64 `json:"score"` // lower better (cost + priority adjusted)
+	EstCost   float64 `json:"est_cost_usd"`
+	Reason    string  `json:"reason"`
+	QuotaLeft float64 `json:"quota_left"`
 }
 
 // ResourceAwareDispatcher consults Supabase quotas to pick economical provider.
@@ -144,8 +144,8 @@ func (d *ResourceAwareDispatcher) UpdateQuotaAfterUse(ctx context.Context, provi
 	q := url.Values{}
 	q.Set("provider", "eq."+provider)
 	body := map[string]any{
-		"remaining":     "remaining - " + fmt.Sprintf("%.4f", delta), // note: this is not correct for postgrest; real would use rpc or select+update
-		"last_updated":  time.Now().UTC().Format(time.RFC3339),
+		"remaining":    "remaining - " + fmt.Sprintf("%.4f", delta), // note: this is not correct for postgrest; real would use rpc or select+update
+		"last_updated": time.Now().UTC().Format(time.RFC3339),
 	}
 	// For demo, use simple PATCH with computed (in real use RPC or transaction)
 	// Here we just log; full impl would read current, compute, update.

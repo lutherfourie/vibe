@@ -1,6 +1,6 @@
 # Vibe Autonomous Bootstrap - Grok Build Mode
 
-Status: infra auto-sync for remote control active (poller exec + CI + dashboard trigger)
+Status: Go runtime verified live and working (poller + CLI tools active)
 Updated: 2026-06-03
 Branch: 
 
@@ -9,6 +9,9 @@ Branch:
 ## Milestones
 
 ## Checkpoint Log
+
+### 2026-06-03 — Go runtime surprisingly solid (pure stdlib Supabase C&C + live poller + auto infra exec)
+- vibe doctor/continue/lanes all green via the Go binary. go test/build/vet/gofmt clean (fixed 2 files). The background 'vibe remote' (started via service key from web/.env.local) is actively polling and processed real queued commands from the web API (sync-supabase auto-exec + status). DB confirms completed + responses. internal/remote/client.go is tiny stdlib net/http + PostgREST (no SDK) yet handles the full remote control plane live alongside the TS dashboard + resolver. The fact the Go side can drive infra updates and bridge everything is wild.
 
 ### 2026-06-03 — auto infra sync: exec in ProcessCommand + vibe remote subcmd + GH workflow + docs + self.vibe dogfood
 - ProcessCommand now runs pnpm infra:* for real (output in acks). New 'vibe remote --session' starts poller wired to it for automatic updates. infra-sync.yml for dispatch/CI. Updated vercel script + local-toolkit.md + added infra_sync_for_remote to examples/vibe-self.vibe then pnpm run self:plan. go test + lang test + web build + check green. This makes Supabase/Vercel update automatically when remote commands sent, fulfilling the request.
