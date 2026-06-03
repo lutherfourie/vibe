@@ -294,9 +294,11 @@
       }
     }
   ],
+  "autonomousSessions": [],
   "notes": [
     "This is a provisional self-plan extracted from current Vibe primitives.",
     "Plugins ending in _lane are treated as lanes until lane syntax exists.",
-    "Plugins ending in _gate are treated as gates until gate syntax exists."
+    "Plugins ending in _gate are treated as gates until gate syntax exists.",
+    "Native autonomous-session/lane/checkpoint/self-review/research-step are now first-class (Langium + Zod)."
   ]
 }

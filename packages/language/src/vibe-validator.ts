@@ -23,7 +23,8 @@
  *   - Cross-reference resolution. Every `Reference` AST node whose first
  *     segment is one of the declaration-kind keywords (`agent`,
  *     `route`, `persona`, `memory`, `harness`, `plugin`, `provider`, `surface`,
- *     `trigger`, `fallback`) must have its second segment match a declared
+ *     `trigger`, `fallback`, `autonomous-session`, `lane`, `checkpoint`,
+ *     `self-review`, `research-step`) must have its second segment match a declared
  *     name of that kind. Catches the most common authoring typo —
  *     `uses = [plugin.assett_pipeline]` when the real declaration is
  *     `plugin asset_pipeline { ... }`. Three-segment `plugin.X.tool`
@@ -56,14 +57,19 @@
 import type { ValidationAcceptor, ValidationChecks } from "langium";
 import type {
   Agent,
+  AutonomousSession,
+  Checkpoint,
   Harness,
+  Lane,
   Memory,
   Persona,
   Plugin,
   Project,
   Provider,
   Reference as VibeReference,
+  ResearchStep,
   Route,
+  SelfReview,
   Surface,
   VibeAstType,
 } from "./generated/ast.js";
@@ -84,7 +90,12 @@ type NamedDeclaration =
   | Plugin
   | Provider
   | Surface
-  | Route;
+  | Route
+  | AutonomousSession
+  | Lane
+  | Checkpoint
+  | SelfReview
+  | ResearchStep;
 
 /**
  * Stable lowercase label used in diagnostics. Matches the keyword each
@@ -100,6 +111,11 @@ const KIND_LABEL: Record<NamedDeclaration["$type"], string> = {
   Provider: "provider",
   Surface: "surface",
   Route: "route",
+  AutonomousSession: "autonomous-session",
+  Lane: "lane",
+  Checkpoint: "checkpoint",
+  SelfReview: "self-review",
+  ResearchStep: "research-step",
 };
 
 function isNamedDeclaration(node: unknown): node is NamedDeclaration {
@@ -112,7 +128,12 @@ function isNamedDeclaration(node: unknown): node is NamedDeclaration {
     type === "Plugin" ||
     type === "Provider" ||
     type === "Surface" ||
-    type === "Route"
+    type === "Route" ||
+    type === "AutonomousSession" ||
+    type === "Lane" ||
+    type === "Checkpoint" ||
+    type === "SelfReview" ||
+    type === "ResearchStep"
   );
 }
 
@@ -279,6 +300,11 @@ export class VibeValidator {
       surface: new Set<string>(),
       trigger: new Set<string>(),
       fallback: new Set<string>(),
+      "autonomous-session": new Set<string>(),
+      lane: new Set<string>(),
+      checkpoint: new Set<string>(),
+      "self-review": new Set<string>(),
+      "research-step": new Set<string>(),
     };
 
     for (const decl of project.declarations) {
@@ -306,6 +332,21 @@ export class VibeValidator {
           break;
         case "Surface":
           declared.surface.add(decl.name.segments.join("."));
+          break;
+        case "AutonomousSession":
+          declared["autonomous-session"].add(decl.name);
+          break;
+        case "Lane":
+          declared.lane.add(decl.name);
+          break;
+        case "Checkpoint":
+          declared.checkpoint.add(decl.name);
+          break;
+        case "SelfReview":
+          declared["self-review"].add(decl.name);
+          break;
+        case "ResearchStep":
+          declared["research-step"].add(decl.name);
           break;
         // Trigger and Fallback have no name slot; they're listed in
         // CROSS_REF_KINDS for completeness (the spec lists them as kind
@@ -410,6 +451,11 @@ const CROSS_REF_KINDS = [
   "surface",
   "trigger",
   "fallback",
+  "autonomous-session",
+  "lane",
+  "checkpoint",
+  "self-review",
+  "research-step",
 ] as const;
 type CrossRefKind = (typeof CROSS_REF_KINDS)[number];
 

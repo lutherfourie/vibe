@@ -8,7 +8,8 @@ entry Project:
     declarations+=Declaration*;
 
 Declaration:
-    Agent | Route | Fallback | Persona | Provider | Surface | Memory | Harness | Plugin | Trigger | Corrected;
+    Agent | Route | Fallback | Persona | Provider | Surface | Memory | Harness | Plugin | Trigger | Corrected
+    | AutonomousSession | Lane | Checkpoint | SelfReview | ResearchStep;
 
 Agent:
     'agent' name=ID '{' fields+=Field* '}';
@@ -43,6 +44,21 @@ Trigger:
 Corrected:
     'corrected' 'for' target=STRING '{' fields+=Field* '}';
 
+AutonomousSession:
+    'autonomous-session' name=ID '{' fields+=Field* '}';
+
+Lane:
+    'lane' name=ID '{' fields+=Field* '}';
+
+Checkpoint:
+    'checkpoint' name=ID '{' fields+=Field* '}';
+
+SelfReview:
+    'self-review' name=ID '{' fields+=Field* '}';
+
+ResearchStep:
+    'research-step' name=ID '{' fields+=Field* '}';
+
 QualifiedName:
     segments+=ID ('.' segments+=ID)*;
 
@@ -52,13 +68,16 @@ Field:
 // Name lets structural-primitive keywords appear as identifiers in identifier
 // positions — Reference / TypeReference segments, Field names, ObjectEntry
 // keys. Each primitive task (Tasks 7-14) must append its keyword here.
+// Autonomous primitives (autonomous-session, lane, checkpoint, self-review,
+// research-step) appended for long-horizon support (aligns to resolver/schemas.ts).
 // `true`, `false`, `null` are deliberately excluded — they stay reserved for
 // the literal expressions so the parser can never ambiguate `x = true`.
 // Declaration headers still bind `name=ID` so declaration names cannot collide
 // with structural keywords; the Task 15 validator enforces the same constraint
 // for `true`/`false`/`null` and any future literal-shaped keyword.
 Name returns string:
-    ID | 'agent' | 'route' | 'persona' | 'provider' | 'surface' | 'fallback' | 'memory' | 'harness' | 'plugin' | 'trigger' | 'corrected' | 'for';
+    ID | 'agent' | 'route' | 'persona' | 'provider' | 'surface' | 'fallback' | 'memory' | 'harness' | 'plugin' | 'trigger' | 'corrected' | 'for'
+    | 'autonomous-session' | 'lane' | 'checkpoint' | 'self-review' | 'research-step';
 
 TypeReference:
     segments+=Name ('.' segments+=Name)*;

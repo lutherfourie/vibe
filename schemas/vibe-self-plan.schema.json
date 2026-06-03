@@ -5,7 +5,7 @@
   "description": "Contract for the self-plan IR emitted by @vibe/language (extractSelfPlan) and consumed by the Go runtime (internal/selfplan).",
   "type": "object",
   "additionalProperties": false,
-  "required": ["name", "source", "providers", "routes", "surfaces", "agents", "lanes", "gates", "notes"],
+  "required": ["name", "source", "providers", "routes", "surfaces", "agents", "lanes", "gates", "autonomousSessions", "notes"],
   "properties": {
     "name": { "type": "string", "minLength": 1 },
     "source": { "type": "string" },
@@ -17,6 +17,7 @@
     "agents": { "type": "array", "items": { "$ref": "#/$defs/agent" } },
     "lanes": { "type": "array", "items": { "$ref": "#/$defs/lane" } },
     "gates": { "type": "array", "items": { "$ref": "#/$defs/gate" } },
+    "autonomousSessions": { "type": "array", "items": { "$ref": "#/$defs/autonomousSession" } },
     "notes": { "type": "array", "items": { "type": "string" } }
   },
   "$defs": {
@@ -80,6 +81,18 @@
         "impl": { "type": "string" },
         "owns": { "type": "string" },
         "emits": { "type": "string" },
+        "metadata": { "$ref": "#/$defs/metadata" }
+      }
+    },
+    "autonomousSession": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "laneCount", "checkpointCount", "metadata"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "description": { "type": "string" },
+        "laneCount": { "type": "number" },
+        "checkpointCount": { "type": "number" },
         "metadata": { "$ref": "#/$defs/metadata" }
       }
     }
