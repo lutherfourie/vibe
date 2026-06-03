@@ -14,11 +14,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lutherfourie/vibe/go/agent"
 	"github.com/lutherfourie/vibe/go/internal/bootstrap"
 	"github.com/lutherfourie/vibe/go/internal/continuation"
 	"github.com/lutherfourie/vibe/go/internal/doctor"
 	"github.com/lutherfourie/vibe/go/internal/lanes"
 	"github.com/lutherfourie/vibe/go/internal/progress"
+	"github.com/lutherfourie/vibe/go/internal/remote"
 	"github.com/lutherfourie/vibe/go/internal/selfplan"
 	"github.com/lutherfourie/vibe/go/internal/serve"
 )
@@ -62,6 +64,8 @@ func run(ctx context.Context, args []string) error {
 		return runCheckpoint(args[1:])
 	case "resume":
 		return runResume(ctx, args[1:])
+	case "remote":
+		return runRemote(ctx, args[1:])
 	case "help", "-h", "--help":
 		usage(os.Stdout)
 		return nil
@@ -84,6 +88,7 @@ func usage(out *os.File) {
 	fmt.Fprintln(out, "  handoff     Emit markdown handoffs from a lane-plan or self-plan JSON")
 	fmt.Fprintln(out, "  checkpoint  Append a timestamped checkpoint to PROGRESS.md")
 	fmt.Fprintln(out, "  resume      Print a resume brief from PROGRESS.md + live git state")
+	fmt.Fprintln(out, "  remote      Start a background poller for a session_id that auto-processes remote C&C incl. infra sync (sync-supabase etc auto-run pnpm when queued)")
 }
 
 func runContinue(ctx context.Context, args []string) error {
@@ -468,6 +473,49 @@ func runResume(ctx context.Context, args []string) error {
 
 	fmt.Print(progress.ResumeBrief(doc, liveBranch, dirty))
 	return nil
+}
+
+// runRemote starts a long-lived poller against a Supabase session using the
+// RemoteControl + ProcessCommand. Any queued agent_command (e.g. from
+// /api/agent/command POST by Grok, or dashboard Infra Sync buttons) will be
+// seen, ProcessCommand will run it (for infra-* this now does real pnpm exec
+// so Supabase migrations and/or Vercel deploys happen *automatically*), and
+// responses/events are written back. This is the "always updated at the right
+// time" piece for remote control of the platform itself.
+func runRemote(ctx context.Context, args []string) error {
+	flags := flag.NewFlagSet("remote", flag.ContinueOnError)
+	flags.SetOutput(os.Stderr)
+	sessionID := flags.String("session", "", "autonomous session id to poll for commands (required; use a real one from dashboard or launch)")
+	interval := flags.Duration("interval", 3*time.Second, "poll interval")
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
+	if *sessionID == "" {
+		return fmt.Errorf("--session <uuid> is required (create/launch one via web dashboard or direct insert)")
+	}
+
+	client := remote.NewClient() // uses SUPABASE_* envs (prefers service key for writes)
+	ctrl := agent.NewRemoteControl(client, *sessionID)
+
+	fmt.Printf("vibe remote: polling session %s every %s. Send commands via POST /api/agent/command or dashboard Infra Sync buttons.\n", *sessionID, interval)
+	fmt.Println("Infra sync commands (sync-supabase, deploy-vercel, sync-infra) will AUTO-EXEC the pnpm scripts if this process has the CLIs+auth.")
+	fmt.Println("Press Ctrl+C to stop. Events and acks will appear here + in Supabase agent_events/responses.")
+
+	// Use ProcessCommand as the handler so all built-in commands (incl new auto-exec infra) work.
+	handler := func(cmd remote.AgentCommand) {
+		fmt.Printf("[remote] received command %s id=%s\n", cmd.Command, cmd.ID)
+		if err := ctrl.ProcessCommand(ctx, cmd); err != nil {
+			fmt.Printf("[remote] ProcessCommand error for %s: %v\n", cmd.Command, err)
+		} else {
+			fmt.Printf("[remote] processed %s\n", cmd.Command)
+		}
+	}
+
+	ctrl.StartPoller(ctx, *interval, handler)
+
+	// Block forever (or until ctx cancel)
+	<-ctx.Done()
+	return ctx.Err()
 }
 
 func printLaneTable(plan selfplan.Plan) {

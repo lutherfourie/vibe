@@ -458,6 +458,75 @@
           }
         ]
       }
+    },
+    {
+      "name": "infra_sync_for_remote",
+      "description": "Ensure Supabase and Vercel are always updated at the right time automatically as a prerequisite for reliable remote control of Vibe (Grok/Claude/Codex can command launches, instructions, and also 'sync-infra' so the C&C tables, dashboard, APIs, and provider logic stay current without manual local steps on the control machine).",
+      "laneCount": 4,
+      "checkpointCount": 1,
+      "metadata": {
+        "name": "infra_sync_for_remote",
+        "description": "Ensure Supabase and Vercel are always updated at the right time automatically as a prerequisite for reliable remote control of Vibe (Grok/Claude/Codex can command launches, instructions, and also 'sync-infra' so the C&C tables, dashboard, APIs, and provider logic stay current without manual local steps on the control machine).",
+        "lanes": [
+          {
+            "name": "automation",
+            "steps": [
+              {
+                "type": "implement",
+                "id": "a1",
+                "description": "pnpm infra:* scripts + os/exec auto-run inside RemoteControl.ProcessCommand for sync-supabase/deploy-vercel/sync-infra (capture output in acks)"
+              }
+            ]
+          },
+          {
+            "name": "poller-cmd",
+            "steps": [
+              {
+                "type": "implement",
+                "id": "p1",
+                "description": "vibe remote --session subcommand (main.go) that starts RemoteControl.StartPoller wired to ProcessCommand so queued commands auto-apply infra updates"
+              }
+            ]
+          },
+          {
+            "name": "ci-fallback",
+            "steps": [
+              {
+                "type": "implement",
+                "id": "c1",
+                "description": ".github/workflows/infra-sync.yml (workflow_dispatch) + update vercel script to npx for portability"
+              }
+            ]
+          },
+          {
+            "name": "surface-docs",
+            "steps": [
+              {
+                "type": "implement",
+                "id": "s1",
+                "description": "dashboard Infra Sync buttons (page.tsx) queue via /api/agent/command; docs/local-toolkit.md section; self-record in vibe-self.vibe"
+              },
+              {
+                "type": "self-review",
+                "id": "s2",
+                "criteria": [
+                  "vibe remote can be started",
+                  "sending command auto execs or dispatches",
+                  "hosted Supabase/Vercel reflect after",
+                  "self:plan + checkpoint used"
+                ]
+              }
+            ]
+          }
+        ],
+        "checkpoints": [
+          {
+            "id": "is1",
+            "name": "auto infra sync for remote control",
+            "resumeStrategy": "last-checkpoint"
+          }
+        ]
+      }
     }
   ],
   "notes": [

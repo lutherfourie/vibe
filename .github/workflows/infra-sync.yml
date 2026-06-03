@@ -1,0 +1,58 @@
+name: Infra Sync (Supabase + Vercel for remote control)
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Infra action to perform (queued by remote C&C or manually)'
+        required: true
+        default: 'sync-infra'
+        type: choice
+        options:
+          - sync-supabase
+          - deploy-vercel
+          - sync-infra
+
+jobs:
+  infra:
+    name: Sync hosted Supabase and/or deploy Vercel prod
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Install Supabase CLI (for db push)
+        run: |
+          curl -fsSL https://supabase.com/install.sh | sh
+          echo "$HOME/.supabase/bin" >> $GITHUB_PATH
+
+      - name: Supabase link (non-interactive using access token)
+        if: github.event.inputs.action == 'sync-supabase' || github.event.inputs.action == 'sync-infra'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: supabase link --project-ref gknrdzkdgmuozhtaonst --yes || true
+
+      - name: Sync Supabase (apply latest migrations to hosted)
+        if: github.event.inputs.action == 'sync-supabase' || github.event.inputs.action == 'sync-infra'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: pnpm run infra:sync-supabase
+
+      - name: Deploy to Vercel Production (latest code, dashboard, /api/*, realtime etc)
+        if: github.event.inputs.action == 'deploy-vercel' || github.event.inputs.action == 'sync-infra'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: npx vercel deploy --prod --yes --token ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "Infra sync action=${{ inputs.action }} complete."
+          echo "If using remote control: the agent_commands response will contain output from the run."

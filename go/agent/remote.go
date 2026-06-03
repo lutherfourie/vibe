@@ -1,9 +1,12 @@
 package agent
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/lutherfourie/vibe/go/internal/remote"
@@ -142,19 +145,60 @@ func (r *RemoteControl) ProcessCommand(ctx context.Context, cmd remote.AgentComm
 		_ = r.EmitEvent(ctx, "checkpoint_requested", result)
 	case "sync-supabase":
 		result["action"] = "sync-supabase"
-		msg = "To update hosted Supabase with latest migrations, run: pnpm run infra:sync-supabase (requires supabase CLI linked to hosted and auth)"
+		if out, err := runPnpmInfra("infra:sync-supabase"); err != nil {
+			result["output"] = out
+			result["error"] = err.Error()
+			msg = "sync-supabase auto-exec completed with error"
+		} else {
+			result["output"] = out
+			msg = "sync-supabase auto-executed successfully (migrations pushed to hosted)"
+		}
 		_ = r.EmitEvent(ctx, "infra_sync_requested", result)
 	case "deploy-vercel":
 		result["action"] = "deploy-vercel"
-		msg = "To deploy latest web dashboard to Vercel prod, run: pnpm run infra:deploy-vercel (requires vercel CLI auth)"
+		if out, err := runPnpmInfra("infra:deploy-vercel"); err != nil {
+			result["output"] = out
+			result["error"] = err.Error()
+			msg = "deploy-vercel auto-exec completed with error"
+		} else {
+			result["output"] = out
+			msg = "deploy-vercel auto-executed successfully (prod deploy triggered)"
+		}
 		_ = r.EmitEvent(ctx, "infra_deploy_requested", result)
 	case "sync-infra":
 		result["action"] = "sync-infra"
-		msg = "Run both: pnpm run infra:sync-supabase && pnpm run infra:deploy-vercel to keep remote control plane and dashboard updated"
+		var allOut strings.Builder
+		// Run supabase first (schema), then vercel (code+UI+APIs) so remote control plane is current.
+		if out1, err1 := runPnpmInfra("infra:sync-supabase"); err1 != nil {
+			allOut.WriteString("supabase: " + out1 + "\nERROR: " + err1.Error() + "\n")
+		} else {
+			allOut.WriteString("supabase: " + out1 + "\n")
+		}
+		if out2, err2 := runPnpmInfra("infra:deploy-vercel"); err2 != nil {
+			allOut.WriteString("vercel: " + out2 + "\nERROR: " + err2.Error())
+		} else {
+			allOut.WriteString("vercel: " + out2)
+		}
+		result["output"] = strings.TrimSpace(allOut.String())
+		msg = "sync-infra auto-executed both (see output for details)"
 		_ = r.EmitEvent(ctx, "infra_sync_requested", result)
 	default:
 		msg = "unknown command, acked as no-op"
 	}
 
 	return r.Ack(ctx, cmd.ID, "completed", result, msg)
+}
+
+// runPnpmInfra executes one of the root pnpm infra:* scripts (sync-supabase, deploy-vercel).
+// Captures combined stdout/stderr so remote ack + events contain the full CLI output.
+// This is what makes "remote control" able to automatically keep Supabase and Vercel
+// in sync when a command is queued (e.g. from Grok chat or dashboard button) and a
+// poller/runner for the session is active with CLIs + auth in its env.
+func runPnpmInfra(subcmd string) (string, error) {
+	cmd := exec.Command("pnpm", "run", subcmd)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &out
+	err := cmd.Run()
+	return strings.TrimSpace(out.String()), err
 }

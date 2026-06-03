@@ -1,6 +1,6 @@
 # Vibe Autonomous Bootstrap - Grok Build Mode
 
-Status: in-progress
+Status: infra auto-sync for remote control active (poller exec + CI + dashboard trigger)
 Updated: 2026-06-03
 Branch: 
 
@@ -9,6 +9,12 @@ Branch:
 ## Milestones
 
 ## Checkpoint Log
+
+### 2026-06-03 — auto infra sync: exec in ProcessCommand + vibe remote subcmd + GH workflow + docs + self.vibe dogfood
+- ProcessCommand now runs pnpm infra:* for real (output in acks). New 'vibe remote --session' starts poller wired to it for automatic updates. infra-sync.yml for dispatch/CI. Updated vercel script + local-toolkit.md + added infra_sync_for_remote to examples/vibe-self.vibe then pnpm run self:plan. go test + lang test + web build + check green. This makes Supabase/Vercel update automatically when remote commands sent, fulfilling the request.
+- Hosted migrations already applied; recent Vercel deploys confirm. Remote control now has closed loop for infra.
+
+### 2026-06-03 — Infra sync automation complete for remote control: 1. Pushed all pending migrations (remote control, fixes, provider_quotas) to hosted Supabase gknrdzkdgmuozhtaonst via supabase db push --linked. 2. Fixed Vercel deploys (added next to root deps + outputDirectory to vercel.json, pnpm install to update lock); successful prod deploy with latest code (agent APIs, infra UI, cerebras enforce, resource dispatcher). Live prod: https://vibe-ansev5eex-4eluther-7974s-projects.vercel.app (and alias). 3. Added pnpm infra:sync-supabase and infra:deploy-vercel scripts. 4. Extended remote C&C: new command types sync-supabase/deploy-vercel/sync-infra handled in Go ProcessCommand (emit event + ack with exact pnpm run instruction for the controller/runner to execute). 5. Added Infra Sync section + buttons to dashboard (page.tsx) that queue the commands via /api/agent/command (using real sessions; works on local dev and now on prod after deploy). 6. Local dev server and prod Vercel both updated. Go build ok. This ensures Supabase (hosted tables) and Vercel (deployed dashboard+APIs) are updated 'at the right time' automatically when remote commands are sent via the C&C plane (Grok can now command 'sync-infra' to keep everything live for control). Follows handoff, checkpoints, contract. Current cycle stable.
 
 ### 2026-06-03 — Cerebras enforcement complete: force via param (provider=cerebras) or config (FORCE_CEREBRAS / DEFAULT_PROVIDER). Key presence checked at request time in /api/launch (and serve init); force without key -> 400 error + console.error (loud notify, no silent mock). Tested on live dev server (monitor captured 400 + error log for force case; 200 + warn log for non-force no-key). Updated route, page.tsx, .env* docs. Go side also has explicit checks+logs. All per 'ensure present + force + notify instead of silent'. Current remote control + resource infra stable.
 
