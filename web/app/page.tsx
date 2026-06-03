@@ -646,6 +646,11 @@ export default function VibeDashboard() {
                         <button onClick={() => sendCommand('status')} className="text-[10px] px-2 py-0.5 border border-white/20 rounded hover:bg-white/5">status</button>
                         <button onClick={() => sendCommand('instruct', {instruction: 'continue the main lane work'})} className="text-[10px] px-2 py-0.5 border border-white/20 rounded hover:bg-white/5">instruct: continue</button>
                         <button onClick={() => sendCommand('sync-infra')} className="text-[10px] px-2 py-0.5 border border-white/20 rounded hover:bg-white/5">sync-infra</button>
+                        {/* Added via Grok + Codex parallel for recommended remote C&C depth */}
+                        <button onClick={() => sendCommand('checkpoint')} className="text-[10px] px-2 py-0.5 border border-emerald-500/40 rounded hover:bg-emerald-500/10">checkpoint (via vibe bin)</button>
+                        <button onClick={() => sendCommand('pause')} className="text-[10px] px-2 py-0.5 border border-white/20 rounded hover:bg-white/5">pause</button>
+                        <button onClick={() => sendCommand('resume')} className="text-[10px] px-2 py-0.5 border border-white/20 rounded hover:bg-white/5">resume</button>
+                        <button onClick={() => sendCommand('launch')} className="text-[10px] px-2 py-0.5 border border-white/20 rounded hover:bg-white/5">launch</button>
                       </div>
                       <div className="flex gap-2">
                         <input

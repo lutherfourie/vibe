@@ -3,10 +3,14 @@ package agent
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"reflect"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/lutherfourie/vibe/go/internal/remote"
 )
 
 func TestRunLoopExecutesToolAndRunsSecondTurn(t *testing.T) {
@@ -122,6 +126,54 @@ func TestRunLoopStopsAtMaxIterations(t *testing.T) {
 	}
 	if got := collected[len(collected)-1].Kind; got != EventKindDone {
 		t.Fatalf("last event kind = %q, want %q", got, EventKindDone)
+	}
+}
+
+func TestRunLoopEmitsTurnTelemetryWhenRemoteControlIsConfigured(t *testing.T) {
+	telemetry := make(chan map[string]any, 4)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/rest/v1/provider_quotas":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`[]`))
+		case r.Method == http.MethodPost && r.URL.Path == "/rest/v1/telemetry_events":
+			var event map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
+				t.Errorf("decode telemetry body: %v", err)
+			}
+			telemetry <- event
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`[{}]`))
+		default:
+			t.Errorf("unexpected request %s %s", r.Method, r.URL.String())
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer server.Close()
+	t.Setenv("SUPABASE_URL", server.URL)
+	t.Setenv("SUPABASE_SERVICE_ROLE_KEY", "test-service-key")
+
+	provider := &scriptedLoopProvider{
+		turns: [][]Event{{TextDelta("done"), Done()}},
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	events, err := RunLoop(ctx, LoopOptions{
+		Provider: provider,
+		Remote:   NewRemoteControl(remote.NewClient(), "session-1"),
+	}, []Message{{Role: RoleUser, Content: "hello"}})
+	if err != nil {
+		t.Fatalf("RunLoop returned error: %v", err)
+	}
+	_ = collectEvents(t, events)
+
+	kinds := collectTelemetryKinds(t, telemetry, 2)
+	if !containsString(kinds, "turn_started") {
+		t.Fatalf("telemetry kinds = %v, want turn_started", kinds)
+	}
+	if !containsString(kinds, "turn_completed") {
+		t.Fatalf("telemetry kinds = %v, want turn_completed", kinds)
 	}
 }
 
@@ -276,4 +328,31 @@ func assertToolResultMessage(t *testing.T, message Message, want ToolResult) {
 	if *event.ToolResult != want {
 		t.Fatalf("tool result message payload = %+v, want %+v", *event.ToolResult, want)
 	}
+}
+
+func collectTelemetryKinds(t *testing.T, ch <-chan map[string]any, want int) []string {
+	t.Helper()
+
+	deadline := time.After(time.Second)
+	var kinds []string
+	for len(kinds) < want {
+		select {
+		case event := <-ch:
+			if kind, ok := event["kind"].(string); ok {
+				kinds = append(kinds, kind)
+			}
+		case <-deadline:
+			t.Fatalf("timed out waiting for %d telemetry events; got %v", want, kinds)
+		}
+	}
+	return kinds
+}
+
+func containsString(values []string, want string) bool {
+	for _, value := range values {
+		if value == want {
+			return true
+		}
+	}
+	return false
 }
