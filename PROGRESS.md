@@ -1,6 +1,6 @@
 # Vibe Autonomous Bootstrap - Grok Build Mode
 
-Status: Claude-inspired hybrid chat + artifacts console live in dashboard
+Status: Claude-inspired console enhanced and live on dev server with demo data
 Updated: 2026-06-03
 Branch: 
 
@@ -9,6 +9,9 @@ Branch:
 ## Milestones
 
 ## Checkpoint Log
+
+### 2026-06-03 — Claude UI polish: improved console chat bubbles (Claude-style right/left alignment, labels) + actual artifacts rendering (per-session checkpoints list + telemetry notes + future plan previews)
+- Tested live: demo session now has 2 commands + 2 events (status + instruct). API calls logged in monitor. Hot reload on dev server. Console now feels more like Claude chat + artifacts side panel for structured agent state (checkpoints as steps, etc.). Matches research on Claude artifacts for live previews + clean chat. Updated code in page.tsx. Self-plan lane covers it. Next: perhaps make artifacts interactive or add streaming simulation.
 
 ### 2026-06-03 — Claude UI inspiration: implemented sessions sidebar + chat console for remote C&C + artifacts in autonomous dashboard
 - Deep research via tools: Claude artifacts (side panel for live interactive generated content, Cowork live dashboards), chat patterns (projects sidebar, clean messages, streaming/states, per-message actions, @/slash), from setproduct blog, Anthropic news, Cursor/v0 comparisons. Better for Vibe: hybrid chat (for sending remote commands via existing agent C&C, rendered from status API as chat stream) + artifacts (checkpoints, telemetry, plan views as structured 'live' panels). Implemented in page.tsx: selectable sessions sidebar (Claude projects), main console with unified chat from commands/events/responses, natural composer, quick buttons. Added console realtime subs. Tested live: used running dev server API to launch session 27eeb8d3... and queue status cmd; monitor logged POSTs/GETs; status data has commands+events for the 'chat' to display. Console would render it when selected in browser. Matches research on artifacts+chat for agentic UIs. Self-plan has the lane. All contract followed.
