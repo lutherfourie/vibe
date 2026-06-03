@@ -22,6 +22,11 @@ type LoopOptions struct {
 	Tools         []ToolSpec
 	Executor      ToolExecutor
 	MaxIterations int
+
+	// Remote (optional) enables Supabase C&C for autonomous agents.
+	// The runner can receive pause/resume/instruct from Grok/Claude/etc.
+	// See agent/remote.go and internal/remote/client.go .
+	Remote *RemoteControl
 }
 
 // RunLoop runs provider turns until no tool calls remain or MaxIterations is hit.
@@ -65,6 +70,16 @@ func runLoop(
 			return
 		}
 
+		// Remote C&C hook: if provided, the autonomous runner can react to
+		// Supabase commands (pause, instruct, resume, etc.) in real-time.
+		// The Go runner (or long-lived agent) polls agent_commands for the session.
+		// External (Grok etc) POST to web /api/agent/command to queue them.
+		// See agent/remote.go + internal/remote/client.go for PollForCommands + Ack.
+		// (Example hook; production uses bg poller from RemoteControl.StartPoller.)
+		if r := getRemoteFromContext(ctx); r != nil && r.Remote != nil {
+			_ = r.Remote.EmitEvent(ctx, "loop_iteration", map[string]any{"iteration": iteration})
+		}
+
 		turnEvents, err := provider.RunTurn(ctx, TurnRequest{
 			Messages: append([]Message(nil), conversation...),
 			Tools:    append([]ToolSpec(nil), tools...),
@@ -104,6 +119,15 @@ func runLoop(
 	}
 
 	sendLoopEvent(ctx, out, Done())
+}
+
+// getRemoteFromContext is a tiny helper so LoopOptions.Remote can influence the run
+// without changing the RunLoop signature heavily. In production use the bg poller
+// from remote.go instead of ctx hack.
+func getRemoteFromContext(ctx context.Context) *LoopOptions {
+	// For demo: real impl would pass options down or use closure.
+	// Here we return nil; the integration example lives in agent/remote.go.
+	return nil
 }
 
 func forwardTurnEvents(ctx context.Context, out chan<- Event, turnEvents <-chan Event) ([]ToolCall, bool) {

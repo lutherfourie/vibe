@@ -331,6 +331,77 @@
           }
         ]
       }
+    },
+    {
+      "name": "supabase_remote_control",
+      "description": "Build Supabase as central C&C plane: agent_commands/responses/events tables + RLS/realtime. Go client + RemoteControl poller/processor for listening/handling (instruct, pause, status, etc.). Web API routes for easy calls from Grok/Claude/Codex. Integrate into autonomous loop. E2E demo via live server + poller.",
+      "laneCount": 4,
+      "checkpointCount": 1,
+      "metadata": {
+        "name": "supabase_remote_control",
+        "description": "Build Supabase as central C&C plane: agent_commands/responses/events tables + RLS/realtime. Go client + RemoteControl poller/processor for listening/handling (instruct, pause, status, etc.). Web API routes for easy calls from Grok/Claude/Codex. Integrate into autonomous loop. E2E demo via live server + poller.",
+        "lanes": [
+          {
+            "name": "schema",
+            "steps": [
+              {
+                "type": "implement",
+                "id": "s1",
+                "description": "migration + RLS"
+              }
+            ]
+          },
+          {
+            "name": "go-runner",
+            "steps": [
+              {
+                "type": "implement",
+                "id": "g1",
+                "description": "client + RemoteControl + ProcessCommand"
+              },
+              {
+                "type": "checkpoint",
+                "id": "g2"
+              }
+            ]
+          },
+          {
+            "name": "web-api",
+            "steps": [
+              {
+                "type": "implement",
+                "id": "w1",
+                "description": " /api/agent/command and /status"
+              }
+            ]
+          },
+          {
+            "name": "integration",
+            "steps": [
+              {
+                "type": "implement",
+                "id": "i1",
+                "description": "hook in loop.go + E2E test"
+              },
+              {
+                "type": "self-review",
+                "id": "i2",
+                "criteria": [
+                  "poller acks commands",
+                  "API works on live server"
+                ]
+              }
+            ]
+          }
+        ],
+        "checkpoints": [
+          {
+            "id": "rc1",
+            "name": "infra+demo",
+            "resumeStrategy": "last-checkpoint"
+          }
+        ]
+      }
     }
   ],
   "notes": [
