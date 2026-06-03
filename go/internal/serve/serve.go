@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	"github.com/lutherfourie/vibe/go/agent"
-	"github.com/lutherfourie/vibe/go/agent/adapters/claude"
+	// "github.com/lutherfourie/vibe/go/agent/adapters/claude"  // temporarily disabled to avoid claude CLI interference with other local project; see DefaultProviders
 )
 
 const (
@@ -53,9 +53,11 @@ func DefaultProviders() map[string]ProviderFactory {
 		"fake": func() agent.Provider {
 			return agent.FakeProvider{}
 		},
-		"claude": func() agent.Provider {
-			return claude.New()
-		},
+		// "claude" temporarily DISABLED: the claude CLI is being used by another local project;
+		// we do not want to interfere or spawn it from this workspace. Re-enable by uncommenting
+		// when the other project is done. Use codex, grok, cerebras, openai, or fake instead.
+		// See .claude.disabled/, VIBE_DISABLE_CLAUDE_CLI, and docs/local-toolkit.md.
+		// "claude": func() agent.Provider { return claude.New() },
 	}
 	for name, factory := range openAICompatibleProviders() {
 		providers[name] = factory

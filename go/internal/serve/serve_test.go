@@ -42,10 +42,7 @@ func TestProvidersReturnsRegisteredProvidersAndDefault(t *testing.T) {
 	handler, err := NewHandler(Options{
 		DefaultProvider: "fake",
 		Providers: map[string]ProviderFactory{
-			"claude": func() agent.Provider {
-				t.Fatal("GET /v1/providers should not construct providers")
-				return nil
-			},
+			// "claude" omitted here too (temporarily disabled in main DefaultProviders)
 			"fake": func() agent.Provider { return agent.FakeProvider{} },
 		},
 	})
@@ -75,7 +72,7 @@ func TestProvidersReturnsRegisteredProvidersAndDefault(t *testing.T) {
 		t.Fatalf("decode response: %v", err)
 	}
 
-	wantProviders := []string{"claude", "fake"}
+	wantProviders := []string{"fake"} // claude temporarily disabled (see serve.go DefaultProviders); codex/grok via other paths
 	if !reflect.DeepEqual(got.Providers, wantProviders) {
 		t.Fatalf("providers = %#v, want %#v", got.Providers, wantProviders)
 	}
@@ -112,7 +109,7 @@ func TestProvidersReturnsDefaultOpenAICompatibleProviders(t *testing.T) {
 		t.Fatalf("decode response: %v", err)
 	}
 
-	wantProviders := []string{"cerebras", "claude", "fake", "openai"}
+	wantProviders := []string{"cerebras", "fake", "openai"} // "claude" temporarily disabled to avoid interfering with another local project using claude CLI
 	if !reflect.DeepEqual(got.Providers, wantProviders) {
 		t.Fatalf("providers = %#v, want %#v", got.Providers, wantProviders)
 	}

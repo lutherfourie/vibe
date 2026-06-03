@@ -223,7 +223,7 @@ func runServe(args []string) error {
 	flags.SetOutput(os.Stderr)
 	planPath := flags.String("plan", defaultSelfPlan, "path to Vibe self-plan JSON")
 	addr := flags.String("addr", serve.DefaultAddr, "local address to bind")
-	provider := flags.String("provider", serve.DefaultProvider, "agent provider for /v1/turn (fake or claude)")
+	provider := flags.String("provider", serve.DefaultProvider, "agent provider for /v1/turn (fake, cerebras, openai; claude temporarily disabled to avoid interfering with another local claude cli project)")
 	if err := flags.Parse(args); err != nil {
 		return err
 	}

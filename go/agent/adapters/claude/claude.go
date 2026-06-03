@@ -22,6 +22,17 @@ type Runner interface {
 	Run(ctx context.Context, args []string, stdin, dir string) (stdout io.ReadCloser, wait func() error, err error)
 }
 
+// isClaudeCLIDisabled reports whether claude CLI invocations are temporarily blocked
+// in this project (claude cli is active in another local project; avoid interference).
+// When true, RunTurn etc will return loud errors instead of exec'ing the binary.
+// Control: set VIBE_DISABLE_CLAUDE_CLI=1 to force disable; =0 to allow (if registration also enabled).
+// Default (env unset): allow (so unit tests + NewWithRunner fakes continue to work; main paths are
+// disabled at serve registration time).
+func isClaudeCLIDisabled() bool {
+	v := strings.ToLower(strings.TrimSpace(os.Getenv("VIBE_DISABLE_CLAUDE_CLI")))
+	return v == "1" || v == "true" || v == "yes"
+}
+
 // Provider implements agent.Provider by driving the Claude CLI.
 type Provider struct {
 	runner Runner
@@ -71,6 +82,9 @@ func (p *Provider) SessionID() string {
 
 // RunTurn invokes the Claude CLI and streams provider-neutral events.
 func (p *Provider) RunTurn(ctx context.Context, req agent.TurnRequest) (<-chan agent.Event, error) {
+	if isClaudeCLIDisabled() {
+		return nil, fmt.Errorf("claude CLI provider is temporarily DISABLED in this Vibe project (the claude CLI binary is in active use by another local project and we must not interfere). Use providers: fake, cerebras, openai, or codex. To re-enable for testing set VIBE_DISABLE_CLAUDE_CLI=0 and re-register 'claude' in serve.DefaultProviders(). See .claude.disabled/ and docs/local-toolkit.md")
+	}
 	runner := p.runner
 	if runner == nil {
 		runner = realRunner{}
@@ -197,6 +211,9 @@ func formatRole(role agent.Role) string {
 type realRunner struct{}
 
 func (realRunner) Run(ctx context.Context, args []string, stdin, dir string) (io.ReadCloser, func() error, error) {
+	if isClaudeCLIDisabled() {
+		return nil, nil, fmt.Errorf("claude CLI is temporarily DISABLED (VIBE_DISABLE_CLAUDE_CLI); refusing to LookPath/exec %q to avoid interfering with other local project", claudeBinary)
+	}
 	path, err := exec.LookPath(claudeBinary)
 	if err != nil {
 		return nil, nil, err

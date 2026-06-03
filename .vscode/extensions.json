@@ -1,7 +1,7 @@
 {
   "recommendations": [
     "openai.chatgpt",
-    "anthropic.claude-code",
+    // "anthropic.claude-code",  // temporarily disabled: claude cli is in use by another local project; do not interfere. Re-enable when done.
     "lutherfourie.vibe-vscode"
   ]
 }

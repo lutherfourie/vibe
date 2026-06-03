@@ -51,6 +51,9 @@ Thumbs.db
 # Claude Code per-user overrides (settings.json is committed, .local is not)
 .claude/settings.local.json
 .claude/worktrees/
+# Temporarily disabled claude config (to not interfere with other local project); worktrees inside would be large session copies anyway
+.claude.disabled/worktrees/
+.claude.disabled/*.local*
 
 .vercel
 

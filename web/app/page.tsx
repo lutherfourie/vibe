@@ -44,8 +44,23 @@ export default function VibeDashboard() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [sessionData, setSessionData] = useState<{commands: any[], events: any[], responses: any[]} | null>(null);
   const [consoleLoading, setConsoleLoading] = useState(false);
+  const [copiedMessageKey, setCopiedMessageKey] = useState<string | null>(null);
 
   const sb = getSupabase();
+  const selectedCheckpoints = selectedId ? checkpoints[selectedId] || [] : [];
+  const reasoningSteps = [...selectedCheckpoints].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+  async function copyConsoleMessage(messageKey: string, message: string) {
+    try {
+      await navigator.clipboard.writeText(message);
+      setCopiedMessageKey(messageKey);
+      window.setTimeout(() => {
+        setCopiedMessageKey((current) => current === messageKey ? null : current);
+      }, 1200);
+    } catch (e: unknown) {
+      setStatus("Copy failed: " + (e instanceof Error ? e.message : String(e)));
+    }
+  }
 
   async function load() {
     setLoading(true);
@@ -480,6 +495,23 @@ export default function VibeDashboard() {
 
                     {/* Chat-like message stream (Claude-inspired: clean bubbles, user right, system left, timestamps, kind labels. Feels like chatting with the autonomous agent via C&C.) */}
                     <div className="flex-1 overflow-auto space-y-2 text-sm mb-3 pr-1 max-h-[280px] bg-black/40 p-3 rounded border border-white/5">
+                      {reasoningSteps.length > 0 && (
+                        <details className="rounded-xl border border-white/10 bg-zinc-900/70 p-2 text-zinc-300 shadow-sm" open>
+                          <summary className="cursor-pointer select-none text-[11px] font-medium text-zinc-300">
+                            Reasoning <span className="font-normal text-zinc-500">/ Autonomous steps ({reasoningSteps.length})</span>
+                          </summary>
+                          <div className="mt-2 space-y-1 border-l border-white/10 pl-3">
+                            {reasoningSteps.map((checkpoint, stepIdx) => (
+                              <div key={checkpoint.id} className="rounded-md bg-white/[0.03] px-2 py-1.5">
+                                <div className="flex items-center justify-between gap-3">
+                                  <span className="text-[11px] text-zinc-300">Step {stepIdx + 1}: {checkpoint.name}</span>
+                                  <span className="shrink-0 text-[10px] text-zinc-500">{new Date(checkpoint.created_at).toLocaleTimeString()}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </details>
+                      )}
                       {sessionData && (sessionData.commands.length + sessionData.events.length + sessionData.responses.length > 0) ? (
                         [...(sessionData.commands || []), ...(sessionData.events || []), ...(sessionData.responses || [])]
                           .sort((a,b) => new Date(a.created_at || a.created_at).getTime() - new Date(b.created_at || b.created_at).getTime())
@@ -488,9 +520,24 @@ export default function VibeDashboard() {
                             const kind = item.command || item.kind || (item.status ? 'response' : 'event');
                             const msg = item.message || (item.payload ? JSON.stringify(item.payload) : (item.result ? JSON.stringify(item.result) : '(no details)'));
                             const time = new Date(item.created_at || item.created_at).toLocaleTimeString();
+                            const messageKey = item.id || `${kind}-${item.created_at || idx}-${idx}`;
+                            const isInstruct = kind === 'instruct';
+                            const bubbleClass = isInstruct
+                              ? 'bg-amber-400/10 border border-amber-300/30 text-amber-50'
+                              : isUser
+                                ? 'bg-emerald-600 text-black'
+                                : 'bg-zinc-800 border border-white/10 text-zinc-200';
                             return (
                               <div key={idx} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-[80%] rounded-2xl px-3 py-1.5 shadow-sm ${isUser ? 'bg-emerald-600 text-black' : 'bg-zinc-800 border border-white/10 text-zinc-200'}`}>
+                                <div className={`group/message relative max-w-[80%] rounded-2xl px-3 py-1.5 pr-9 shadow-sm ${bubbleClass}`}>
+                                  <button
+                                    type="button"
+                                    aria-label="Copy message"
+                                    onClick={() => copyConsoleMessage(messageKey, msg)}
+                                    className="absolute right-1.5 top-1.5 rounded px-1.5 py-0.5 text-[9px] opacity-0 transition hover:bg-white/10 focus:opacity-100 group-hover/message:opacity-70"
+                                  >
+                                    {copiedMessageKey === messageKey ? '✓' : 'Copy'}
+                                  </button>
                                   <div className="flex items-center gap-2 text-[9px] opacity-70 mb-0.5">
                                     <span>{isUser ? 'You' : 'Agent'}</span>
                                     <span className="font-mono">· {kind}</span>
@@ -510,8 +557,87 @@ export default function VibeDashboard() {
                     {/* Artifacts (Claude Artifacts inspiration): side-panel style live/structured views for the session's declarative state. Checkpoints as "steps", telemetry as "insights". Can be extended to preview plans, render interactive previews, etc. */}
                     <div className="mb-2 p-2 bg-zinc-900/60 rounded border border-white/10 text-[10px]">
                       <div className="font-medium mb-1 flex items-center gap-1">📦 Artifacts for this session <span className="text-emerald-400">(Claude-like live previews)</span></div>
-                      <div>Checkpoints: {(checkpoints[selectedId] || []).length ? (checkpoints[selectedId] || []).map(c => c.name).join(' → ') : 'none yet'}</div>
-                      <div className="text-amber-400">Telemetry events for session: see global Telemetry section or refresh console (loads per-session). Future: render VibePlan previews, resource decisions, or generated UI artifacts here.</div>
+                      <div className="mb-2">
+                        <div className="mb-1 text-zinc-400">Checkpoints</div>
+                        {(checkpoints[selectedId] || []).length ? (
+                          <div className="space-y-1">
+                            {(checkpoints[selectedId] || []).map((c) => (
+                              <div key={c.id} className="flex items-center justify-between gap-2 rounded border border-white/10 bg-black/30 px-2 py-1">
+                                <span className="truncate text-zinc-200">{c.name}</span>
+                                <button
+                                  onClick={() => {
+                                    const input = document.querySelector('#console-input') as HTMLInputElement;
+                                    if (input) {
+                                      input.value = `refine the description and add success criteria for checkpoint: ${c.name}`;
+                                      input.focus();
+                                      alert('Refine prompt added to the console. Press Send when ready.');
+                                    }
+                                  }}
+                                  className="shrink-0 rounded border border-white/20 px-1.5 py-0.5 text-[9px] hover:bg-white/5"
+                                >
+                                  Refine
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-zinc-500">none yet</div>
+                        )}
+                        {/* Grok-direct small enhancement for recommended generative artifacts (while Codex parallel tasks enhance stream + full artifacts interactivity). In real would call /api/launch or resolver for live plan preview. */}
+                        <button
+                          onClick={() => {
+                            const input = document.querySelector('#console-input') as HTMLInputElement;
+                            if (input) {
+                              input.value = 'suggest and add a new checkpoint for the current lane progress with success criteria';
+                              input.focus();
+                              // Local "generative" stub: could push a temp UI suggestion here in future.
+                            }
+                          }}
+                          className="mt-1 w-full rounded border border-emerald-500/30 bg-emerald-500/5 px-2 py-0.5 text-[10px] text-emerald-400 hover:bg-emerald-500/10"
+                        >
+                          + Suggest checkpoint (Grok + Codex parallel)
+                        </button>
+                      </div>
+                      <div className="mb-2 text-amber-400">Telemetry events for session: see global Telemetry section or refresh console (loads per-session).</div>
+                      <div className="rounded border border-emerald-500/20 bg-black/30 p-2">
+                        <div className="mb-2 flex items-center justify-between gap-2">
+                          <div>
+                            <div className="uppercase tracking-[2px] text-emerald-400">Live preview</div>
+                            <div className="text-xs text-zinc-200">Plan artifact</div>
+                          </div>
+                          <button
+                            onClick={() => {
+                              const input = document.querySelector('#console-input') as HTMLInputElement;
+                              if (input) {
+                                input.value = 'update the plan artifact to include telemetry summary';
+                                input.focus();
+                                alert('Edit prompt added to the console. Press Send when ready.');
+                              }
+                            }}
+                            className="shrink-0 rounded border border-white/20 px-2 py-1 text-[9px] hover:bg-white/5"
+                          >
+                            Edit in chat
+                          </button>
+                        </div>
+                        <div className="rounded border border-white/10 bg-zinc-950/80 p-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="truncate font-medium text-zinc-100">{sessions.find(s => s.id === selectedId)?.name || 'Selected session'}</div>
+                            <div className="shrink-0 text-zinc-500">{(checkpoints[selectedId] || []).length} checkpoints</div>
+                          </div>
+                          <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                            {(checkpoints[selectedId] || []).length ? (
+                              (checkpoints[selectedId] || []).map((c) => (
+                                <div key={c.id} className="rounded border border-white/10 bg-zinc-900 px-2 py-1">
+                                  <div className="truncate text-zinc-200">{c.name}</div>
+                                  <div className="text-zinc-500">{new Date(c.created_at).toLocaleTimeString()}</div>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="rounded border border-dashed border-white/10 bg-zinc-900/70 px-2 py-1 text-zinc-500">Waiting for checkpoints</div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Composer - natural language command input, Claude style */}
