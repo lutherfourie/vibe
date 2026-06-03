@@ -17,7 +17,7 @@ app and is not linked from here.
 
 ```bash
 supabase start            # boot the local stack (Postgres, Studio, Auth, Storage, …)
-supabase status           # show local URLs + keys (API :54321, DB :54322, Studio :54323)
+supabase status           # show local URLs + keys (API :54421, DB :54422, Studio :54423)
 supabase stop             # stop the stack (use `--no-backup` to drop local data)
 
 supabase migration new <name>   # create supabase/migrations/<ts>_<name>.sql
@@ -25,7 +25,11 @@ supabase db reset               # re-apply all migrations + seed.sql to the loca
 supabase db diff -f <name>      # capture schema changes you made via Studio/SQL into a migration
 ```
 
-Studio runs at <http://localhost:54323> once `supabase start` is up.
+Studio runs at <http://localhost:54423> once `supabase start` is up.
+
+Vibe uses the **544xx** port range (api 54421, db 54422, studio 54423, inbucket
+54424, analytics 54427, pooler 54429) so its local stack coexists with other
+local Supabase projects on the default 543xx range (e.g. `cockpit`).
 
 ## Making schema changes (workflow)
 
