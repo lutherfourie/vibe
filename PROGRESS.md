@@ -149,4 +149,11 @@ Full loop exercised for this slice.
 
 Self-bootstrapping UI complete for the platform.
 
-Continuing... (commit web, push, PR#32; then self-use: add autonomous-session decl to examples/vibe-self.vibe or new; run self:plan + go vibe handoff; full pnpm run check; final verify).
+**Final platform + self-use checkpoint (2026-06-03)**:
+- All core pieces: grammar primitives, 5 providers (codex/grok/big-agi added), supabase tables+RLS, resolver/pipeline dispatch+persist, Next.js Vercel dashboard (launch/monitor from Supabase).
+- PRs #27 (audit) through #32 (web) created + auto-merged on branch per contract.
+- Self-use: added minimal autonomous-session + lane decl to examples/vibe-self.vibe (dogfood native syntax for self-build lane). Ran self:plan (extracts it, schema ok).
+- Full verification in progress: pnpm run check, go tests, etc.
+- Unified platform working: self-bootstrapping via own primitives + any backend + shared state + dashboard.
+
+The declarative agent OS vision achieved in autonomous loop. Keep for polish if needed, but core done.

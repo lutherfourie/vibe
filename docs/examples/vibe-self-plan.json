@@ -294,7 +294,45 @@
       }
     }
   ],
-  "autonomousSessions": [],
+  "autonomousSessions": [
+    {
+      "name": "self_bootstrap",
+      "description": "Use Vibe primitives to build/extend the unified autonomous platform itself (langium, providers, supabase, web, dispatch).",
+      "laneCount": 1,
+      "checkpointCount": 1,
+      "metadata": {
+        "name": "self_bootstrap",
+        "description": "Use Vibe primitives to build/extend the unified autonomous platform itself (langium, providers, supabase, web, dispatch).",
+        "lanes": [
+          {
+            "name": "language",
+            "steps": [
+              {
+                "type": "checkpoint",
+                "id": "c1",
+                "name": "grammar+resolver"
+              },
+              {
+                "type": "self-review",
+                "id": "r1",
+                "criteria": [
+                  "tests green",
+                  "schema valid"
+                ]
+              }
+            ]
+          }
+        ],
+        "checkpoints": [
+          {
+            "id": "cp1",
+            "name": "post-audit",
+            "resumeStrategy": "last-checkpoint"
+          }
+        ]
+      }
+    }
+  ],
   "notes": [
     "This is a provisional self-plan extracted from current Vibe primitives.",
     "Plugins ending in _lane are treated as lanes until lane syntax exists.",
