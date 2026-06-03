@@ -1,121 +1,22 @@
-# Vibe — Autonomous Long-Horizon Work
+# Vibe Autonomous Bootstrap - Grok Build Mode
 
-Status: M1 shipped; PR 4 (continue integration) verified locally
-Updated: 2026-06-03
-Branch: feat/vibe-continue-progress
+**Date**: 2026-06-03
 
-## Mission
+**Status**: Grok Build bootstrap initiated.
 
-Make long-horizon, durable, resume-from-checkpoint work a **first-class lane
-kind** in Vibe. A `.vibe`/lane-plan should be able to declare a lane as
-`autonomous` and get, with no hand-pasting: (a) a generated, scoped operating
-brief embedding the full Explore → Research → Plan → Implement → Verify → Test →
-Commit loop, and (b) a durable `PROGRESS.md` discipline (`checkpoint`/`resume`)
-that survives session boundaries. This file is both the project tracker and the
-first dogfood of the `PROGRESS.md` contract the feature defines.
+## Audit Summary
+- Feature branch `feature/autonomous-langium-zod` active
+- Existing autonomous lane mode, PROGRESS.md contract, vibe-checkpoint / vibe-resume
+- Supabase initialized with local + hosted project
+- Go agent SDK with providers
+- Langium parser and Zod schemas in place (refined)
+- web/ Vercel deployment ready
+- Providers include Cerebras
 
-## Milestones
+## Next Milestones
+1. Extend Langium grammar for full autonomous primitives
+2. Add multi-provider adapters (Codex, Claude Code, Grok Build, big-AGI, Cerebras)
+3. Supabase schema for durable agent sessions
+4. Vercel dashboard enhancements
 
-- [x] Explore the repo; locate the integration seam (lane modes → handoffs).
-- [x] Research note: base autonomous prompt read as a contract; big-AGI fit.
-- [x] Design spec: `autonomous` mode + lane IR + `PROGRESS.md` contract.
-- [x] TDD plan (T1–T7) sliced into 3 PRs.
-- [x] PR 1 (core): T1 schema, T2 IR, T3 prompt generator, T4 coordinator + smoke.
-- [x] PR 2 (durable state): T5 `progress` package, T6 `checkpoint`/`resume` verbs.
-- [x] PR 3 (surfaces): T7 skills, templates, docs.
-- [x] PR 4 (integration): PROGRESS.md surfaced inside `vibe continue`.
-
-## Checkpoint Log
-
-### 2026-06-03 — PR 4: PROGRESS.md-aware vibe continue (resume layers compose)
-- continuation.Report gains an optional Progress block; Markdown renders Status/Updated/Latest checkpoint
-- runContinue parses PROGRESS.md and populates it; continuation package stays dependency-free
-
-### 2026-06-03 — PR 3: autonomous skills + status script + docs (M1 surfaces)
-- skills vibe-autonomous + vibe-checkpoint for Claude + Codex (drift check: match); vibe_autonomous_status.ps1
-- docs/autonomous-lanes.md guide; updated README, CLAUDE.md, go/README.md, schemas/README.md, vibe-contract.md, plugins README
-- M1 complete on merge: autonomous mode + brief + PROGRESS.md contract + verbs + surfaces
-
-### 2026-06-03 — PR 2 complete: progress contract package + checkpoint/resume verbs
-- go/internal/progress: Doc/Checkpoint, Render/Parse (idempotent round-trip), surgical AppendCheckpoint, Scaffold, ResumeBrief; clock injected
-- vibe checkpoint + vibe resume verbs; smoke tests; verified surgical append on a copy of this file
-- dogfood: this very entry was written by 'vibe checkpoint'
-
-### 2026-06-03 — PR 1 core complete: autonomous lane mode end-to-end
-- T1: schema gains `autonomous` mode + namespaced `autonomous` config object;
-  `docs/examples/vibe-autonomous-lanes.json` fixture; `check-schemas.mjs` asserts
-  it valid + rejects an unknown `autonomous.*` key. Fixed the ajv $id
-  double-compile gotcha (shared schema across two fixtures). `schemas:check` 6/6.
-- T2: `lanes.Lane.Autonomous` + `Autonomous` struct; round-trip test decodes the
-  fixture and asserts non-autonomous lanes carry no block.
-- T3: `prompts.AutonomousHandoff` renders the full operating contract (Core Auth,
-  Startup/Resumption, Explore→…→Commit loop, Multi-Agent Roles, Branching,
-  Persistence, PROGRESS.md Contract) with defaults; 3 tests incl. custom-role +
-  defaults paths.
-- T4: coordinator dispatches `ModeAutonomous`; `cmd/vibe` + coordinator emit
-  smoke tests. Verified the real generated brief by eye — clean, paste-ready.
-- Gates green: `go test ./...`, `go vet`, `gofmt -l` clean; `pnpm run schemas:check`.
-- Next: open PR 1, auto-merge `--squash`; then PR 2 (the `progress` package +
-  `checkpoint`/`resume` verbs).
-
-### 2026-06-03 — Foundation: design artifacts + branch
-- Startup protocol run: `git pull` (fast-forwarded onto the merged Go agent SDK,
-  PR #18), `git status` clean. Discovered the runtime direction is now **Go**
-  (the agent SDK daemon supersedes the stale TS LangGraph Phase-3 plan in
-  memory).
-- Located the integration seam: `go/internal/lanes` dispatches per-mode handoffs
-  (`codex.web`, `local`); an `autonomous` mode is the first-class home for the
-  long-horizon protocol.
-- Wrote research note, design spec, and TDD plan under `docs/superpowers/`.
-- Created/rebased branch `feat/vibe-autonomous-lanes` onto current main HEAD
-  (e492805). Baseline `go test ./...` green before any change.
-- Next: implement T1 (schema + fixture) red→green.
-
-## Next Moves
-
-M1 is shipped (PRs #19, #20, #21, + continue integration). Next chunks — each
-deserves a fresh session per the one-repo-at-a-time rule:
-
-1. **M2 — daemon runs the loop.** Wire autonomous lanes to `vibe serve` so the
-   Go daemon (which already has the agent SDK) can *execute* the Explore→…→Commit
-   loop and auto-checkpoint PROGRESS.md, not just emit the brief.
-2. **`.vibe` grammar seam.** Add a real `lane` primitive to the Langium grammar
-   so `lane x { mode = autonomous; autonomous { … } }` parses and compiles to the
-   lane-plan JSON. Touches `packages/language` (keep the 242 TS tests green).
-3. **Polish (optional, small):** `vibe checkpoint` could refresh the `Branch:`
-   front-block from the live git branch (today it leaves it; hand-fixed per
-   slice). A `pnpm run vibe:resume` alias for parity with the other `vibe:*`
-   scripts. A git hook / VS Code task that nudges a checkpoint before long pauses.
-
-## Decisions
-
-- **Land in the lane-plan IR (Go), not the `.vibe` grammar, for M1.** The
-  lane-plan is the execution contract; `.vibe` `autonomous` syntax is a
-  documented future seam. Keeps M1 cohesive and avoids a TS grammar change.
-- **Namespace autonomous config under a lane `autonomous` object** rather than
-  flat fields — keeps the generic lane lean and the config clearly mode-scoped.
-- **Split text vs. state.** The loop/protocol the agent *reads* → a generated
-  handoff (new mode). Durable *state/structure* → the `PROGRESS.md` contract +
-  `checkpoint` verb. Clean separation; testable independently.
-- **Inject the clock** into the `progress` package so rendering stays
-  deterministic and unit-testable; the CLI supplies real time.
-
-## Risks / Blockers
-
-- None blocking. Watch: schema `additionalProperties:false` means every new key
-  must be declared in both the schema and the Go struct or contract tests fail —
-  this is the intended guardrail.
-
-## Resume
-
-Read first:
-- `docs/superpowers/specs/2026-06-03-vibe-autonomous-lanes-design.md` (the design)
-- `docs/superpowers/plans/2026-06-03-vibe-autonomous-lanes-m1.md` (the tasks)
-- this file (latest checkpoint = current position)
-
-Commands:
-- Orient: `git status` · `git log --oneline -8`
-- Verify Go: `cd go && go test ./... && go vet ./... && gofmt -l .`
-- Verify schemas: `pnpm run schemas:check`
-- Branch: per-slice `feat/vibe-*`; `main` is unprotected so PRs land on merge.
-  CI is billing-locked — verify gates locally (see memory `ci_billing_lock`).
+Continuing autonomously...
