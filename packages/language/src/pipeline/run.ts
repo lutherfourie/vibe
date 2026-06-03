@@ -5,6 +5,7 @@ import { dispatchSource } from "../dispatcher/index.js";
 import type { ProseRegion } from "../dispatcher/types.js";
 import { resolveProse } from "../resolver/index.js";
 import { mergeCorrected } from "../resolver/corrections.js";
+import { persistVibePlan } from "../resolver/persist.js";
 import type { ResolverResult } from "../resolver/types.js";
 import {
   type Corrected,
@@ -14,6 +15,7 @@ import {
 } from "../generated/ast.js";
 import type { ProviderRegistry } from "../providers/index.js";
 import { createVibeServices } from "../vibe-module.js";
+import { VibePlanSchema, type VibePlan } from "../resolver/schemas.js";
 
 export interface PipelineInput {
   source: string;
@@ -124,6 +126,25 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
       unknownKeys: merge.unknownKeys,
       cacheKey: result.cacheKey,
     });
+  }
+
+  // Wire autonomous dispatch + persist: if any resolved region is a VibePlan (from
+  // prose using VibePlanSchema or AutonomousSessionSchema), dispatch note + persist
+  // to Supabase (for cross-backend resume + dashboard). Uses any registered provider
+  // context; actual "dispatch" here is the resolve that produced the plan + persist.
+  // Callers (serve, web, go bridge) can further route the plan to Codex/Claude/Grok/etc.
+  for (const r of resolvedRegions) {
+    try {
+      const val = r.value as any;
+      if (val && (val.kind === "plan" || val.session)) {
+        const plan = VibePlanSchema.parse(val) as VibePlan;
+        // fire-and-forget persist (non-blocking for pipeline)
+        persistVibePlan(plan).catch(() => {});
+        // TODO: real multi-backend dispatch using registry + plan (e.g. pick provider per lane, call generate for substeps)
+      }
+    } catch {
+      // not a plan, ignore
+    }
   }
 
   return {

@@ -123,4 +123,14 @@
 
 Big momentum: schema + grammar + providers (5) + supabase tables now in place for dispatch+persist.
 
-Continuing... (commit supabase slice + push + PR#30; then wire resolver/pipeline to use VibePlanSchema + new providers + persist via supabase client; or start web Next.js dashboard).
+**Resolver/pipeline wire + persist checkpoint (2026-06-03)**:
+- Added `resolver/persist.ts`: supabase client (from env SUPABASE_* or NEXT_PUBLIC), persistVibePlan() upserts session/lanes/checkpoints/reviews/research + lane_event "plan_resolved". No-op + log if no client (graceful for local).
+- Wired in `pipeline/run.ts`: after resolve, detect VibePlan (from prose using the schema or autonomous decls), call persistVibePlan (fire-forget). Imports VibePlanSchema.
+- "dispatch": the resolveProse already uses registry + provider (any of 5) to produce the typed plan from prose desc; persist follows. Structured autonomous decls parse to AST (future: map AST->plan shape).
+- Build + pipeline/integration tests green.
+- Now: .vibe (prose region + VibePlanSchema) -> provider (codex/claude/grok/cerebras/bigagi) -> VibePlan -> Supabase tables. Ready for dashboard launch/monitor + multi-backend resume.
+- Client added to @vibe/language (side effect after audit).
+
+Full loop exercised for this slice.
+
+Continuing... (commit wire, push, PR#31 auto; next: enhance web to Next.js dashboard using supabase for launch/monitor + vercel update; or self-use by adding autonomous decl to examples/vibe-self.vibe).
