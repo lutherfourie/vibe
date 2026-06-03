@@ -1,6 +1,6 @@
 # Vibe Autonomous Bootstrap - Grok Build Mode
 
-Status: Claude-inspired console enhanced and live on dev server with demo data
+Status: Claude-inspired console complete, live demoed on dev server
 Updated: 2026-06-03
 Branch: 
 
@@ -9,6 +9,12 @@ Branch:
 ## Milestones
 
 ## Checkpoint Log
+
+### 2026-06-03 — Claude console fully demoed live: 3 cmds in chat (monitor logged), artifacts show real cps (1 'start'), button fixed, cps load ensured. Server hot-reloading the polished UI.
+- User can now open localhost:3000, select demo sid 27eeb8d3... in sidebar to see Claude-like chat with 3 entries + artifacts with checkpoint. Composer (input+button) works to queue more (will show in stream). Realtime should update. Research fully realized in hybrid console+artifacts.
+
+### 2026-06-03 — Claude console live on dev: polished chat (bubbles, labels per research), artifacts now render actual per-session checkpoints + notes; demo data populated (2 cmds, monitor has logs); load ensures cps. PR#45.
+- The dashboard console now closely mimics Claude chat + artifacts: conversational remote control stream + structured declarative artifacts (cps as steps). Tested end-to-end with live server APIs. User can open http://localhost:3000, select the demo sid 27eeb8d3... to see the chat with status/instruct entries and artifacts. Hot reloads confirmed in monitor.
 
 ### 2026-06-03 — Claude UI polish: improved console chat bubbles (Claude-style right/left alignment, labels) + actual artifacts rendering (per-session checkpoints list + telemetry notes + future plan previews)
 - Tested live: demo session now has 2 commands + 2 events (status + instruct). API calls logged in monitor. Hot reload on dev server. Console now feels more like Claude chat + artifacts side panel for structured agent state (checkpoints as steps, etc.). Matches research on Claude artifacts for live previews + clean chat. Updated code in page.tsx. Self-plan lane covers it. Next: perhaps make artifacts interactive or add streaming simulation.
