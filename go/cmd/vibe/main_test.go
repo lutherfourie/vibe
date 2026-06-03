@@ -136,6 +136,39 @@ func TestRunHandoffAcceptsLanePlan(t *testing.T) {
 	}
 }
 
+func TestRunHandoffEmitsAutonomousLane(t *testing.T) {
+	outDir := filepath.Join(t.TempDir(), "handoffs")
+	planPath := repoFixture(t, "docs/examples/vibe-autonomous-lanes.json")
+	out, err := captureStdout(t, func() error {
+		return runHandoff(context.Background(), []string{"--plan", planPath, "--out", outDir})
+	})
+	if err != nil {
+		t.Fatalf("runHandoff --plan returned error: %v", err)
+	}
+
+	// The autonomous fixture declares one autonomous lane and one local lane;
+	// each mode renders a different template, so assert the autonomous header
+	// (and the embedded operating contract) for the autonomous lane.
+	if !strings.Contains(out, "agent-sdk-hardening") {
+		t.Fatalf("handoff manifest missing the autonomous lane:\n%s", out)
+	}
+	body, err := os.ReadFile(filepath.Join(outDir, "agent-sdk-hardening.md"))
+	if err != nil {
+		t.Fatalf("read agent-sdk-hardening.md: %v", err)
+	}
+	for _, want := range []string{
+		"# Autonomous Lane: agent-sdk-hardening",
+		"Mode: autonomous",
+		"## Autonomous Operating Contract",
+		"### Structured Workflow Loop",
+		"### PROGRESS.md Contract",
+	} {
+		if !strings.Contains(string(body), want) {
+			t.Fatalf("autonomous handoff missing %q:\n%s", want, string(body))
+		}
+	}
+}
+
 func TestRunMakePlanWritesJSON(t *testing.T) {
 	outPath := filepath.Join(t.TempDir(), "self-plan.json")
 	out, err := captureStdout(t, func() error {

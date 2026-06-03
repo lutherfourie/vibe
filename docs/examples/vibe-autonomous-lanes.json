@@ -1,0 +1,47 @@
+{
+  "name": "vibe-autonomous-demo",
+  "repo": "C:/vibe",
+  "lanes": [
+    {
+      "name": "agent-sdk-hardening",
+      "mode": "autonomous",
+      "branch": "feat/agent-sdk-hardening",
+      "reads": [
+        "go/agent/**",
+        "docs/superpowers/specs/2026-05-28-vibe-go-agent-sdk-design.md",
+        "PROGRESS.md"
+      ],
+      "writes": [
+        "go/agent/**"
+      ],
+      "prompt": "Harden the Go agent SDK to production grade across many sessions: add streaming backpressure handling, provider timeout/retry policy, and an integration test matrix across the fake/claude/codex/openai adapters. Work the full Explore -> Research -> Plan -> Implement -> Verify -> Test -> Commit loop, checkpointing PROGRESS.md as you go.",
+      "requires": [
+        "cd go && go test ./...",
+        "cd go && go vet ./...",
+        "human.merge-review"
+      ],
+      "autonomous": {
+        "progress": "PROGRESS.md",
+        "horizon": "long",
+        "checkpointEvery": "every major step or 30-60 minutes",
+        "roles": ["architect", "implementer", "researcher", "tester", "reviewer", "devops"],
+        "research": "docs/superpowers/research"
+      }
+    },
+    {
+      "name": "lane-docs",
+      "mode": "local",
+      "branch": "feat/agent-sdk-hardening",
+      "reads": [
+        "go/agent/README.md"
+      ],
+      "writes": [
+        "docs/agent-sdk-notes.md"
+      ],
+      "prompt": "Keep a short human-facing notes doc for the agent SDK hardening lane. Docs only; no code.",
+      "requires": [
+        "human.review"
+      ]
+    }
+  ]
+}

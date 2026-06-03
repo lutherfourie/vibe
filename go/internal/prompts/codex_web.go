@@ -13,6 +13,10 @@ type Lane struct {
 	Writes   []string
 	Prompt   string
 	Requires []string
+
+	// Autonomous carries the long-horizon config for a mode=="autonomous" lane.
+	// It is nil for codex.web / local lanes (and ignored by their generators).
+	Autonomous *Autonomous
 }
 
 // CodexWebHandoff renders a paste-ready prompt for a Codex cloud lane.

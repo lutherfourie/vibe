@@ -18,12 +18,25 @@
       "required": ["name", "mode"],
       "properties": {
         "name": { "type": "string", "minLength": 1 },
-        "mode": { "type": "string", "enum": ["codex.web", "local"] },
+        "mode": { "type": "string", "enum": ["codex.web", "local", "autonomous"] },
         "branch": { "type": "string" },
         "reads": { "type": "array", "items": { "type": "string" } },
         "writes": { "type": "array", "items": { "type": "string" } },
         "prompt": { "type": "string" },
-        "requires": { "type": "array", "items": { "type": "string" } }
+        "requires": { "type": "array", "items": { "type": "string" } },
+        "autonomous": { "$ref": "#/$defs/autonomous" }
+      }
+    },
+    "autonomous": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Long-horizon config for a mode==\"autonomous\" lane. Ignored by other modes.",
+      "properties": {
+        "progress": { "type": "string" },
+        "horizon": { "type": "string" },
+        "checkpointEvery": { "type": "string" },
+        "roles": { "type": "array", "items": { "type": "string" } },
+        "research": { "type": "string" }
       }
     }
   }

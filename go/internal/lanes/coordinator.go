@@ -15,8 +15,9 @@ import (
 )
 
 const (
-	ModeCodexWeb = "codex.web"
-	ModeLocal    = "local"
+	ModeCodexWeb   = "codex.web"
+	ModeLocal      = "local"
+	ModeAutonomous = "autonomous"
 )
 
 // ParsePlan validates raw JSON against the canonical lane-plan schema and then
@@ -115,19 +116,22 @@ func emitLane(ctx context.Context, plan Plan, lane Lane, outDir string) (Handoff
 
 	var body string
 	promptLane := prompts.Lane{
-		Name:     lane.Name,
-		Mode:     lane.Mode,
-		Branch:   lane.Branch,
-		Reads:    lane.Reads,
-		Writes:   lane.Writes,
-		Prompt:   lane.Prompt,
-		Requires: lane.Requires,
+		Name:       lane.Name,
+		Mode:       lane.Mode,
+		Branch:     lane.Branch,
+		Reads:      lane.Reads,
+		Writes:     lane.Writes,
+		Prompt:     lane.Prompt,
+		Requires:   lane.Requires,
+		Autonomous: promptAutonomous(lane.Autonomous),
 	}
 	switch lane.Mode {
 	case ModeCodexWeb:
 		body = prompts.CodexWebHandoff(plan.Name, plan.Repo, promptLane)
 	case ModeLocal:
 		body = prompts.LocalChecklist(plan.Name, plan.Repo, promptLane)
+	case ModeAutonomous:
+		body = prompts.AutonomousHandoff(plan.Name, plan.Repo, promptLane)
 	default:
 		return Handoff{}, fmt.Errorf("lane %q has unsupported mode %q", lane.Name, lane.Mode)
 	}
@@ -190,6 +194,21 @@ func scopesOverlap(a, b string) bool {
 		return true
 	}
 	return strings.HasPrefix(a, b+"/") || strings.HasPrefix(b, a+"/")
+}
+
+// promptAutonomous maps the runtime IR's autonomous config to the prompt
+// package's dependency-free view, preserving nil for non-autonomous lanes.
+func promptAutonomous(a *Autonomous) *prompts.Autonomous {
+	if a == nil {
+		return nil
+	}
+	return &prompts.Autonomous{
+		Progress:        a.Progress,
+		Horizon:         a.Horizon,
+		CheckpointEvery: a.CheckpointEvery,
+		Roles:           a.Roles,
+		Research:        a.Research,
+	}
 }
 
 func sanitizeFilename(name string) string {
