@@ -60,6 +60,8 @@ export {
 } from "./providers/api/grok.js";
 export { createBigAgiProvider } from "./providers/api/big-agi.js";
 export { mergeCorrected } from "./resolver/corrections.js";
+export { getSupabaseClient, persistVibePlan } from "./resolver/persist.js";
+export { VibePlanSchema, type VibePlan, AutonomousSessionSchema, type AutonomousSession } from "./resolver/schemas.js";
 export { runPipeline, type PipelineInput, type PipelineResult } from "./pipeline/run.js";
 
 export {
