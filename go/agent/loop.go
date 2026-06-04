@@ -26,6 +26,20 @@ type LoopOptions struct {
 	Executor      ToolExecutor
 	MaxIterations int
 
+	// Fanout, when it lists 2+ providers, makes every loop turn run the SAME
+	// request across ALL of them concurrently (agent.SpawnParallel); the
+	// strongest result (PickBest) drives the loop and its events are replayed
+	// into the stream. With 0 or 1 entries the loop uses Provider as before.
+	//
+	// This is the M2 multi-provider payoff. For example,
+	//   LoopOptions{Fanout: []Provider{cerebras, grokCLI}}
+	// fans Cerebras GLM and the Grok CLI side-by-side each turn and keeps the
+	// better one. When Fanout is set, Provider may be nil (Fanout[0] is used
+	// for any single-provider turns). Callers wanting different selection
+	// semantics (judge panel, schema-merge, first-to-finish) can run
+	// SpawnParallel directly instead of using the loop.
+	Fanout []Provider
+
 	// Remote (optional) enables Supabase C&C for autonomous agents.
 	// The runner can receive pause/resume/instruct from Grok/Claude/etc.
 	// See agent/remote.go and internal/remote/client.go .
@@ -34,7 +48,13 @@ type LoopOptions struct {
 
 // RunLoop runs provider turns until no tool calls remain or MaxIterations is hit.
 func RunLoop(ctx context.Context, opts LoopOptions, messages []Message) (<-chan Event, error) {
-	if opts.Provider == nil {
+	primary := opts.Provider
+	if primary == nil && len(opts.Fanout) > 0 {
+		// Fan-out-only configuration: use the first listed provider for any
+		// single-provider turns (the fan-out path itself ignores this).
+		primary = opts.Fanout[0]
+	}
+	if primary == nil {
 		return nil, errors.New("agent: loop provider is nil")
 	}
 	if ctx == nil {
@@ -49,10 +69,11 @@ func RunLoop(ctx context.Context, opts LoopOptions, messages []Message) (<-chan 
 	out := make(chan Event)
 	conversation := append([]Message(nil), messages...)
 	tools := append([]ToolSpec(nil), opts.Tools...)
+	fanout := append([]Provider(nil), opts.Fanout...)
 
 	go func() {
 		defer close(out)
-		runLoop(ctx, out, opts.Provider, tools, opts.Executor, maxIterations, conversation)
+		runLoop(ctx, out, primary, fanout, tools, opts.Executor, maxIterations, conversation)
 	}()
 
 	return out, nil
@@ -62,6 +83,7 @@ func runLoop(
 	ctx context.Context,
 	out chan<- Event,
 	provider Provider,
+	fanout []Provider,
 	tools []ToolSpec,
 	executor ToolExecutor,
 	maxIterations int,
@@ -95,7 +117,7 @@ func runLoop(
 			}
 		}
 
-		turnEvents, err := provider.RunTurn(ctx, TurnRequest{
+		turnEvents, err := chooseTurn(ctx, provider, fanout, TurnRequest{
 			Messages: append([]Message(nil), conversation...),
 			Tools:    append([]ToolSpec(nil), tools...),
 		})
@@ -146,6 +168,34 @@ func getRemoteFromContext(ctx context.Context) *LoopOptions {
 	// For demo: real impl would pass options down or use closure.
 	// Here we return nil; the integration example lives in agent/remote.go.
 	return nil
+}
+
+// chooseTurn runs one provider turn. When fanout lists 2+ providers it fans the
+// SAME request across all of them concurrently (SpawnParallel) and replays the
+// strongest result (PickBest) into the loop; otherwise it streams the single
+// primary provider live. A fan-out winner that errored still surfaces its error
+// event, so the loop's existing error handling applies uniformly.
+func chooseTurn(ctx context.Context, primary Provider, fanout []Provider, req TurnRequest) (<-chan Event, error) {
+	if len(fanout) >= 2 {
+		best, ok := PickBest(SpawnParallel(ctx, fanout, req))
+		if !ok {
+			return nil, errors.New("agent: multi-provider fan-out produced no results")
+		}
+		return replayEvents(best.Events), nil
+	}
+	return primary.RunTurn(ctx, req)
+}
+
+// replayEvents returns a closed, buffered channel yielding the already-collected
+// events in order. It feeds a fan-out winner's events back through the loop's
+// normal streaming machinery without holding a live provider connection open.
+func replayEvents(events []Event) <-chan Event {
+	ch := make(chan Event, len(events))
+	for _, ev := range events {
+		ch <- ev
+	}
+	close(ch)
+	return ch
 }
 
 func forwardTurnEvents(ctx context.Context, out chan<- Event, turnEvents <-chan Event) ([]ToolCall, bool) {
