@@ -1,7 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 
 const url = "http://127.0.0.1:54421";
-const key = "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH";
+// Load from web/.env.local (NEXT_PUBLIC_SUPABASE_ANON_KEY or SUPABASE_SERVICE_ROLE_KEY) after `supabase start`.
+// The value below is a snapshot; refresh after restarting local Supabase if realtime 401s occur.
+const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH";
 
 const sb = createClient(url, key, {
   realtime: { params: { eventsPerSecond: 10 } }

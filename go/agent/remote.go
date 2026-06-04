@@ -5,7 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -131,14 +134,15 @@ func (r *RemoteControl) WaitForResume(ctx context.Context, cmd remote.AgentComma
 // A real autonomous runner would call this from the PollForCommands handler.
 // It performs the action (or simulates for Vibe primitives) and always Acks.
 func (r *RemoteControl) ProcessCommand(ctx context.Context, cmd remote.AgentCommand) error {
+	command := strings.ToLower(strings.TrimSpace(cmd.Command))
 	result := map[string]any{
-		"command": cmd.Command,
+		"command": command,
 		"action":  "processed",
 		"note":    "handled by RemoteControl.ProcessCommand (demo)",
 	}
 	msg := ""
 
-	switch cmd.Command {
+	switch command {
 	case "instruct", "instruction":
 		// Simulate injecting the instruction into the agent's context / PROGRESS.
 		// In full impl, this could write to a session memory or trigger a step.
@@ -150,16 +154,36 @@ func (r *RemoteControl) ProcessCommand(ctx context.Context, cmd remote.AgentComm
 		}
 		_ = r.EmitEvent(ctx, "instruction_received", result)
 	case "pause":
-		return r.WaitForResume(ctx, cmd) // blocks until resume
+		result["action"] = "paused"
+		result["mode"] = "simulated"
+		msg = "pause acknowledged (simulated; runner should stop scheduling new turns)"
+		_ = r.EmitEvent(ctx, "agent_paused", result)
 	case "resume":
-		// Usually sent to unblock; here just ack
-		msg = "resume acknowledged (if waiting, would unblock)"
+		result["action"] = "resumed"
+		result["mode"] = "simulated"
+		msg = "resume acknowledged (simulated; runner may continue scheduling turns)"
+		_ = r.EmitEvent(ctx, "agent_resumed", result)
 	case "status":
 		result["current_status"] = "running (simulated)"
 		_ = r.EmitEvent(ctx, "status_reported", result)
 	case "checkpoint":
-		result["checkpoint"] = "would call vibe checkpoint or internal progress"
-		_ = r.EmitEvent(ctx, "checkpoint_requested", result)
+		result["action"] = "checkpoint"
+		if out, err := runVibeCheckpoint(ctx, cmd.IssuedBy); err != nil {
+			result["output"] = out
+			result["error"] = err.Error()
+			msg = "checkpoint command completed with error"
+			_ = r.EmitEvent(ctx, "checkpoint_failed", result)
+		} else {
+			result["output"] = out
+			msg = "checkpoint recorded via local vibe CLI"
+			_ = r.EmitEvent(ctx, "checkpoint_completed", result)
+		}
+	case "launch":
+		result["action"] = "launch_queued"
+		result["mode"] = "stub"
+		result["instruction"] = "launch requested remotely; queue a local runner or call web /api/launch for real dispatch"
+		msg = "launch queued as a remote instruction (no local launcher is wired here yet)"
+		_ = r.EmitEvent(ctx, "launch_queued", result)
 	case "sync-supabase":
 		result["action"] = "sync-supabase"
 		if out, err := runPnpmInfra("infra:sync-supabase"); err != nil {
@@ -205,12 +229,60 @@ func (r *RemoteControl) ProcessCommand(ctx context.Context, cmd remote.AgentComm
 
 	// Telemetry for remote command processing (best effort). This is one of the core
 	// places we want metrics: how often remote control is used, which commands, success.
-	_ = r.EmitTelemetry(ctx, "remote_command_processed", "go", map[string]any{
-		"command":   cmd.Command,
+	telemetryPayload := map[string]any{
+		"command":   command,
 		"issued_by": cmd.IssuedBy,
-	})
+	}
+	if errText, ok := result["error"]; ok {
+		telemetryPayload["error"] = errText
+	}
+	_ = r.EmitTelemetry(ctx, "remote_command_processed", "go", telemetryPayload)
 
 	return r.Ack(ctx, cmd.ID, "completed", result, msg)
+}
+
+// runVibeCheckpoint appends a local PROGRESS.md checkpoint through the same CLI path
+// humans use, capturing combined stdout/stderr for the remote response.
+func runVibeCheckpoint(ctx context.Context, issuedBy string) (string, error) {
+	by := strings.TrimSpace(issuedBy)
+	if by == "" {
+		by = "unknown"
+	}
+	cmd := exec.CommandContext(ctx,
+		"go", "run", "./cmd/vibe", "checkpoint",
+		"--summary", "remote via "+by,
+		"--note", "from command",
+		"--status", "in_progress",
+	)
+	if root := goModuleRoot(); root != "" {
+		cmd.Dir = root
+	}
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &out
+	err := cmd.Run()
+	return strings.TrimSpace(out.String()), err
+}
+
+func goModuleRoot() string {
+	_, file, _, ok := runtime.Caller(0)
+	if !ok {
+		return ""
+	}
+	return filepath.Dir(filepath.Dir(file))
+}
+
+// infraRoot returns the vibe repo root (parent of go/) so that pnpm scripts,
+// supabase link, and vercel commands run from the correct directory with
+// access to root package.json and any .vercel link state. This makes
+// infra sync reliable even if `vibe remote` was started from go/ or a subdir.
+func infraRoot() string {
+	_, file, _, ok := runtime.Caller(0)
+	if !ok {
+		return "."
+	}
+	// go/agent/remote.go -> go/agent -> go -> <vibe root>
+	return filepath.Dir(filepath.Dir(filepath.Dir(file)))
 }
 
 // runPnpmInfra executes one of the root pnpm infra:* scripts (sync-supabase, deploy-vercel).
@@ -218,8 +290,38 @@ func (r *RemoteControl) ProcessCommand(ctx context.Context, cmd remote.AgentComm
 // This is what makes "remote control" able to automatically keep Supabase and Vercel
 // in sync when a command is queued (e.g. from Grok chat or dashboard button) and a
 // poller/runner for the session is active with CLIs + auth in its env.
+//
+// Auth fixes:
+// - Always cd to infraRoot() so pnpm finds root scripts and vercel link state is visible.
+// - If SUPABASE_ACCESS_TOKEN present, pre-run `supabase link --project-ref ... --yes` (non-interactive).
+// - If VERCEL_TOKEN present for deploy, run npx vercel ... --token <val> directly (bypasses pnpm script shell expansion issues on Windows).
 func runPnpmInfra(subcmd string) (string, error) {
+	root := infraRoot()
+
+	if strings.Contains(subcmd, "sync-supabase") {
+		if tok := os.Getenv("SUPABASE_ACCESS_TOKEN"); tok != "" {
+			link := exec.Command("supabase", "link", "--project-ref", "gknrdzkdgmuozhtaonst", "--yes")
+			link.Dir = root
+			link.Env = append(os.Environ(), "SUPABASE_ACCESS_TOKEN="+tok)
+			// best effort; ignore error if already linked or cached
+			_ = link.Run()
+		}
+	}
+
+	if subcmd == "infra:deploy-vercel" {
+		if tok := os.Getenv("VERCEL_TOKEN"); tok != "" {
+			cmd := exec.Command("npx", "vercel", "deploy", "--prod", "--yes", "--token", tok)
+			cmd.Dir = root
+			var out bytes.Buffer
+			cmd.Stdout = &out
+			cmd.Stderr = &out
+			err := cmd.Run()
+			return strings.TrimSpace(out.String()), err
+		}
+	}
+
 	cmd := exec.Command("pnpm", "run", subcmd)
+	cmd.Dir = root
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &out

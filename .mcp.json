@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp",
+      "headers": {
+        "X-Source-Name": "vibe",
+        "X-Source-Version": "0.0.0"
+      }
+    },
+    "vercel": {
+      "type": "http",
+      "url": "https://mcp.vercel.com",
+      "note": "Official Vercel MCP server. OAuth on first connection for the vibe project. Read-only in initial release: search docs, list projects/deployments, inspect logs, trigger deploys via tools when authorized."
+    }
+  }
+}
