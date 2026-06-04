@@ -37,6 +37,9 @@ func DefaultRequirements() []Requirement {
 		// claude: temporarily disabled (claude CLI used by another local project; see VIBE_DISABLE_CLAUDE_CLI + serve registration + .claude.disabled). Doctor still detects the binary if present on PATH.
 		{Name: "claude", Command: "claude", Required: false},
 		{Name: "obsidian", Command: "obsidian", Required: false},
+		// Supabase + Vercel CLIs + tokens enable `pnpm infra:*` and remote poller auto sync of schema/deploys.
+		{Name: "supabase", Command: "supabase", Required: false},
+		{Name: "vercel", Command: "vercel", Required: false},
 	}
 }
 

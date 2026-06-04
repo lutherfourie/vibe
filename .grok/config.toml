@@ -1,0 +1,10 @@
+# Project-scoped Grok config for Vibe.
+# See ~/.grok/docs/user-guide/05-configuration.md and 07-mcp-servers.md
+
+[mcp_servers.supabase]
+url = "https://mcp.supabase.com/mcp"
+enabled = true
+
+[mcp_servers.vercel]
+url = "https://mcp.vercel.com"
+enabled = true

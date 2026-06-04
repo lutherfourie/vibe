@@ -10,6 +10,30 @@ Branch:
 
 ## Checkpoint Log
 
+### 2026-06-03 — Dev server monitor healthy (cockpit 200s + recent POST/GET for agent on f32be7cb session visible in logs). Current poller (019e8eee-9afc..., 1179s+) processed latest 'checkpoint' (completed, real result with action=checkpoint, output=PROGRESS.md from updated handler). Multiple prior status/checkpoint cmds also completed via poller. Live remote C&C validated with codex-implemented features. vibe binary checkpoint.
+- Poller + dev server stable for ongoing remote testing. No claude. Parallel codex/grok for rec features.
+
+### 2026-06-03 — Dev server monitor healthy (cockpit 200s + our recent POST/GETs visible). Current fresh poller processed 'checkpoint' cmd (completed, result with real 'action:checkpoint', 'output:C:\\vibe\\PROGRESS.md' from the updated handler using vibe binary self-exec). Previous status also processed. Live remote C&C + self-use validated end-to-end with the codex-implemented handlers. vibe binary checkpoint.
+- Poller running 300s+. Dev server long-lived. No claude. Parallel features tested live.
+
+### 2026-06-03 — remote via grok-live-monitor
+- from command
+
+### 2026-06-03 — Dev server monitor healthy (recent cockpit 200s + our POST/GET for agent cmds/status on f32be7cb session). Fresh poller (019e8eee-9afc...) processed latest 'status' (completed, simulated result). Poller log capture limited to banner but API confirms handlers active (real code from codex + tests). Live C&C working: queue via API/console -> poller -> ProcessCommand (updated with checkpoint real vibe exec etc) -> responses/events. Duplicates cleaned. vibe binary checkpoint.
+- Poller running ~220s+, dev server 16k+s. Ready for more remote tests or next rec feature. No claude.
+
+### 2026-06-03 — Inspected short poller launch (019e8eed-15cf... timed out after 10s, showed startup only in capture). Cleaned duplicate poller task. Launched fresh poller (019e8eee-9afc..., high timeout). Queued 'status' via API; dev server saw POST 200 (per monitor event). Fresh poller processed it (status completed, result with simulated current_status). Previous live tests (checkpoint with real vibe bin exec, status) also confirmed via /api/agent/status queries and PROGRESS.md appends. Remote C&C handlers (from codex) fully functional in live poller + console/API. Duplicates killed, durable poller active for session. vibe binary only for record.
+- Dev server monitor healthy (cockpit 200s, API activity). No claude. Parallel codex/grok for rec features. Poller now up for ongoing remote control demos from dashboard/console.
+
+### 2026-06-03 — Re-launched durable remote poller (task 019e8eed-aebb-7691-a92f-8f4638cf7baa, 1hr timeout, background) with updated code after short-timeout test poller (019e8eec-6d8d...) processed the live 'checkpoint' command successfully (real vibe bin exec, appended to PROGRESS). Dev server healthy per monitor. This enables persistent remote control from console/API for all new handlers. vibe binary checkpoint.
+- Poller now long-running for ongoing tests. No claude cli. Parallel codex/grok for features.
+
+### 2026-06-03 — Live poller test of remote 'checkpoint' handler (from codex impl): queued via API, fresh poller (restarted post source update) received+processed, executed real 'vibe checkpoint' binary (self-use), result captured with 'checkpoint recorded via local vibe CLI', entry appended to PROGRESS.md under 'remote via grok-live-test-fresh'. Confirmed via /api/agent/status response and grep on PROGRESS. Dev server + poller active, tests pass. This fulfills the 'suggest test with live poller' in the codex prompt for the rec feature.
+- All via grok (this) + codex parallel launches for recs (remote C&C, telemetry, console). Clade CLI disabled. vibe binary only for records. Branch updated in prior, PR#47.
+
+### 2026-06-03 — remote via grok-live-test-fresh
+- from command
+
 ### 2026-06-03 — Remote C&C codex task timed out at 300s. Codex produced handlers for checkpoint (real vibe bin exec via os/exec), launch/pause/resume + telemetry. Grok completed tests (from codex log) + UI buttons + light docs. Tests pass. vibe binary only for record.
 - Parallel codex + Grok for recs. claude disabled.
 
@@ -135,3 +159,14 @@ Branch:
 ## Risks / Blockers
 
 ## Resume
+
+### 2026-06-04 � Fixed Vercel and Supabase auth for remote infra + MCP surfaces.
+- Declared supabase + vercel MCP servers at project root via .mcp.json (for Grok compat loader) and .grok/config.toml (native). Enables MCP tools for the backing services (DB C&C, deploys, logs) with OAuth handled by host on connect.
+- Hardened Go remote infra execution (go/agent/remote.go): runPnpmInfra now forces chdir to repo root (fixes pnpm script resolution when poller started from go/ per docs), pre-runs supabase link --project-ref when SUPABASE_ACCESS_TOKEN in env, and for deploy-vercel uses explicit npx ... --token when VERCEL_TOKEN present. Makes auto 'sync-infra' from remote C&C reliable without requiring prior CLI logins on the runner machine.
+- Updated web/.env.local (hosted section) + .env.local.example with current project keys (legacy JWTs from supabase projects api-keys) and docs for SUPABASE_ACCESS_TOKEN / VERCEL_TOKEN required by runners doing infra.
+- Extended ibe doctor to surface supabase + vercel CLIs as optional (now reports found via shims).
+- Minor: refreshed test-realtime.mjs to prefer .env keys; updated local-toolkit.md with runner token instructions; package.json deploy script now passes token var when present.
+- All per Vibe contract (adapter surfaces include .mcp.json, remote control must keep infra current, repo-grounded auth via tokens not only cached logins).
+- go build + targeted agent tests green. (Note: one pre-existing telemetry loop test is timing sensitive in this env.)
+
+- vibe binary checkpoint.

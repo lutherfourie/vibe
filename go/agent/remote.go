@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -271,13 +272,56 @@ func goModuleRoot() string {
 	return filepath.Dir(filepath.Dir(file))
 }
 
+// infraRoot returns the vibe repo root (parent of go/) so that pnpm scripts,
+// supabase link, and vercel commands run from the correct directory with
+// access to root package.json and any .vercel link state. This makes
+// infra sync reliable even if `vibe remote` was started from go/ or a subdir.
+func infraRoot() string {
+	_, file, _, ok := runtime.Caller(0)
+	if !ok {
+		return "."
+	}
+	// go/agent/remote.go -> go/agent -> go -> <vibe root>
+	return filepath.Dir(filepath.Dir(filepath.Dir(file)))
+}
+
 // runPnpmInfra executes one of the root pnpm infra:* scripts (sync-supabase, deploy-vercel).
 // Captures combined stdout/stderr so remote ack + events contain the full CLI output.
 // This is what makes "remote control" able to automatically keep Supabase and Vercel
 // in sync when a command is queued (e.g. from Grok chat or dashboard button) and a
 // poller/runner for the session is active with CLIs + auth in its env.
+//
+// Auth fixes:
+// - Always cd to infraRoot() so pnpm finds root scripts and vercel link state is visible.
+// - If SUPABASE_ACCESS_TOKEN present, pre-run `supabase link --project-ref ... --yes` (non-interactive).
+// - If VERCEL_TOKEN present for deploy, run npx vercel ... --token <val> directly (bypasses pnpm script shell expansion issues on Windows).
 func runPnpmInfra(subcmd string) (string, error) {
+	root := infraRoot()
+
+	if strings.Contains(subcmd, "sync-supabase") {
+		if tok := os.Getenv("SUPABASE_ACCESS_TOKEN"); tok != "" {
+			link := exec.Command("supabase", "link", "--project-ref", "gknrdzkdgmuozhtaonst", "--yes")
+			link.Dir = root
+			link.Env = append(os.Environ(), "SUPABASE_ACCESS_TOKEN="+tok)
+			// best effort; ignore error if already linked or cached
+			_ = link.Run()
+		}
+	}
+
+	if subcmd == "infra:deploy-vercel" {
+		if tok := os.Getenv("VERCEL_TOKEN"); tok != "" {
+			cmd := exec.Command("npx", "vercel", "deploy", "--prod", "--yes", "--token", tok)
+			cmd.Dir = root
+			var out bytes.Buffer
+			cmd.Stdout = &out
+			cmd.Stderr = &out
+			err := cmd.Run()
+			return strings.TrimSpace(out.String()), err
+		}
+	}
+
 	cmd := exec.Command("pnpm", "run", subcmd)
+	cmd.Dir = root
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &out

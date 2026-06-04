@@ -21,7 +21,7 @@
     "vibe:verify": "cd go && go run ./cmd/vibe verify",
     "langium:generate": "pnpm --filter @vibe/language langium:generate",
     "infra:sync-supabase": "supabase db push --linked --yes",
-    "infra:deploy-vercel": "npx vercel deploy --prod --yes"
+    "infra:deploy-vercel": "npx vercel deploy --prod --yes ${VERCEL_TOKEN:+--token $VERCEL_TOKEN}"
   },
   "devDependencies": {
     "ajv": "^8.17.1",
