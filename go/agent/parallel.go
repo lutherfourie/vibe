@@ -95,6 +95,19 @@ func SpawnParallel(ctx context.Context, providers []Provider, req TurnRequest) [
 // semantics (best-of-N by a judge, schema-merge, first-to-finish) can inspect
 // the []TurnResult directly.
 func PickBest(results []TurnResult) (TurnResult, bool) {
+	i, ok := PickBestIndex(results)
+	if !ok {
+		return TurnResult{}, false
+	}
+	return results[i], true
+}
+
+// PickBestIndex returns the index of the strongest result using the same
+// heuristic as PickBest (error-free beats errored; then more assembled text;
+// ties break toward the faster provider). Returns -1, false for an empty/all-nil
+// set. Useful when the caller needs to map the winner back to a parallel slice
+// (e.g. provider labels) rather than just the TurnResult.
+func PickBestIndex(results []TurnResult) (int, bool) {
 	best := -1
 	for i := range results {
 		if best == -1 || resultBetter(results[i], results[best]) {
@@ -102,9 +115,9 @@ func PickBest(results []TurnResult) (TurnResult, bool) {
 		}
 	}
 	if best == -1 {
-		return TurnResult{}, false
+		return -1, false
 	}
-	return results[best], true
+	return best, true
 }
 
 func resultBetter(a, b TurnResult) bool {

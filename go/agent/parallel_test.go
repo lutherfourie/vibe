@@ -21,7 +21,7 @@ func TestSpawnParallelCollectsEveryProviderInOrder(t *testing.T) {
 		FakeProvider{Events: []Event{TextDelta("alpha"), UsageEvent(Usage{OutputTokens: 1}), Done()}},
 		FakeProvider{Events: []Event{TextDelta("bravo bravo"), UsageEvent(Usage{OutputTokens: 2}), Done()}},
 		FakeProvider{Events: []Event{ErrorEvent("boom")}}, // terminal error event
-		runTurnErrProvider{name: "rterr"},                  // RunTurn() returns error
+		runTurnErrProvider{name: "rterr"},                 // RunTurn() returns error
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
@@ -117,6 +117,26 @@ func TestPickBestTieBreaksOnSpeed(t *testing.T) {
 
 func TestPickBestEmpty(t *testing.T) {
 	if _, ok := PickBest(nil); ok {
+		t.Fatalf("empty results should yield ok=false")
+	}
+}
+
+func TestPickBestIndexReturnsWinnerPosition(t *testing.T) {
+	results := []TurnResult{
+		{Provider: "short", Text: "short"},
+		{Provider: "long", Text: "a much longer, more complete answer"},
+		{Provider: "errored", Text: "errored but very long text here", Err: errors.New("x")},
+	}
+	idx, ok := PickBestIndex(results)
+	if !ok || idx != 1 {
+		t.Fatalf("PickBestIndex want idx=1, got idx=%d ok=%v", idx, ok)
+	}
+	// Must agree with PickBest.
+	best, _ := PickBest(results)
+	if results[idx].Provider != best.Provider {
+		t.Fatalf("PickBestIndex %q disagrees with PickBest %q", results[idx].Provider, best.Provider)
+	}
+	if _, ok := PickBestIndex(nil); ok {
 		t.Fatalf("empty results should yield ok=false")
 	}
 }

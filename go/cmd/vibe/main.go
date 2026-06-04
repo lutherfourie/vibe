@@ -66,6 +66,8 @@ func run(ctx context.Context, args []string) error {
 		return runResume(ctx, args[1:])
 	case "remote":
 		return runRemote(ctx, args[1:])
+	case "fanout":
+		return runFanout(ctx, args[1:])
 	case "help", "-h", "--help":
 		usage(os.Stdout)
 		return nil
@@ -89,6 +91,7 @@ func usage(out *os.File) {
 	fmt.Fprintln(out, "  checkpoint  Append a timestamped checkpoint to PROGRESS.md")
 	fmt.Fprintln(out, "  resume      Print a resume brief from PROGRESS.md + live git state")
 	fmt.Fprintln(out, "  remote      Start a background poller for a session_id that auto-processes remote C&C incl. infra sync (sync-supabase etc auto-run pnpm when queued)")
+	fmt.Fprintln(out, "  fanout      Fan one prompt across multiple subagents concurrently (cerebras/codex/grok-cli/...) and report/pick-best")
 }
 
 func runContinue(ctx context.Context, args []string) error {
