@@ -9,7 +9,12 @@
   "properties": {
     "name": { "type": "string", "minLength": 1 },
     "repo": { "type": "string", "minLength": 1 },
-    "lanes": { "type": "array", "items": { "$ref": "#/$defs/lane" } }
+    "lanes": { "type": "array", "items": { "$ref": "#/$defs/lane" } },
+    "tools": { "type": "array", "items": { "$ref": "#/$defs/tool" } },
+    "evals": { "type": "array", "items": { "$ref": "#/$defs/eval" } },
+    "templates": { "type": "array", "items": { "$ref": "#/$defs/template" } },
+    "policies": { "type": "array", "items": { "$ref": "#/$defs/policy" } },
+    "workflows": { "type": "array", "items": { "$ref": "#/$defs/workflow" } }
   },
   "$defs": {
     "lane": {
@@ -24,7 +29,8 @@
         "writes": { "type": "array", "items": { "type": "string" } },
         "prompt": { "type": "string" },
         "requires": { "type": "array", "items": { "type": "string" } },
-        "autonomous": { "$ref": "#/$defs/autonomous" }
+        "autonomous": { "$ref": "#/$defs/autonomous" },
+        "steps": { "type": "array", "items": { "$ref": "#/$defs/step" } }
       }
     },
     "autonomous": {
@@ -37,6 +43,80 @@
         "checkpointEvery": { "type": "string" },
         "roles": { "type": "array", "items": { "type": "string" } },
         "research": { "type": "string" }
+      }
+    },
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "description": { "type": "string" },
+        "schema": { "type": "object" },
+        "provider": { "type": "string" },
+        "mcp": { "type": "string" }
+      }
+    },
+    "eval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "criteria": { "type": "array", "items": { "type": "string" } },
+        "threshold": { "type": "number" },
+        "llm": { "type": "string" }
+      }
+    },
+    "template": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "prompt"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "prompt": { "type": "string" },
+        "variables": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "sandbox": { "type": "boolean" },
+        "rateLimit": { "type": "number" },
+        "allowedTools": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "workflow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "steps": { "type": "array", "items": { "type": "string" } },
+        "parallel": { "type": "boolean" },
+        "retries": { "type": "number" },
+        "policy": { "type": "string" }
+      }
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "enum": ["tool", "eval", "template", "policy", "workflow", "checkpoint"] },
+        "tool": { "type": "string" },
+        "eval": { "type": "string" },
+        "template": { "type": "string" },
+        "workflow": { "type": "string" },
+        "dimensions": { "type": "array", "items": { "type": "string" } },
+        "threshold": { "type": "number" },
+        "if": { "type": "string" },
+        "then": { "type": "string" },
+        "checkpoint": { "type": "string" },
+        "args": { "type": "object" }
       }
     }
   }

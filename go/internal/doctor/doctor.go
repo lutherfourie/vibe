@@ -34,6 +34,9 @@ func DefaultRequirements() []Requirement {
 		{Name: "pnpm", Command: "pnpm", Required: true},
 		{Name: "go", Command: "go", Required: true},
 		{Name: "codex", Command: "codex", Required: false},
+		// grok: the Grok CLI ("Grok Build"), spawnable as the "grok-cli" provider
+		// (rides the CLI's own OAuth; no GROK_API_KEY needed). Optional; detected if on PATH.
+		{Name: "grok", Command: "grok", Required: false},
 		// claude: temporarily disabled (claude CLI used by another local project; see VIBE_DISABLE_CLAUDE_CLI + serve registration + .claude.disabled). Doctor still detects the binary if present on PATH.
 		{Name: "claude", Command: "claude", Required: false},
 		{Name: "obsidian", Command: "obsidian", Required: false},

@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/lutherfourie/vibe/go/agent"
+	"github.com/lutherfourie/vibe/go/agent/adapters/grokcli"
 	// "github.com/lutherfourie/vibe/go/agent/adapters/claude"  // temporarily disabled to avoid claude CLI interference with other local project; see DefaultProviders
 )
 
@@ -52,6 +53,14 @@ func DefaultProviders() map[string]ProviderFactory {
 	providers := map[string]ProviderFactory{
 		"fake": func() agent.Provider {
 			return agent.FakeProvider{}
+		},
+		// "grok-cli": the locally-authenticated Grok CLI ("Grok Build") as a spawnable
+		// subagent. Rides the CLI's own OAuth (no GROK_API_KEY needed, unlike the HTTP
+		// "grok" provider) and keeps grok's own subagents enabled. Construction is cheap;
+		// the binary is only resolved at RunTurn (clear error if grok is not on PATH).
+		// Safety valve: VIBE_DISABLE_GROK_CLI=1 makes RunTurn refuse to exec it.
+		"grok-cli": func() agent.Provider {
+			return grokcli.New()
 		},
 		// "claude" temporarily DISABLED: the claude CLI is being used by another local project;
 		// we do not want to interfere or spawn it from this workspace. Re-enable by uncommenting

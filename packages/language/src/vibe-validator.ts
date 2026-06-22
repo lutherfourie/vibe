@@ -59,11 +59,13 @@ import type {
   Agent,
   AutonomousSession,
   Checkpoint,
+  Eval,
   Harness,
   Lane,
   Memory,
   Persona,
   Plugin,
+  Policy,
   Project,
   Provider,
   Reference as VibeReference,
@@ -71,7 +73,10 @@ import type {
   Route,
   SelfReview,
   Surface,
+  Template,
+  Tool,
   VibeAstType,
+  Workflow,
 } from "./generated/ast.js";
 import type { LangiumServices } from "langium/lsp";
 
@@ -95,7 +100,12 @@ type NamedDeclaration =
   | Lane
   | Checkpoint
   | SelfReview
-  | ResearchStep;
+  | ResearchStep
+  | Tool
+  | Eval
+  | Template
+  | Policy
+  | Workflow;
 
 /**
  * Stable lowercase label used in diagnostics. Matches the keyword each
@@ -116,6 +126,11 @@ const KIND_LABEL: Record<NamedDeclaration["$type"], string> = {
   Checkpoint: "checkpoint",
   SelfReview: "self-review",
   ResearchStep: "research-step",
+  Tool: "tool",
+  Eval: "eval",
+  Template: "template",
+  Policy: "policy",
+  Workflow: "workflow",
 };
 
 function isNamedDeclaration(node: unknown): node is NamedDeclaration {
@@ -133,7 +148,12 @@ function isNamedDeclaration(node: unknown): node is NamedDeclaration {
     type === "Lane" ||
     type === "Checkpoint" ||
     type === "SelfReview" ||
-    type === "ResearchStep"
+    type === "ResearchStep" ||
+    type === "Tool" ||
+    type === "Eval" ||
+    type === "Template" ||
+    type === "Policy" ||
+    type === "Workflow"
   );
 }
 
@@ -305,6 +325,11 @@ export class VibeValidator {
       checkpoint: new Set<string>(),
       "self-review": new Set<string>(),
       "research-step": new Set<string>(),
+      tool: new Set<string>(),
+      eval: new Set<string>(),
+      template: new Set<string>(),
+      policy: new Set<string>(),
+      workflow: new Set<string>(),
     };
 
     for (const decl of project.declarations) {
@@ -347,6 +372,21 @@ export class VibeValidator {
           break;
         case "ResearchStep":
           declared["research-step"].add(decl.name);
+          break;
+        case "Tool":
+          declared.tool.add(decl.name);
+          break;
+        case "Eval":
+          declared.eval.add(decl.name);
+          break;
+        case "Template":
+          declared.template.add(decl.name);
+          break;
+        case "Policy":
+          declared.policy.add(decl.name);
+          break;
+        case "Workflow":
+          declared.workflow.add(decl.name);
           break;
         // Trigger and Fallback have no name slot; they're listed in
         // CROSS_REF_KINDS for completeness (the spec lists them as kind
@@ -456,6 +496,11 @@ const CROSS_REF_KINDS = [
   "checkpoint",
   "self-review",
   "research-step",
+  "tool",
+  "eval",
+  "template",
+  "policy",
+  "workflow",
 ] as const;
 type CrossRefKind = (typeof CROSS_REF_KINDS)[number];
 

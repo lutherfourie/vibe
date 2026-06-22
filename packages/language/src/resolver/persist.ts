@@ -1,7 +1,67 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import type { VibePlan } from "./schemas.js";
 
+export type PersistTelemetryRow = {
+  session_id: string;
+  kind: string;
+  source: string;
+  payload: Record<string, unknown>;
+};
+
 let _client: SupabaseClient | null = null;
+
+/** Build the telemetry rows a successful persist would emit (for tests + dry-run). */
+export function buildPersistTelemetryRows(plan: VibePlan, sessionId: string): PersistTelemetryRow[] {
+  const session = plan.session;
+  const rows: PersistTelemetryRow[] = [
+    {
+      session_id: sessionId,
+      kind: "plan_resolved",
+      source: "resolver",
+      payload: {
+        version: plan.version,
+        sourceFile: plan.sourceFile,
+        generatedAt: plan.generatedAt,
+      },
+    },
+    {
+      session_id: sessionId,
+      kind: "session_persisted",
+      source: "resolver",
+      payload: { name: session.name, resumeOnRestart: session.resumeOnRestart },
+    },
+  ];
+
+  for (const lane of session.lanes ?? []) {
+    rows.push({
+      session_id: sessionId,
+      kind: "lane_persisted",
+      source: "resolver",
+      payload: { laneId: lane.id, name: lane.name },
+    });
+  }
+
+  for (const checkpoint of session.checkpoints ?? []) {
+    rows.push({
+      session_id: sessionId,
+      kind: "checkpoint_persisted",
+      source: "resolver",
+      payload: { checkpointId: checkpoint.id, name: checkpoint.name },
+    });
+  }
+
+  const backend = session.metadata?.backend;
+  if (typeof backend === "string" && backend.trim()) {
+    rows.push({
+      session_id: sessionId,
+      kind: "provider_used",
+      source: "resolver",
+      payload: { provider: backend },
+    });
+  }
+
+  return rows;
+}
 
 export function getSupabaseClient(): SupabaseClient | null {
   if (_client) return _client;

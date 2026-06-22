@@ -129,6 +129,121 @@ func TestRunLoopStopsAtMaxIterations(t *testing.T) {
 	}
 }
 
+func TestRunLoopFansOutAndPicksRicherProvider(t *testing.T) {
+	short := FakeProvider{Events: []Event{TextDelta("short"), Done()}}
+	long := FakeProvider{Events: []Event{TextDelta("a much longer, more complete answer"), Done()}}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	events, err := RunLoop(ctx, LoopOptions{
+		Fanout: []Provider{short, long},
+	}, []Message{{Role: RoleUser, Content: "hello"}})
+	if err != nil {
+		t.Fatalf("RunLoop returned error: %v", err)
+	}
+	collected := collectEvents(t, events)
+
+	if got, want := assembledText(collected), "a much longer, more complete answer"; got != want {
+		t.Fatalf("assembled text = %q, want %q (richer fan-out provider should win)", got, want)
+	}
+	if got := collected[len(collected)-1].Kind; got != EventKindDone {
+		t.Fatalf("last event kind = %q, want %q", got, EventKindDone)
+	}
+	if n := countEvents(collected, EventKindError); n != 0 {
+		t.Fatalf("error event count = %d, want 0", n)
+	}
+}
+
+func TestRunLoopFanoutIsolatesProviderError(t *testing.T) {
+	boom := FakeProvider{Events: []Event{ErrorEvent("provider boom")}}
+	good := FakeProvider{Events: []Event{TextDelta("good answer"), Done()}}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	events, err := RunLoop(ctx, LoopOptions{
+		Provider: good, // primary; ignored by the fan-out path but proves coexistence
+		Fanout:   []Provider{boom, good},
+	}, []Message{{Role: RoleUser, Content: "hello"}})
+	if err != nil {
+		t.Fatalf("RunLoop returned error: %v", err)
+	}
+	collected := collectEvents(t, events)
+
+	if got, want := assembledText(collected), "good answer"; got != want {
+		t.Fatalf("assembled text = %q, want %q (error-free fan-out provider should win)", got, want)
+	}
+	if n := countEvents(collected, EventKindError); n != 0 {
+		t.Fatalf("error event count = %d, want 0; a single failed provider must not surface", n)
+	}
+}
+
+func TestRunLoopFanoutWithoutExplicitPrimaryProvider(t *testing.T) {
+	a := FakeProvider{Events: []Event{TextDelta("alpha"), Done()}}
+	b := FakeProvider{Events: []Event{TextDelta("beta beta beta"), Done()}}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	// Provider intentionally nil: a fan-out-only config must be accepted.
+	events, err := RunLoop(ctx, LoopOptions{
+		Fanout: []Provider{a, b},
+	}, []Message{{Role: RoleUser, Content: "hello"}})
+	if err != nil {
+		t.Fatalf("RunLoop should accept a fan-out-only config (Provider nil): %v", err)
+	}
+	collected := collectEvents(t, events)
+
+	if got, want := assembledText(collected), "beta beta beta"; got != want {
+		t.Fatalf("assembled text = %q, want %q", got, want)
+	}
+}
+
+func TestRunLoopFanoutExecutesWinningProviderToolCall(t *testing.T) {
+	call := ToolCall{ID: "call-1", Name: "lookup", Args: json.RawMessage(`{"q":"x"}`)}
+	// Both providers advance one scripted turn per loop iteration (SpawnParallel
+	// calls each exactly once per turn), so their turn indices stay in lockstep.
+	winner := &scriptedLoopProvider{turns: [][]Event{
+		{TextDelta("a much longer plan, calling tool"), ToolCallEvent(call), Done()},
+		{TextDelta("finished after tool"), Done()},
+	}}
+	loser := &scriptedLoopProvider{turns: [][]Event{
+		{TextDelta("short"), Done()},
+		{TextDelta("short2"), Done()},
+	}}
+	executor := &recordingToolExecutor{result: ToolResult{ID: "call-1", Content: "lookup result"}}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	events, err := RunLoop(ctx, LoopOptions{
+		Fanout:   []Provider{winner, loser},
+		Tools:    []ToolSpec{{Name: "lookup", Description: "look up a value"}},
+		Executor: executor,
+	}, []Message{{Role: RoleUser, Content: "hello"}})
+	if err != nil {
+		t.Fatalf("RunLoop returned error: %v", err)
+	}
+	collected := collectEvents(t, events)
+
+	if got, want := eventKinds(collected), []EventKind{
+		EventKindTextDelta,
+		EventKindToolCall,
+		EventKindToolResult,
+		EventKindTextDelta,
+		EventKindDone,
+	}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("event kinds = %v, want %v", got, want)
+	}
+	if got, want := assembledText(collected), "a much longer plan, calling toolfinished after tool"; got != want {
+		t.Fatalf("assembled text = %q, want %q", got, want)
+	}
+	if got, want := executor.callsCopy(), []ToolCall{call}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("executor calls = %+v, want %+v (winning provider's tool call must execute)", got, want)
+	}
+}
+
 func TestRunLoopEmitsTurnTelemetryWhenRemoteControlIsConfigured(t *testing.T) {
 	telemetry := make(chan map[string]any, 4)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -142,6 +257,9 @@ func TestRunLoopEmitsTurnTelemetryWhenRemoteControlIsConfigured(t *testing.T) {
 				t.Errorf("decode telemetry body: %v", err)
 			}
 			telemetry <- event
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`[{}]`))
+		case r.Method == http.MethodPost && r.URL.Path == "/rest/v1/agent_events":
 			w.Header().Set("Content-Type", "application/json")
 			_, _ = w.Write([]byte(`[{}]`))
 		default:

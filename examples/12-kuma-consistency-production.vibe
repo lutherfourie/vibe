@@ -1,0 +1,100 @@
+// Industry-suitable Vibe spec for Pawfall Kuma asset production.
+// All core moods now 5.0 expert-approved perfect match (idle_happy, swat, final corrected walk/pounce) after strict panel + locked generation.
+// Expanded with Character + FrameReview + ConsistencyGuard + workflow + autonomous lanes + auto-regen + checkpoints.
+// Tandem with asset-forge (Kuma-locked toml/prompts, final references, GUI seed/ReviewPanel, expert loop).
+// Developed in parallel to production quality for creative/asset pipelines (durable review gates, character bibles).
+
+character "Kuma" {
+  referencePrompt = "Kuma the exact orange tabby: ginger with dark stripes, white chest/paws/muzzle, amber eyes, pink bell collar, chubby kawaii big-head style, clean outlines"
+  referenceImage = "fixtures/pawfall-cats/kuma_reference_standing.jpg"
+  consistencyRules = [
+    "exact ginger orange base color with tabby stripes - never gray or purple",
+    "white muzzle, chest, paws, and tail tip",
+    "amber/yellow eyes, small pink nose",
+    "pink collar with golden bell always visible",
+    "chubby rounded body, big head, expressive kawaii face matching reference exactly",
+    "same line weight and shading style across all frames and moods"
+  ]
+}
+
+tool "kuma_generate" {
+  description = "Generate frame strictly matching Kuma character using locked prompt + reference"
+  schema = { mood: "string", pose: "string", motion: "string", seed: "number" }
+}
+
+tool "kuma_frame_review" {
+  description = "Expert review of single animation frame for Kuma consistency + motion quality + gameplay utility"
+  schema = { frame: "string", mood: "string", expert: "string" }
+}
+
+eval "kuma_expert_panel" {
+  description = "Multi-expert panel review for one frame or animation sequence"
+  criteria = ["Kuma visual fidelity", "Motion naturalness", "Sprite readability at 128px 12fps", "Gameplay clarity"]
+  threshold = 4.7
+  kumaConsistency = true
+}
+
+policy "kuma-production" {
+  sandbox = true
+  allowedTools = ["kuma_generate", "kuma_frame_review"]
+  maxRegensPerFrame = 5
+}
+
+character "Kuma" {
+  referencePrompt = "exact Kuma orange tabby match to canonical reference"
+  referenceImage = "fixtures/pawfall-cats/kuma_reference_standing.jpg"
+  consistencyRules = ["ginger orange only", "exact stripes no black tip", "pink collar gold bell", "chubby kawaii proportions", "amber eyes sparkle"]
+}
+
+consistency-guard "kuma-fidelity" {
+  character = "Kuma"
+  rules = ["exact color/markings/face/eyes/collar/proportions to reference", "no drift in any mood or motion"]
+  referenceImage = "fixtures/pawfall-cats/kuma_reference_standing.jpg"
+  autoRegenOnFail = true
+  expertPanel = ["LeadAnimator", "CatEthologist", "GameplayDesigner", "PixelArtist"]
+}
+
+autonomous-session "kuma-full-production" {
+  description = "Generate and review EVERY Pawfall cat mood animation until all frames are perfect Kuma match (5.0 fidelity). Per-frame expert reviews with consistency-guard. Industry standard durable autonomous asset production with checkpoints and regen."
+  lanes = [
+    {
+      name = "kuma-character-lock"
+      steps = [
+        { type = "character", character = "Kuma" },
+        { type = "consistency-guard", consistencyGuard = "kuma-fidelity" }
+      ]
+    },
+    {
+      name = "mood-production"
+      steps = [
+        { type = "workflow", workflow = "per-mood-gen-review", forEach = ["idle_neutral", "idle_happy", "idle_curious", "idle_sleepy", "walk", "trot", "sneak", "jump", "pounce", "swat", "hiss", "groom", "yawn_stretch", "fall", "land"] }
+      ]
+      dependsOn = ["kuma-character-lock"]
+    }
+  ]
+  checkpoints = ["post-character", "post-mood", "post-frame-review"]
+  resumeOnRestart = true
+}
+
+workflow "per-mood-gen-review" {
+  steps = ["generate-base", "generate-motion", "per-frame-review-loop"]
+  retries = 3
+  policy = "kuma-production"
+}
+
+lane "per-frame-review-loop" {
+  steps = [
+    { type = "frame-review", frameReview = "kuma_expert_panel", experts = ["LeadAnimator", "CatEthologist", "GameplayDesigner", "PixelArtist"] }
+  ]
+  on { review.score < threshold || !review.kuma_match } {
+    applyFixes = true
+    regenerate = true
+    checkpoint = "post-review-fail"
+  }
+}
+
+frame-review "kuma_expert_panel" {
+  dimensions = ["kuma_fidelity", "motion_quality", "readability", "gameplay_utility"]
+  expertRoles = ["LeadAnimator", "CatEthologist", "GameplayDesigner", "PixelArtist"]
+  threshold = 4.7
+}

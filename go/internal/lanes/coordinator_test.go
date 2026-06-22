@@ -183,3 +183,89 @@ func TestParsePlanDecodesAutonomousLane(t *testing.T) {
 		}
 	}
 }
+
+// TestParsePlanAcceptsModernVibeDecls exercises the new Tool/Eval/Template/Policy/Workflow
+// + Steps support added for grammar modern standards. Compatible with legacy.
+func TestParsePlanAcceptsModernVibeDecls(t *testing.T) {
+	// Minimal plan inspired by examples/11-pawfall-asset-review.vibe + Pawfall asset review
+	// (generate_cat_frame tool, expert_review eval, template, policy, workflow + steps).
+	raw := []byte(`{
+		"name": "pawfall-asset-review",
+		"repo": "C:/GameSpree/Pawfall",
+		"lanes": [{
+			"name": "asset-gen-review",
+			"mode": "autonomous",
+			"prompt": "Generate + review cat frames until approved.",
+			"steps": [
+				{"type": "tool", "tool": "generate_cat_frame", "args": {"mood": "pounce"}},
+				{"type": "eval", "eval": "expert_review", "dimensions": ["technical_quality","motion_fidelity"], "threshold": 4.2}
+			]
+		}],
+		"tools": [{
+			"name": "generate_cat_frame",
+			"description": "Generate base or motion frame for Pawfall cat mood using Flux/LTX",
+			"provider": "flux-klein"
+		}, {
+			"name": "expert_review",
+			"description": "Run multi-expert Grok review on animation frames"
+		}],
+		"evals": [{
+			"name": "expert_review",
+			"criteria": ["LeadAnimator motion", "CatEthologist behavior"],
+			"threshold": 4.5,
+			"llm": "grok-expert"
+		}],
+		"templates": [{
+			"name": "cat_motion",
+			"prompt": "the cat {motion}",
+			"variables": ["motion"]
+		}],
+		"policies": [{
+			"name": "asset-policy",
+			"sandbox": true,
+			"allowedTools": ["generate_cat_frame", "expert_review"]
+		}],
+		"workflows": [{
+			"name": "cat-review-iteration",
+			"steps": ["gen", "review", "fix"],
+			"retries": 3,
+			"policy": "asset-policy"
+		}]
+	}`)
+
+	plan, err := ParsePlan(raw)
+	if err != nil {
+		t.Fatalf("modern decls lane plan should parse: %v", err)
+	}
+	if len(plan.Tools) != 2 {
+		t.Fatalf("expected 2 tools, got %d", len(plan.Tools))
+	}
+	if plan.Tools[0].Name != "generate_cat_frame" {
+		t.Fatalf("tool[0] name = %q", plan.Tools[0].Name)
+	}
+	if len(plan.Evals) != 1 || plan.Evals[0].Name != "expert_review" {
+		t.Fatal("expected expert_review eval")
+	}
+	if len(plan.Templates) != 1 || plan.Templates[0].Name != "cat_motion" {
+		t.Fatal("expected cat_motion template")
+	}
+	if len(plan.Policies) != 1 || len(plan.Policies[0].AllowedTools) != 2 {
+		t.Fatal("expected asset-policy with tools")
+	}
+	if len(plan.Workflows) != 1 || plan.Workflows[0].Retries != 3 {
+		t.Fatal("expected workflow")
+	}
+	lane := plan.Lanes[0]
+	if len(lane.Steps) != 2 || lane.Steps[0].Type != "tool" || lane.Steps[1].Eval != "expert_review" {
+		t.Fatalf("expected 2 steps on autonomous lane, got %+v", lane.Steps)
+	}
+	// Still emits handoff (modern section appended for autonomous)
+	outDir := t.TempDir()
+	res, err := EmitHandoffs(context.Background(), plan, outDir)
+	if err != nil {
+		t.Fatalf("emit with modern decls: %v", err)
+	}
+	if len(res.Handoffs) != 1 {
+		t.Fatal("expected 1 handoff")
+	}
+}

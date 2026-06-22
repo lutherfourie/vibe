@@ -22,6 +22,9 @@ func openAICompatibleProviders() map[string]ProviderFactory {
 	if !hasCerebrasKey {
 		log.Printf("[Vibe Serve] WARN: CEREBRAS_API_KEY not configured. 'cerebras' provider will not be usable for real calls (only if key added).")
 	}
+	if os.Getenv("GROK_API_KEY") == "" && os.Getenv("XAI_API_KEY") == "" {
+		log.Printf("[Vibe Serve] WARN: GROK_API_KEY/XAI_API_KEY not configured. 'grok' provider will not be usable for real calls (only if key added).")
+	}
 
 	// Consult resource dispatcher for economical default before registering providers.
 	// This wires CLI/external delegation to the dispatcher (task 4/5).
@@ -45,7 +48,24 @@ func openAICompatibleProviders() map[string]ProviderFactory {
 				APIKey:  os.Getenv("CEREBRAS_API_KEY"),
 			})
 		},
+		// Grok (xAI) via its OpenAI-compatible endpoint. Registered so the daemon
+		// + dispatcher can spawn it as a real subagent (M2 multi-provider fan-out).
+		"grok": func() agent.Provider {
+			return openai.New(openai.Config{
+				BaseURL: envOrDefault("GROK_BASE_URL", "https://api.x.ai/v1"),
+				Model:   envOrDefault("GROK_MODEL", "grok-3"),
+				APIKey:  grokAPIKey(),
+			})
+		},
 	}
+}
+
+// grokAPIKey reads the Grok/xAI key, accepting either common env var name.
+func grokAPIKey() string {
+	if k := os.Getenv("GROK_API_KEY"); k != "" {
+		return k
+	}
+	return os.Getenv("XAI_API_KEY")
 }
 
 func envOrDefault(name, fallback string) string {

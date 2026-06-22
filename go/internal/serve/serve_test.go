@@ -109,7 +109,7 @@ func TestProvidersReturnsDefaultOpenAICompatibleProviders(t *testing.T) {
 		t.Fatalf("decode response: %v", err)
 	}
 
-	wantProviders := []string{"cerebras", "fake", "openai"} // "claude" temporarily disabled to avoid interfering with another local project using claude CLI
+	wantProviders := []string{"cerebras", "fake", "grok", "grok-cli", "openai"} // "grok" (HTTP/xAI) + "grok-cli" (local Grok CLI, OAuth, no API key) registered for M2 multi-provider dispatch; "claude" temporarily disabled to avoid interfering with another local project using claude CLI
 	if !reflect.DeepEqual(got.Providers, wantProviders) {
 		t.Fatalf("providers = %#v, want %#v", got.Providers, wantProviders)
 	}

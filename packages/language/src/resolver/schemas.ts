@@ -30,10 +30,88 @@ export const ResearchStepSchema = z.object({
   tools: z.array(z.string()).optional(),
 }).strict();
 
+export const ToolSchema = z.object({
+  id: z.string().min(1).brand<"Id">(),
+  name: z.string().min(1),
+  description: z.string().optional(),
+  schema: z.record(z.string(), z.any()).optional(), // JSON Schema for inputs/outputs (industry std OpenAI/MCP tools)
+  mcp: z.string().optional(), // MCP server ref
+}).strict();
+
+export const EvalSchema = z.object({
+  id: z.string().min(1).brand<"Id">(),
+  name: z.string().min(1),
+  criteria: z.array(z.string().min(1)),
+  threshold: z.number().min(0).max(1).optional(),
+  llm: z.string().optional(),
+}).strict();
+
+export const TemplateSchema = z.object({
+  id: z.string().min(1).brand<"Id">(),
+  name: z.string().min(1),
+  prompt: z.string(),
+  variables: z.array(z.string()).optional(),
+  fewShot: z.array(z.string()).optional(), // modern prompt engineering
+}).strict();
+
+export const PolicySchema = z.object({
+  id: z.string().min(1).brand<"Id">(),
+  name: z.string().min(1),
+  sandbox: z.boolean().default(true),
+  rateLimit: z.number().optional(),
+  auth: z.string().optional(),
+  allowedTools: z.array(z.string()).optional(),
+}).strict();
+
+export const WorkflowSchema = z.object({
+  id: z.string().min(1).brand<"Id">(),
+  name: z.string().min(1),
+  steps: z.array(z.string()).optional(), // references to steps or lanes; for graph primitives
+  parallel: z.boolean().default(false),
+  retries: z.number().default(0),
+  dependsOn: z.array(z.string()).optional(),
+}).strict();
+
+export const CharacterSchema = z.object({
+  id: z.string().min(1).brand<"Id">(),
+  name: z.string().min(1),
+  referencePrompt: z.string(),
+  referenceImage: z.string().optional(), // path or hash to canonical Kuma ref
+  consistencyRules: z.array(z.string()).optional(), // e.g. "exact orange tabby stripes, white paws, bell collar, kawaii proportions"
+}).strict();
+
+export const FrameReviewSchema = z.object({
+  id: z.string().min(1).brand<"Id">(),
+  name: z.string().min(1),
+  animation: z.string(),
+  dimensions: z.array(z.string()),
+  expertRoles: z.array(z.string()),
+  threshold: z.number().optional(),
+  kumaConsistency: z.boolean().default(true), // special for Pawfall Kuma matching
+}).strict();
+
+export const ConsistencyGuardSchema = z.object({
+  id: z.string().min(1).brand<"Id">(),
+  name: z.string().min(1),
+  character: z.string(),
+  rules: z.array(z.string()),
+  referenceImage: z.string().optional(),
+  autoRegenOnFail: z.boolean().default(true),
+  expertPanel: z.array(z.string()).optional(),
+}).strict();
+
 export const StepSchema = z.discriminatedUnion("type", [
   CheckpointSchema.extend({ type: z.literal("checkpoint") }),
   SelfReviewSchema.extend({ type: z.literal("self-review") }),
   ResearchStepSchema.extend({ type: z.literal("research") }),
+  ToolSchema.extend({ type: z.literal("tool") }),
+  EvalSchema.extend({ type: z.literal("eval") }),
+  TemplateSchema.extend({ type: z.literal("template") }),
+  PolicySchema.extend({ type: z.literal("policy") }),
+  WorkflowSchema.extend({ type: z.literal("workflow") }),
+  CharacterSchema.extend({ type: z.literal("character") }),
+  FrameReviewSchema.extend({ type: z.literal("frame-review") }),
+  ConsistencyGuardSchema.extend({ type: z.literal("consistency-guard") }),
 ]);
 
 export const LaneSchema = z.object({
@@ -80,6 +158,11 @@ export const ResolverOutputSchema = z.discriminatedUnion("kind", [
 export type Checkpoint = z.infer<typeof CheckpointSchema>;
 export type SelfReview = z.infer<typeof SelfReviewSchema>;
 export type ResearchStep = z.infer<typeof ResearchStepSchema>;
+export type Tool = z.infer<typeof ToolSchema>;
+export type Eval = z.infer<typeof EvalSchema>;
+export type Template = z.infer<typeof TemplateSchema>;
+export type Policy = z.infer<typeof PolicySchema>;
+export type Workflow = z.infer<typeof WorkflowSchema>;
 export type Step = z.infer<typeof StepSchema>;
 export type Lane = z.infer<typeof LaneSchema>;
 export type AutonomousSession = z.infer<typeof AutonomousSessionSchema>;
