@@ -259,6 +259,9 @@ func TestRunLoopEmitsTurnTelemetryWhenRemoteControlIsConfigured(t *testing.T) {
 			telemetry <- event
 			w.Header().Set("Content-Type", "application/json")
 			_, _ = w.Write([]byte(`[{}]`))
+		case r.Method == http.MethodPost && r.URL.Path == "/rest/v1/agent_events":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`[{}]`))
 		default:
 			t.Errorf("unexpected request %s %s", r.Method, r.URL.String())
 			w.WriteHeader(http.StatusNotFound)

@@ -11,7 +11,7 @@ Declaration:
     Agent | Route | Fallback | Persona | Provider | Surface | Memory | Harness | Plugin | Trigger | Corrected
     | AutonomousSession | Lane | Checkpoint | SelfReview | ResearchStep
     | Tool | Eval | Template | Policy | Workflow
-    | Character | FrameReview;
+    | Character | FrameReview | ConsistencyGuard;
 
 Agent:
     'agent' name=ID '{' fields+=Field* '}';
@@ -81,9 +81,6 @@ Character:
 
 FrameReview:
     'frame-review' name=ID '{' fields+=Field* '}';
-
-ConsistencyGuard:
-    'consistency-guard' name=ID '{' fields+=Field* '}';
 
 ConsistencyGuard:
     'consistency-guard' name=ID '{' fields+=Field* '}';

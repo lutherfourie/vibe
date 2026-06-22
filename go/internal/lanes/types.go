@@ -11,11 +11,11 @@ type Plan struct {
 
 	// Modern declarations (top-level in .vibe sources; carried in lane-plan IR for
 	// the Go coordinator + step executors). Tied to Pawfall asset-review patterns.
-	Tools        []Tool        `json:"tools,omitempty"`
-	Evals        []Eval        `json:"evals,omitempty"`
-	Templates    []Template    `json:"templates,omitempty"`
-	Policies     []Policy      `json:"policies,omitempty"`
-	Workflows    []Workflow    `json:"workflows,omitempty"`
+	Tools             []Tool             `json:"tools,omitempty"`
+	Evals             []Eval             `json:"evals,omitempty"`
+	Templates         []Template         `json:"templates,omitempty"`
+	Policies          []Policy           `json:"policies,omitempty"`
+	Workflows         []Workflow         `json:"workflows,omitempty"`
 	Characters        []Character        `json:"characters,omitempty"`
 	FrameReviews      []FrameReview      `json:"frameReviews,omitempty"`
 	ConsistencyGuards []ConsistencyGuard `json:"consistencyGuards,omitempty"`

@@ -218,11 +218,11 @@ func (e *DefaultStepExecutor) ExecuteVibeStep(ctx context.Context, step VibeStep
 			}
 		}
 		return map[string]any{
-			"eval":    step.Eval,
-			"score":   score,
-			"passed":  score >= 4.2,
+			"eval":       step.Eval,
+			"score":      score,
+			"passed":     score >= 4.2,
 			"dimensions": dims,
-			"detail":  "simulated expert review (Pawfall asset review tie-in)",
+			"detail":     "simulated expert review (Pawfall asset review tie-in)",
 		}, nil
 	case "template":
 		// Render stub: naive {var} replacement.

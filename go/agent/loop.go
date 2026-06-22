@@ -49,8 +49,8 @@ type LoopOptions struct {
 	// lane plans for autonomous workflows. When provided, RunLoop can drive
 	// declared steps (e.g. Pawfall asset review: generate + expert_review eval).
 	// Fully backward: nil means legacy tool-only behavior via Executor.
-	VibeDecls     *VibeDeclarations
-	StepExecutor  StepExecutor
+	VibeDecls    *VibeDeclarations
+	StepExecutor StepExecutor
 }
 
 // RunLoop runs provider turns until no tool calls remain or MaxIterations is hit.
@@ -80,7 +80,7 @@ func RunLoop(ctx context.Context, opts LoopOptions, messages []Message) (<-chan 
 
 	// Wire modern vibe decls into loop (registration stub for declared Tools).
 	if opts.VibeDecls != nil && opts.StepExecutor != nil {
-		if defExec, ok := opts.StepExecutor.(*DefaultStepExecutor); ok {  // best-effort bridge
+		if defExec, ok := opts.StepExecutor.(*DefaultStepExecutor); ok { // best-effort bridge
 			for _, t := range opts.VibeDecls.Tools {
 				defExec.RegisterVibeTool(t)
 			}
@@ -90,7 +90,7 @@ func RunLoop(ctx context.Context, opts LoopOptions, messages []Message) (<-chan 
 
 	go func() {
 		defer close(out)
-		runLoop(ctx, out, primary, fanout, tools, opts.Executor, maxIterations, conversation, opts.VibeDecls, opts.StepExecutor)
+		runLoop(ctx, out, primary, fanout, tools, opts.Executor, maxIterations, conversation, opts.VibeDecls, opts.StepExecutor, opts.Remote)
 	}()
 
 	return out, nil
@@ -107,6 +107,7 @@ func runLoop(
 	conversation []Message,
 	vibeDecls *VibeDeclarations,
 	stepExec StepExecutor,
+	remote *RemoteControl,
 ) {
 	for iteration := 0; iteration < maxIterations; iteration++ {
 		if err := ctx.Err(); err != nil {
@@ -120,9 +121,9 @@ func runLoop(
 		// External (Grok etc) POST to web /api/agent/command to queue them.
 		// See agent/remote.go + internal/remote/client.go for PollForCommands + Ack.
 		// (Example hook; production uses bg poller from RemoteControl.StartPoller.)
-		if r := getRemoteFromContext(ctx); r != nil && r.Remote != nil {
-			_ = r.Remote.EmitEvent(ctx, "loop_iteration", map[string]any{"iteration": iteration})
-			_ = r.Remote.EmitTelemetry(ctx, "turn_start", "loop", map[string]any{"iteration": iteration})
+		if remote != nil {
+			_ = remote.EmitEvent(ctx, "loop_iteration", map[string]any{"iteration": iteration})
+			_ = remote.EmitTelemetry(ctx, "turn_started", "loop", map[string]any{"iteration": iteration})
 		}
 
 		// Resource-aware: before provider turn (which may delegate externally), consult
@@ -146,8 +147,8 @@ func runLoop(
 		}
 
 		toolCalls, stopped := forwardTurnEvents(ctx, out, turnEvents)
-		if r := getRemoteFromContext(ctx); r != nil && r.Remote != nil {
-			_ = r.Remote.EmitTelemetry(ctx, "turn_end", "loop", map[string]any{"iteration": iteration, "tool_calls": len(toolCalls)})
+		if remote != nil {
+			_ = remote.EmitTelemetry(ctx, "turn_completed", "loop", map[string]any{"iteration": iteration, "tool_calls": len(toolCalls)})
 		}
 		if stopped {
 			return
@@ -184,15 +185,6 @@ func runLoop(
 	}
 
 	sendLoopEvent(ctx, out, Done())
-}
-
-// getRemoteFromContext is a tiny helper so LoopOptions.Remote can influence the run
-// without changing the RunLoop signature heavily. In production use the bg poller
-// from remote.go instead of ctx hack.
-func getRemoteFromContext(ctx context.Context) *LoopOptions {
-	// For demo: real impl would pass options down or use closure.
-	// Here we return nil; the integration example lives in agent/remote.go.
-	return nil
 }
 
 // chooseTurn runs one provider turn. When fanout lists 2+ providers it fans the
