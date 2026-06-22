@@ -68,8 +68,8 @@ describe("examples/ integration — every .vibe parses + validates clean", () =>
 
   // Guard rail: if Task 18's examples ever disappear we want a loud failure,
   // not a silent zero-test pass.
-  it("examples directory contains at least the 9 canonical files", () => {
-    expect(allFiles.length, `examples found in ${examplesDir}`).toBeGreaterThanOrEqual(9);
+  it("examples directory contains at least the 10 canonical files", () => {
+    expect(allFiles.length, `examples found in ${examplesDir}`).toBeGreaterThanOrEqual(10);
   });
 
   for (const file of pureFiles) {

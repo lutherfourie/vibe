@@ -9,7 +9,9 @@ entry Project:
 
 Declaration:
     Agent | Route | Fallback | Persona | Provider | Surface | Memory | Harness | Plugin | Trigger | Corrected
-    | AutonomousSession | Lane | Checkpoint | SelfReview | ResearchStep;
+    | AutonomousSession | Lane | Checkpoint | SelfReview | ResearchStep
+    | Tool | Eval | Template | Policy | Workflow
+    | Character | FrameReview;
 
 Agent:
     'agent' name=ID '{' fields+=Field* '}';
@@ -59,6 +61,33 @@ SelfReview:
 ResearchStep:
     'research-step' name=ID '{' fields+=Field* '}';
 
+Tool:
+    'tool' name=ID '{' fields+=Field* '}';
+
+Eval:
+    'eval' name=ID '{' fields+=Field* '}';
+
+Template:
+    'template' name=ID '{' fields+=Field* '}';
+
+Policy:
+    'policy' name=ID '{' fields+=Field* '}';
+
+Workflow:
+    'workflow' name=ID '{' fields+=Field* '}';
+
+Character:
+    'character' name=ID '{' fields+=Field* '}';
+
+FrameReview:
+    'frame-review' name=ID '{' fields+=Field* '}';
+
+ConsistencyGuard:
+    'consistency-guard' name=ID '{' fields+=Field* '}';
+
+ConsistencyGuard:
+    'consistency-guard' name=ID '{' fields+=Field* '}';
+
 QualifiedName:
     segments+=ID ('.' segments+=ID)*;
 
@@ -77,7 +106,8 @@ Field:
 // for `true`/`false`/`null` and any future literal-shaped keyword.
 Name returns string:
     ID | 'agent' | 'route' | 'persona' | 'provider' | 'surface' | 'fallback' | 'memory' | 'harness' | 'plugin' | 'trigger' | 'corrected' | 'for'
-    | 'autonomous-session' | 'lane' | 'checkpoint' | 'self-review' | 'research-step';
+    | 'autonomous-session' | 'lane' | 'checkpoint' | 'self-review' | 'research-step'
+    | 'tool' | 'eval' | 'template' | 'policy' | 'workflow' | 'character' | 'frame-review' | 'consistency-guard';
 
 TypeReference:
     segments+=Name ('.' segments+=Name)*;

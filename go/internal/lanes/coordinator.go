@@ -136,11 +136,65 @@ func emitLane(ctx context.Context, plan Plan, lane Lane, outDir string) (Handoff
 		return Handoff{}, fmt.Errorf("lane %q has unsupported mode %q", lane.Name, lane.Mode)
 	}
 
+	// Modern declarations support (Tool/Eval/Template/Policy/Workflow + Steps):
+	// append a compact execution contract section for autonomous lanes.
+	// Keeps handoff generation fully compatible for legacy plans (no decls/steps).
+	if lane.Mode == ModeAutonomous && (len(plan.Tools) > 0 || len(plan.Evals) > 0 || len(plan.Templates) > 0 || len(plan.Policies) > 0 || len(plan.Workflows) > 0 || len(lane.Steps) > 0) {
+		body += buildModernDeclsSection(plan, lane)
+	}
+
 	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
 		return Handoff{}, fmt.Errorf("write handoff for lane %q: %w", lane.Name, err)
 	}
 
 	return Handoff{LaneName: lane.Name, Mode: lane.Mode, Path: path}, nil
+}
+
+// buildModernDeclsSection injects a summary of declared tools/evals/etc and
+// step graph into autonomous handoffs. This surfaces the new grammar decls
+// to the executing agent (e.g. Pawfall cat asset review loop).
+func buildModernDeclsSection(plan Plan, lane Lane) string {
+	var b strings.Builder
+	b.WriteString("\n\n## Modern Vibe Declarations (Tool/Eval/Template/Policy/Workflow)\n\n")
+	b.WriteString("This lane uses modern structured declarations. Use the registered step executors (Temporal Activity style) below.\n\n")
+
+	if len(plan.Tools) > 0 {
+		b.WriteString("### Declared Tools\n")
+		for _, t := range plan.Tools {
+			fmt.Fprintf(&b, "- %s: %s (provider=%s mcp=%s)\n", t.Name, t.Description, t.Provider, t.MCP)
+		}
+	}
+	if len(plan.Evals) > 0 {
+		b.WriteString("### Declared Evals\n")
+		for _, e := range plan.Evals {
+			fmt.Fprintf(&b, "- %s: criteria=%v threshold=%.2f\n", e.Name, e.Criteria, e.Threshold)
+		}
+	}
+	if len(plan.Templates) > 0 {
+		b.WriteString("### Declared Templates\n")
+		for _, tm := range plan.Templates {
+			fmt.Fprintf(&b, "- %s\n", tm.Name)
+		}
+	}
+	if len(plan.Policies) > 0 {
+		b.WriteString("### Declared Policies\n")
+		for _, p := range plan.Policies {
+			fmt.Fprintf(&b, "- %s: sandbox=%v rateLimit=%d allowed=%v\n", p.Name, p.Sandbox, p.RateLimit, p.AllowedTools)
+		}
+	}
+	if len(plan.Workflows) > 0 {
+		b.WriteString("### Declared Workflows\n")
+		for _, w := range plan.Workflows {
+			fmt.Fprintf(&b, "- %s: steps=%v parallel=%v\n", w.Name, w.Steps, w.Parallel)
+		}
+	}
+	if len(lane.Steps) > 0 {
+		b.WriteString("### Lane Steps (executable graph)\n")
+		for i, s := range lane.Steps {
+			fmt.Fprintf(&b, "%d. type=%s tool=%s eval=%s if=%s checkpoint=%s\n", i+1, s.Type, s.Tool, s.Eval, s.If, s.Checkpoint)
+		}
+	}
+	return b.String()
 }
 
 // ValidatePlan applies the first "do not step on toes" rule: two lanes may not
@@ -172,6 +226,35 @@ func ValidatePlan(plan Plan) error {
 				}
 			}
 			seen[scope] = lane.Name
+		}
+	}
+
+	// Modern decl validation (non-breaking for legacy plans with zero decls).
+	// Names must be present; full cross-ref and policy enforcement is in
+	// step executors (agent loop).
+	for i, t := range plan.Tools {
+		if strings.TrimSpace(t.Name) == "" {
+			return fmt.Errorf("plan tool[%d] name is required", i)
+		}
+	}
+	for i, e := range plan.Evals {
+		if strings.TrimSpace(e.Name) == "" {
+			return fmt.Errorf("plan eval[%d] name is required", i)
+		}
+	}
+	for i, t := range plan.Templates {
+		if strings.TrimSpace(t.Name) == "" {
+			return fmt.Errorf("plan template[%d] name is required", i)
+		}
+	}
+	for i, p := range plan.Policies {
+		if strings.TrimSpace(p.Name) == "" {
+			return fmt.Errorf("plan policy[%d] name is required", i)
+		}
+	}
+	for i, w := range plan.Workflows {
+		if strings.TrimSpace(w.Name) == "" {
+			return fmt.Errorf("plan workflow[%d] name is required", i)
 		}
 	}
 

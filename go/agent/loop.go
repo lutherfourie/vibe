@@ -44,6 +44,13 @@ type LoopOptions struct {
 	// The runner can receive pause/resume/instruct from Grok/Claude/etc.
 	// See agent/remote.go and internal/remote/client.go .
 	Remote *RemoteControl
+
+	// VibeDecls + StepExecutor support modern declarations (Tool/Eval/...) inside
+	// lane plans for autonomous workflows. When provided, RunLoop can drive
+	// declared steps (e.g. Pawfall asset review: generate + expert_review eval).
+	// Fully backward: nil means legacy tool-only behavior via Executor.
+	VibeDecls     *VibeDeclarations
+	StepExecutor  StepExecutor
 }
 
 // RunLoop runs provider turns until no tool calls remain or MaxIterations is hit.
@@ -71,9 +78,19 @@ func RunLoop(ctx context.Context, opts LoopOptions, messages []Message) (<-chan 
 	tools := append([]ToolSpec(nil), opts.Tools...)
 	fanout := append([]Provider(nil), opts.Fanout...)
 
+	// Wire modern vibe decls into loop (registration stub for declared Tools).
+	if opts.VibeDecls != nil && opts.StepExecutor != nil {
+		if defExec, ok := opts.StepExecutor.(*DefaultStepExecutor); ok {  // best-effort bridge
+			for _, t := range opts.VibeDecls.Tools {
+				defExec.RegisterVibeTool(t)
+			}
+		}
+		// In full impl, also surface Tools from VibeDecls into provider Tools list.
+	}
+
 	go func() {
 		defer close(out)
-		runLoop(ctx, out, primary, fanout, tools, opts.Executor, maxIterations, conversation)
+		runLoop(ctx, out, primary, fanout, tools, opts.Executor, maxIterations, conversation, opts.VibeDecls, opts.StepExecutor)
 	}()
 
 	return out, nil
@@ -88,6 +105,8 @@ func runLoop(
 	executor ToolExecutor,
 	maxIterations int,
 	conversation []Message,
+	vibeDecls *VibeDeclarations,
+	stepExec StepExecutor,
 ) {
 	for iteration := 0; iteration < maxIterations; iteration++ {
 		if err := ctx.Err(); err != nil {
@@ -134,6 +153,12 @@ func runLoop(
 			return
 		}
 		if len(toolCalls) == 0 || executor == nil || iteration == maxIterations-1 {
+			// Modern step executor hook (Temporal-style): if VibeDecls + executor present,
+			// the autonomous driver can feed steps here. For demo we execute a no-op
+			// checkpoint-style step when decls provided (Pawfall pattern).
+			if vibeDecls != nil && stepExec != nil && len(vibeDecls.Tools)+len(vibeDecls.Evals) > 0 {
+				_, _ = stepExec.ExecuteVibeStep(ctx, VibeStep{Type: "checkpoint", Checkpoint: "post-turn"}, vibeDecls)
+			}
 			sendLoopEvent(ctx, out, Done())
 			return
 		}
