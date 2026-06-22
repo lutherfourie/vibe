@@ -77,6 +77,9 @@ import type {
   Tool,
   VibeAstType,
   Workflow,
+  Character,
+  FrameReview,
+  ConsistencyGuard,
 } from "./generated/ast.js";
 import type { LangiumServices } from "langium/lsp";
 
@@ -105,7 +108,10 @@ type NamedDeclaration =
   | Eval
   | Template
   | Policy
-  | Workflow;
+  | Workflow
+  | Character
+  | FrameReview
+  | ConsistencyGuard;
 
 /**
  * Stable lowercase label used in diagnostics. Matches the keyword each
@@ -131,6 +137,9 @@ const KIND_LABEL: Record<NamedDeclaration["$type"], string> = {
   Template: "template",
   Policy: "policy",
   Workflow: "workflow",
+  Character: "character",
+  FrameReview: "frame-review",
+  ConsistencyGuard: "consistency-guard",
 };
 
 function isNamedDeclaration(node: unknown): node is NamedDeclaration {
@@ -153,7 +162,10 @@ function isNamedDeclaration(node: unknown): node is NamedDeclaration {
     type === "Eval" ||
     type === "Template" ||
     type === "Policy" ||
-    type === "Workflow"
+    type === "Workflow" ||
+    type === "Character" ||
+    type === "FrameReview" ||
+    type === "ConsistencyGuard"
   );
 }
 
@@ -330,6 +342,9 @@ export class VibeValidator {
       template: new Set<string>(),
       policy: new Set<string>(),
       workflow: new Set<string>(),
+      character: new Set<string>(),
+      "frame-review": new Set<string>(),
+      "consistency-guard": new Set<string>(),
     };
 
     for (const decl of project.declarations) {
@@ -387,6 +402,15 @@ export class VibeValidator {
           break;
         case "Workflow":
           declared.workflow.add(decl.name);
+          break;
+        case "Character":
+          declared.character.add(decl.name);
+          break;
+        case "FrameReview":
+          declared["frame-review"].add(decl.name);
+          break;
+        case "ConsistencyGuard":
+          declared["consistency-guard"].add(decl.name);
           break;
         // Trigger and Fallback have no name slot; they're listed in
         // CROSS_REF_KINDS for completeness (the spec lists them as kind
@@ -501,6 +525,9 @@ const CROSS_REF_KINDS = [
   "template",
   "policy",
   "workflow",
+  "character",
+  "frame-review",
+  "consistency-guard",
 ] as const;
 type CrossRefKind = (typeof CROSS_REF_KINDS)[number];
 

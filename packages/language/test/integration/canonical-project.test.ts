@@ -61,16 +61,7 @@ describe("examples/ integration — every .vibe parses + validates clean", () =>
   // Only pure-structured files get the direct Langium parse-and-validate
   // sweep. Markdown / conversation files contain prose that the grammar
   // (correctly) rejects; they are exercised below via runPipeline instead.
-  // Production Pawfall/Kuma specs (11/12) use declaration syntax ahead of the v0
-  // grammar (quoted IDs, hyphenated names, inline lane graphs). Keep them in
-  // examples/ as targets; validate via pipeline tests once grammar lands.
-  const grammarAhead = new Set([
-    "11-pawfall-asset-review.vibe",
-    "12-kuma-consistency-production.vibe",
-  ]);
-
   const pureFiles = allFiles.filter((f) => {
-    if (grammarAhead.has(f)) return false;
     const source = readFileSync(join(examplesDir, f), "utf8");
     return detectShape(source) === "pure-structured";
   });

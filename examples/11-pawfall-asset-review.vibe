@@ -1,89 +1,74 @@
-// Modern .vibe declarations for Pawfall cat asset generation + expert review loop.
-// Uses new primitives (tool, eval, template, policy, workflow) + autonomous lanes.
-// Fits industry standards (MCP/OpenAI tools, JSON Schema, evals with thresholds, policy sandbox,
-// workflow graphs with retries/parallel, checkpoints for LangGraph/Temporal-style autonomy).
-// Ties to asset-forge: drives cat moods (idle, swat, pounce...) + Grok expert reviews (6 dims) + regen loop.
+// Pawfall cat asset generation + expert review loop (valid v0 structured syntax).
 
-provider "grok-expert" {
+provider xai.grok_expert {
   model = "grok-3"
   temperature = 0.1
 }
 
-provider "flux-klein" {
+provider comfy.flux_klein {
   endpoint = "comfyui://127.0.0.1:8000"
   workflow = "flux_klein_4b_distilled.json"
 }
 
-provider "ltx-2.3" {
+provider comfy.ltx_23 {
   endpoint = "comfyui://127.0.0.1:8000"
   workflow = "ltx_2_3_dev_fp8_i2v.json"
 }
 
-// mcp "unity-mcp" { endpoint = "http://127.0.0.1:8080/mcp" }  // future: add 'mcp' decl to grammar if needed for full MCP std
-
-tool "generate_cat_frame" {
+tool generate_cat_frame {
   description = "Generate base or motion frame for Pawfall cat mood using Flux/LTX"
-  schema = { prompt: "string", seed: "number", mood: "string" }
-  provider = "flux-klein"
+  schema = { prompt = "string", seed = "number", mood = "string" }
+  provider = provider.comfy.flux_klein
 }
 
-tool "expert_review" {
-  description = "Run multi-expert Grok review on animation frames for 6 dimensions"
-  schema = { animation: "string", frames: "array", motionPrompt: "string" }
-  provider = "grok-expert"
+tool expert_review {
+  description = "Run multi-expert Grok review on animation frames for six dimensions"
+  schema = { animation = "string", frames = "array", motionPrompt = "string" }
+  provider = provider.xai.grok_expert
 }
 
-template "cat_motion" {
-  prompt = "the cat {motion} , static camera, body remains in same position, cat-like weight, deliberate paw placement, tail counterbalance"
+template cat_motion {
+  prompt = "the cat {motion}, static camera, body remains in same position, cat-like weight, deliberate paw placement, tail counterbalance"
 }
 
-policy "asset-policy" {
+policy asset_policy {
   sandbox = true
   rateLimit = 10
-  allowedTools = ["generate_cat_frame", "expert_review", "unity-mcp"]
+  allowedTools = ["generate_cat_frame", "expert_review"]
 }
 
-autonomous-session "pawfall-cat-moods" {
-  description = "Generate, review, iterate cat animations for every mood until all approved per Pawfall needs. Reusable for other GameSpree titles."
-  lanes = [
-    {
-      name = "asset-gen"
-      steps = [
-        { type = "tool", tool = "generate_cat_frame", forEach = ["idle_neutral", "swat", "pounce", "walk", "jump"] }
-      ]
-    },
-    {
-      name = "review-loop"
-      steps = [
-        { type = "eval", eval = "expert_review", dimensions = ["technical_quality", "motion_fidelity", "cat_behavior_authenticity", "gameplay_utility", "loop_seamlessness", "artistic_style_consistency"], threshold = 4.2 },
-        { type = "workflow", if = "score < threshold", then = "regenerate with suggestedFixes", checkpoint = "post-review" }
-      ]
-      dependsOn = ["asset-gen"]
-    }
-  ]
-  checkpoints = ["post-gen", "post-review"]
-  resumeOnRestart = true
+eval expert_cat_review {
+  criteria = ["LeadAnimator motion", "CatEthologist behavior", "GameplayDesigner utility for platformer"]
+  threshold = 4.5
+  llm = provider.xai.grok_expert
 }
 
-workflow "cat-review-iteration" {
+workflow cat_review_iteration {
   steps = ["gen", "review", "fix"]
   parallel = false
   retries = 3
-  policy = "asset-policy"
+  policy = policy.asset_policy
 }
 
-eval "expert-cat-review" {
-  criteria = ["LeadAnimator motion", "CatEthologist behavior", "GameplayDesigner utility for platformer"]
-  threshold = 4.5
-  llm = "grok-expert"
+autonomous-session pawfall_cat_moods {
+  description = "Generate, review, and iterate cat animations for every mood until approved for Pawfall."
+  lanes = [
+    { name = "asset_gen", steps = [ { type = "tool", tool = "generate_cat_frame", forEach = ["idle_neutral", "swat", "pounce", "walk", "jump"] } ] },
+    { name = "review_loop", steps = [ { type = "eval", eval = "expert_review", threshold = 4.2 }, { type = "workflow", workflow = "cat_review_iteration", checkpoint = "post_review" } ], dependsOn = ["asset_gen"] }
+  ]
+  checkpoints = ["post_gen", "post_review"]
+  resumeOnRestart = true
 }
 
-agent "PawfallCat" {
-  prompt = "cute expressive cartoon house cat, full body, plain white background"
-}
+route resolver -> xai.grok_expert
 
-route "swat" -> "base_action" {
-  motion = template.cat_motion { motion = "reaches its raised right front paw forward in a deliberate swatting motion" }
+route swat -> xai.grok_expert {
+  template = template.cat_motion
+  motion = "reaches its raised right front paw forward in a deliberate swatting motion"
   loop = false
   fps = 12
+}
+
+agent pawfall_cat {
+  prompt = "cute expressive cartoon house cat, full body, plain white background"
 }
