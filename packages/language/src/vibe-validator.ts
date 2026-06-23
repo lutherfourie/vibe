@@ -80,6 +80,8 @@ import type {
   Character,
   FrameReview,
   ConsistencyGuard,
+  Rule,
+  Director,
 } from "./generated/ast.js";
 import type { LangiumServices } from "langium/lsp";
 
@@ -111,7 +113,9 @@ type NamedDeclaration =
   | Workflow
   | Character
   | FrameReview
-  | ConsistencyGuard;
+  | ConsistencyGuard
+  | Rule
+  | Director;
 
 /**
  * Stable lowercase label used in diagnostics. Matches the keyword each
@@ -140,6 +144,8 @@ const KIND_LABEL: Record<NamedDeclaration["$type"], string> = {
   Character: "character",
   FrameReview: "frame-review",
   ConsistencyGuard: "consistency-guard",
+  Rule: "rule",
+  Director: "director",
 };
 
 function isNamedDeclaration(node: unknown): node is NamedDeclaration {
@@ -165,7 +171,9 @@ function isNamedDeclaration(node: unknown): node is NamedDeclaration {
     type === "Workflow" ||
     type === "Character" ||
     type === "FrameReview" ||
-    type === "ConsistencyGuard"
+    type === "ConsistencyGuard" ||
+    type === "Rule" ||
+    type === "Director"
   );
 }
 
@@ -345,6 +353,8 @@ export class VibeValidator {
       character: new Set<string>(),
       "frame-review": new Set<string>(),
       "consistency-guard": new Set<string>(),
+      rule: new Set<string>(),
+      director: new Set<string>(),
     };
 
     for (const decl of project.declarations) {
@@ -367,12 +377,21 @@ export class VibeValidator {
         case "Plugin":
           declared.plugin.add(decl.name);
           break;
-        case "Provider":
-          declared.provider.add(decl.name.segments.join("."));
+        case "Provider": {
+          // Defensive: a partially-parsed `provider { ... }` with no bound
+          // name leaves `decl.name` undefined. Mirror the `?.` guard used in
+          // declarationKey so the populator never NPEs on an error-recovery
+          // AST — the parser has already emitted its own diagnostic, and
+          // skipping here keeps the rest of the document's diagnostics alive.
+          const seg = decl.name?.segments;
+          if (seg) declared.provider.add(seg.join("."));
           break;
-        case "Surface":
-          declared.surface.add(decl.name.segments.join("."));
+        }
+        case "Surface": {
+          const seg = decl.name?.segments;
+          if (seg) declared.surface.add(seg.join("."));
           break;
+        }
         case "AutonomousSession":
           declared["autonomous-session"].add(decl.name);
           break;
@@ -412,6 +431,12 @@ export class VibeValidator {
         case "ConsistencyGuard":
           declared["consistency-guard"].add(decl.name);
           break;
+        case "Rule":
+          declared.rule.add(decl.name);
+          break;
+        case "Director":
+          declared.director.add(decl.name);
+          break;
         // Trigger and Fallback have no name slot; they're listed in
         // CROSS_REF_KINDS for completeness (the spec lists them as kind
         // keywords) but never accept references back to themselves at v0.
@@ -423,6 +448,10 @@ export class VibeValidator {
       const typed = node as { $type?: string };
       if (typed.$type === "Reference") {
         const ref = node as VibeReference;
+        // Defensive: error-recovery can produce a Reference node whose
+        // `segments` array is undefined. Skip it rather than NPE on
+        // `ref.segments[0]` — the parser already flagged the malformed input.
+        if (!ref.segments) return;
         const head = ref.segments[0];
         if (head !== undefined && isCrossRefKind(head) && ref.segments.length >= 2) {
           // Provider and surface declared names are dotted, so references like
@@ -528,6 +557,8 @@ const CROSS_REF_KINDS = [
   "character",
   "frame-review",
   "consistency-guard",
+  "rule",
+  "director",
 ] as const;
 type CrossRefKind = (typeof CROSS_REF_KINDS)[number];
 

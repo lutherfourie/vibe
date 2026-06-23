@@ -18,6 +18,8 @@
     "lanes": { "type": "array", "items": { "$ref": "#/$defs/lane" } },
     "gates": { "type": "array", "items": { "$ref": "#/$defs/gate" } },
     "autonomousSessions": { "type": "array", "items": { "$ref": "#/$defs/autonomousSession" } },
+    "rules": { "type": "array", "items": { "$ref": "#/$defs/rule" } },
+    "directors": { "type": "array", "items": { "$ref": "#/$defs/rule" } },
     "notes": { "type": "array", "items": { "type": "string" } }
   },
   "$defs": {
@@ -94,6 +96,25 @@
         "laneCount": { "type": "number" },
         "checkpointCount": { "type": "number" },
         "metadata": { "$ref": "#/$defs/metadata" }
+      }
+    },
+    "guard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["condition", "assignments"],
+      "properties": {
+        "condition": { "type": "string" },
+        "assignments": { "type": "object" }
+      }
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "fields", "guards"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "fields": { "type": "object" },
+        "guards": { "type": "array", "items": { "$ref": "#/$defs/guard" } }
       }
     }
   }

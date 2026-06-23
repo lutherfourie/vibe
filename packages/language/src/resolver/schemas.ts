@@ -100,6 +100,31 @@ export const ConsistencyGuardSchema = z.object({
   expertPanel: z.array(z.string()).optional(),
 }).strict();
 
+// --- Conditional feel/director primitives (additive) -----------------------
+// Mirror the grammar's Guard block: a boolean condition plus a list of
+// assignments (the feel knobs to set when the guard fires). Both condition and
+// assignment values are kept as opaque strings here — the structured AST holds
+// the typed form; these schemas describe the resolver/self-plan projection,
+// where a guard is summarized as "<condition> -> { target = value, ... }".
+export const GuardSchema = z.object({
+  condition: z.string().min(1),
+  assignments: z.record(z.string(), z.any()).default({}),
+}).strict();
+
+export const RuleSchema = z.object({
+  id: z.string().min(1).brand<"Id">(),
+  name: z.string().min(1),
+  fields: z.record(z.string(), z.any()).optional(),
+  guards: z.array(GuardSchema).default([]),
+}).strict();
+
+export const DirectorSchema = z.object({
+  id: z.string().min(1).brand<"Id">(),
+  name: z.string().min(1),
+  fields: z.record(z.string(), z.any()).optional(),
+  guards: z.array(GuardSchema).default([]),
+}).strict();
+
 export const StepSchema = z.discriminatedUnion("type", [
   CheckpointSchema.extend({ type: z.literal("checkpoint") }),
   SelfReviewSchema.extend({ type: z.literal("self-review") }),
@@ -112,6 +137,8 @@ export const StepSchema = z.discriminatedUnion("type", [
   CharacterSchema.extend({ type: z.literal("character") }),
   FrameReviewSchema.extend({ type: z.literal("frame-review") }),
   ConsistencyGuardSchema.extend({ type: z.literal("consistency-guard") }),
+  RuleSchema.extend({ type: z.literal("rule") }),
+  DirectorSchema.extend({ type: z.literal("director") }),
 ]);
 
 export const LaneSchema = z.object({
@@ -163,6 +190,9 @@ export type Eval = z.infer<typeof EvalSchema>;
 export type Template = z.infer<typeof TemplateSchema>;
 export type Policy = z.infer<typeof PolicySchema>;
 export type Workflow = z.infer<typeof WorkflowSchema>;
+export type Guard = z.infer<typeof GuardSchema>;
+export type Rule = z.infer<typeof RuleSchema>;
+export type Director = z.infer<typeof DirectorSchema>;
 export type Step = z.infer<typeof StepSchema>;
 export type Lane = z.infer<typeof LaneSchema>;
 export type AutonomousSession = z.infer<typeof AutonomousSessionSchema>;
