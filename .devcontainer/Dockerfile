@@ -1,0 +1,1 @@
+# Optional custom Dockerfile for full vibe setup with pnpm, Go, Supabase CLI etc.

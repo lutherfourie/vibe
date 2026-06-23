@@ -1,0 +1,15 @@
+{
+  "name": "Vibe Dev Environment",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {},
+    "ghcr.io/devcontainers/features/go:1": {}
+  },
+  "postCreateCommand": "pnpm install && go mod download",
+  "remoteUser": "vscode",
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-vscode.vscode-typescript-next", "golang.go"]
+    }
+  }
+}
