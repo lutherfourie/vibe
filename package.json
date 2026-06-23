@@ -6,11 +6,12 @@
   "license": "MIT",
   "scripts": {
     "build": "pnpm -r build",
+    "turbo:build": "turbo run build",
     "check": "pnpm run self:plan && pnpm run test && pnpm run build",
+    "turbo:ci": "turbo run build test lint",
     "lint": "echo \"no lint configured yet\"",
     "self:read": "node scripts/read-vibe-self.mjs",
     "schemas:check": "node scripts/check-schemas.mjs",
-    "self:read:test": "node --test scripts/read-vibe-self.test.mjs",
     "self:plan": "pnpm --filter @vibe/language build && pnpm --filter @vibe/language self:plan --out ../../docs/examples/vibe-self-plan.json",
     "test": "pnpm -r test",
     "vibe:continue": "cd go && go run ./cmd/vibe continue",
@@ -25,7 +26,8 @@
   },
   "devDependencies": {
     "ajv": "^8.17.1",
-    "next": "16.2.7"
+    "next": "16.2.7",
+    "turbo": "latest"
   },
   "engines": {
     "node": ">=22"

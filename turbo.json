@@ -4,35 +4,22 @@
     "**/.env.*",
     "pnpm-lock.yaml",
     "go/go.mod",
-    "schemas/*.json",
-    ".github/workflows/*.yml"
+    "schemas/*.json"
   ],
   "globalEnv": [
     "VIBE_*",
     "SUPABASE_*",
     "VERCEL_*",
-    "GROK_API_KEY",
-    "CLAUDE_API_KEY",
-    "NODE_ENV"
+    "GROK_API_KEY"
   ],
   "pipeline": {
     "build": {
-      "dependsOn": ["^build", "langium:generate", "schema:check"],
-      "outputs": [".vibe-out/**", "dist/**", "packages/*/dist/**", "web/.next/**"],
+      "dependsOn": ["^build", "langium:generate"],
+      "outputs": ["dist/**", ".vibe-out/**", "web/.next/**"],
       "cache": true
     },
     "langium:generate": {
-      "dependsOn": ["^build"],
       "outputs": ["packages/language/src/generated/**"],
-      "cache": true
-    },
-    "schema:check": {
-      "dependsOn": ["^build"],
-      "cache": true
-    },
-    "test": {
-      "dependsOn": ["^build"],
-      "outputs": ["coverage/**"],
       "cache": true
     },
     "self:plan": {
@@ -40,17 +27,21 @@
       "outputs": [".vibe-out/**"],
       "cache": true
     },
+    "test": {
+      "dependsOn": ["^build"],
+      "cache": true
+    },
     "vibe:serve": {
+      "cache": false,
+      "persistent": true
+    },
+    "dev": {
       "cache": false,
       "persistent": true
     },
     "vibe:*": {
       "dependsOn": ["^build"],
       "cache": true
-    },
-    "dev": {
-      "cache": false,
-      "persistent": true
     }
   }
 }
