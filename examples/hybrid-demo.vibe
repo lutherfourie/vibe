@@ -1,0 +1,6 @@
+lane hybrid-test {
+  description: 'Demonstrate IaC on CrewAI/LangGraph'
+  backend: crewai or langgraph
+  adds: persistence, git, dashboard
+}
+// Auto-compiled and executed in vibe loop
