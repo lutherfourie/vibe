@@ -1,18 +1,22 @@
 {
   "$schema": "https://nx.dev/schemas/nx-schema.json",
-  "namedInputs": {
-    "default": ["{projectRoot}/**/*", "sharedGlobals"],
-    "production": ["default"]
+  "name": "vibe",
+  "defaultBase": "main",
+  "generators": {
+    "@nx/js:lib": {
+      "buildable": true
+    }
   },
   "targetDefaults": {
     "build": {
-      "dependsOn": ["^build"],
-      "inputs": ["production", "^production"],
-      "outputs": ["{projectRoot}/dist"],
+      "cache": true,
+      "dependsOn": ["^build"]
+    },
+    "self:plan": {
       "cache": true
     },
-    "test": {
-      "cache": true
+    "vibe:serve": {
+      "cache": false
     }
   }
 }

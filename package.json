@@ -2,35 +2,20 @@
   "name": "vibe",
   "version": "0.0.0",
   "private": true,
-  "description": "Vibecade's Vibe monorepo: language, docs, editor support, and self-describing bootstrap artifacts.",
+  "description": "Vibecade's Vibe monorepo with Turbo + exploring Nx capabilities. Agentic IaC powerhouse.",
   "license": "MIT",
   "scripts": {
-    "build": "pnpm -r build",
-    "turbo:build": "turbo run build",
-    "check": "pnpm run self:plan && pnpm run test && pnpm run build",
-    "turbo:ci": "turbo run build test lint",
-    "lint": "echo \"no lint configured yet\"",
-    "self:read": "node scripts/read-vibe-self.mjs",
-    "schemas:check": "node scripts/check-schemas.mjs",
-    "self:plan": "pnpm --filter @vibe/language build && pnpm --filter @vibe/language self:plan --out ../../docs/examples/vibe-self-plan.json",
-    "test": "pnpm -r test",
-    "vibe:continue": "cd go && go run ./cmd/vibe continue",
-    "vibe:doctor": "cd go && go run ./cmd/vibe doctor",
-    "vibe:lanes": "cd go && go run ./cmd/vibe lanes --plan docs/examples/vibe-self-plan.json",
-    "vibe:graph": "cd go && go run ./cmd/vibe graph --plan docs/examples/vibe-self-plan.json --out docs/examples/vibe-lanes.mmd",
-    "vibe:serve": "cd go && go run ./cmd/vibe serve --plan docs/examples/vibe-self-plan.json --addr 127.0.0.1:8787",
-    "vibe:verify": "cd go && go run ./cmd/vibe verify",
-    "langium:generate": "pnpm --filter @vibe/language langium:generate",
-    "infra:sync-supabase": "supabase db push --linked --yes",
-    "infra:deploy-vercel": "npx vercel deploy --prod --yes ${VERCEL_TOKEN:+--token $VERCEL_TOKEN}"
+    "nx": "nx",
+    "nx:graph": "nx graph",
+    "nx:affected": "nx affected:build",
+    "build": "turbo run build || nx run-many --target=build",
+    "self:plan": "nx run @vibe/language:self-plan"
   },
   "devDependencies": {
     "ajv": "^8.17.1",
     "next": "16.2.7",
-    "turbo": "latest"
-  },
-  "engines": {
-    "node": ">=22"
-  },
-  "packageManager": "pnpm@10.33.4"
+    "turbo": "latest",
+    "nx": "latest",
+    "@nx/js": "latest"
+  }
 }
