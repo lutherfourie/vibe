@@ -68,6 +68,8 @@ func run(ctx context.Context, args []string) error {
 		return runRemote(ctx, args[1:])
 	case "fanout":
 		return runFanout(ctx, args[1:])
+	case "daemon":
+		return runDaemon(ctx, args[1:])
 	case "help", "-h", "--help":
 		usage(os.Stdout)
 		return nil
@@ -92,6 +94,7 @@ func usage(out *os.File) {
 	fmt.Fprintln(out, "  resume      Print a resume brief from PROGRESS.md + live git state")
 	fmt.Fprintln(out, "  remote      Start a background poller for a session_id that auto-processes remote C&C incl. infra sync (sync-supabase etc auto-run pnpm when queued)")
 	fmt.Fprintln(out, "  fanout      Fan one prompt across multiple subagents concurrently (cerebras/codex/grok-cli/...) and report/pick-best")
+	fmt.Fprintln(out, "  daemon      Run the idle Windows startup / remote-controlled self-build loop daemon (control on :3737 + Supabase C&C)")
 }
 
 func runContinue(ctx context.Context, args []string) error {
