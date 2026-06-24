@@ -88,3 +88,5 @@ export {
   type SelfProvider,
   type VibeSelfPlan,
 } from "./self/self-plan.js";
+
+export * from "./crewai/index.js";
