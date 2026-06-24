@@ -1,1 +1,6 @@
-scripts: { 'vibe:iac-demo': 'node tools/vibe-iac-transpiler.js' }
+{
+  "scripts": {
+    "grok-build": "node scripts/kick-self-build.js",
+    "kick-dogfood": "pnpm run self:plan && pnpm vibe:continue"
+  }
+}
