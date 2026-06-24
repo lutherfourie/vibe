@@ -1,0 +1,1 @@
+The daemon includes auto-git-pull + restart logic for reliable updates when vibe changes.
