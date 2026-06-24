@@ -1,0 +1,1 @@
+// Go daemon for Windows startup + remote control loop
