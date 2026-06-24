@@ -209,11 +209,11 @@ function buildFlowPy(plan: VibeSelfPlan, hasHumanLanes: Set<string>): string {
         );
   let methods = '';
   let first = true;
-  const firstLane = laneSources[0] ?? "flow";
+  let prevMethod = '';
   for (const ln of laneSources) {
     const safe = sanitizePyName(ln);
     const gate = hasHumanLanes.has(ln) ? '\n        human_feedback()' : '';
-    const decorator = first ? '@start()' : `@listen(${sanitizePyName(firstLane)}_done)`;
+    const decorator = first ? '@start()' : `@listen(${prevMethod})`;
     methods += `
     ${decorator}
     def ${safe}(self${first ? '' : ', _prev'}):
@@ -223,6 +223,7 @@ function buildFlowPy(plan: VibeSelfPlan, hasHumanLanes: Set<string>): string {
         return {"lane": "${ln}", "status": "done"}
 `;
     first = false;
+    prevMethod = safe;
   }
   return `from crewai.flow.flow import Flow, start, listen
 
@@ -326,7 +327,7 @@ export function compileCrewAI(
 
   // Start with required import line
   const crewPy =
-    'from crewai import Agent, Task, Crew, Flow\n' +
+    'from crewai import Agent, Task, Crew\n' +
     (hasAnyHuman ? '# human_feedback support via separate def\n' : '') +
     '\n' +
     vibeHeader +

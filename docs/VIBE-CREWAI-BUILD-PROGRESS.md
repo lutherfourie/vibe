@@ -317,3 +317,38 @@ This document is the source of truth for the CrewAI IaC slice. Update it at the 
 
 ---
 *End of PHASE 0 output.*
+
+---
+
+## Stack-audit findings 2026-06-24
+
+A stack audit of the P1 vibe->CrewAI compiler (`packages/language/src/crewai/compiler.ts`)
+found two emitter bugs that made the generated Python non-importable / non-firing.
+**Both are now fixed** (tests green, `tsc --noEmit` exit 0):
+
+- **BUG-1 (fixed):** the `crew.py` ROOT import emitted `from crewai import Agent, Task, Crew, Flow`,
+  but `Flow` does **not** exist at the `crewai` root — it lives at `crewai.flow.flow`
+  (correctly imported separately in the Flow emission). The root import now emits
+  `from crewai import Agent, Task, Crew`. Compiler test asserts the clean import and
+  asserts the buggy form is absent.
+- **BUG-3 (fixed):** in the Flow emission (`buildFlowPy`), each non-first lane's `@listen(...)`
+  decorator chained an invented `<firstLane>_done` symbol that never exists, so flows never
+  fired past step 1 (and it always chained to the *first* lane, not the predecessor). Now each
+  step chains `@listen(<previous_lane_methodname>)` so steps actually run in sequence. A new
+  multi-lane regression test asserts `@listen(first_lane)` and that no `_done` symbol is emitted.
+  (The current self-plan exposes lanes as a flat ordered list with no fan-in graph, so linear
+  predecessor chaining is correct; `or_(...)` fan-in is the right tool once multiple predecessors
+  become representable.)
+
+### Follow-ups for P2 / later
+
+- **BUG-2 — real HITL (own PR, golden-file test):** `buildHumanGateBlock` currently emits a
+  fake `human_feedback()` stub that just prints and returns `"approved"`. Replace it with the
+  real CrewAI HITL API:
+  - **Crew path:** `Task(human_input=True)`.
+  - **Flow path:** `@human_feedback(message=...)` from `crewai.flow.human_feedback`.
+  - Pin `crewai==1.14.7` in the executor venv.
+  Ship this as its own PR with a golden-file test over the emitted Python.
+- **B2 — pluggable target backend (P2):** generalize `CrewAICompileResult` into a pluggable
+  `TargetBackend` interface (CrewAI as the first backend, **LangGraph as the production target**
+  later) rather than hardcoding CrewAI throughout the compiler.
