@@ -186,6 +186,17 @@ A new pure-TS compiler in `@vibe/language`:
 
 ### P2: Executor (local Python shim + Vibe contract runner)
 
+**Status: ✅ DONE (2026-06-24)** — commit `e977adc` on `origin/main` (FF push `ed405b7..e977adc`).
+
+Proof:
+- Files created: `go/internal/crewai/{backend,runner,backend_test}.go` (backend-neutral surface) + `go/internal/adapters/crewai/{executor,generate,executor_test}.go` (package `crewaiadapter`, the CrewAI backend). The non-compiling 16-line stub `go/internal/adapters/crewai.go` was deleted. No Go CLI / web / docs-WIP / `package.json` / `pyproject` changes; no live crew or LLM run.
+- **Pluggable TargetBackend seam (B2):** `go/internal/crewai` defines `TargetBackend interface { Execute(ctx, ExecuteRequest) (ExecuteResult, error) }` plus backend-neutral `ExecuteRequest`/`ExecuteResult` and a `Runner` abstraction (`CommandRunner` mirrors `devpool/gate` exec + `*exec.ExitError` handling; `FakeRunner` is the offline test double). CrewAI is the **first** backend (`crewaiadapter.NewBackend`); a LangGraph backend (the production target later) drops in behind the same interface with **no shared call-site changes** — CrewAI is not hardcoded into the contract package.
+- **Vibe primitives wrapped:** human gate (`human.before_runtime`) — a live run (`!DryRun && !ForceRun`) returns `Gated:true` with a `VIBE_GATE: human approval required …` signal and **never shells**; write-scope guard fails **loud** (returns error) on any target escaping `lane.Writes` (`filepath.Rel` + `..`-escape + prefix match); PROGRESS checkpoint/resume via the real `progress.AppendCheckpoint` after parsing the `VIBE_CHECKPOINT` marker from runner output.
+- Verified (orchestrator, main tree + clean worktree off `origin/main`): `go build ./internal/adapters/crewai/... ./internal/crewai/...` exit 0; `go vet` exit 0; `go test ./internal/adapters/crewai/... ./internal/crewai/...` **6 passed** (human gate blocks live + no runner call; dry run calls runner + appends checkpoint; write-scope guard rejects out-of-scope loud; ForceRun bypasses gate but still dry + checkpoints). All offline — no python / crewai / LLM needed (`uv add crewai` skipped as unnecessary for the mocked path; pin `crewai==1.14.7` remains the P3+/runtime venv target).
+- **Known pre-existing breakage (needs-Luther, NOT from this work):** `go build ./...` fails repo-wide on `go/cmd/vibe/daemon.go:1` (`expected 'package', found 'EOF'` — the file is empty/truncated) on **clean `origin/main`** as well. This is the concurrent vibe-autonomy agent's WIP / a bad prior commit, a forbidden file for this lane; left untouched.
+
+**Next: P3 (CLI / Go wire + IaC command)** — wire `vibe iac-compile` in `main.go`/`iac-compile.go` to call the P1 compiler + this P2 executor; then **P4 (prove)** end-to-end on the existing `crewai_adapter_lane` surface without live crews.
+
 **Deliverable**  
 Executor surface (can live in Go first for subprocess safety, or thin TS):
 - Given generated `crew.py` dir + Vibe context (lane name, read/write scopes, progress path, verify commands), produce a runnable wrapper or direct `python -m` invocation contract.
