@@ -1,0 +1,11 @@
+// PWA improvements
+{
+  "name": "Vibe Control",
+  "short_name": "Vibe",
+  "description": "Remote control vibe self-build",
+  "start_url": "/",
+  "display": "standalone",
+  "icons": [...]
+}
+// Push notifications: Use Web Push API + Supabase
+// Widgets: Progressive Web App + Android support via manifest
