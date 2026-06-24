@@ -1,1 +1,36 @@
-scripts: { 'vibe:iac-demo': 'node tools/vibe-iac-transpiler.js' }
+{
+  "name": "vibe",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Vibecade's Vibe monorepo: language, docs, editor support, and self-describing bootstrap artifacts. Dogfood-first agentic IaC and autonomous platform.",
+  "license": "MIT",
+  "scripts": {
+    "build": "turbo run build || pnpm -r build",
+    "check": "pnpm run self:plan && pnpm run test && pnpm run build",
+    "lint": "echo \"no lint configured yet\"",
+    "self:read": "node scripts/read-vibe-self.mjs",
+    "schemas:check": "node scripts/check-schemas.mjs",
+    "self:read:test": "node --test scripts/read-vibe-self.test.mjs",
+    "self:plan": "pnpm --filter @vibe/language build && pnpm --filter @vibe/language run self:plan",
+    "test": "turbo run test || pnpm -r test",
+    "vibe:continue": "cd go && go run ./cmd/vibe continue",
+    "vibe:doctor": "cd go && go run ./cmd/vibe doctor",
+    "vibe:lanes": "cd go && go run ./cmd/vibe lanes -plan ../docs/examples/vibe-self-plan.json",
+    "vibe:graph": "cd go && go run ./cmd/vibe graph -plan ../docs/examples/vibe-self-plan.json -out C:/vibe/docs/examples/vibe-lanes.mmd",
+    "vibe:serve": "cd go && go run ./cmd/vibe serve -plan ../docs/examples/vibe-self-plan.json -addr 127.0.0.1:8787",
+    "vibe:verify": "cd go && go run ./cmd/vibe verify",
+    "langium:generate": "pnpm --filter @vibe/language langium:generate",
+    "infra:sync-supabase": "supabase db push --linked --yes",
+    "infra:deploy-vercel": "npx vercel deploy --prod --yes",
+    "infra:sync-infra": "pnpm run infra:sync-supabase && pnpm run infra:deploy-vercel"
+  },
+  "devDependencies": {
+    "ajv": "^8.17.1",
+    "next": "16.2.7",
+    "turbo": "latest"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@10.33.4"
+}

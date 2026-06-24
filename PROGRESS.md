@@ -1,7 +1,7 @@
 # Vibe Autonomous Bootstrap - Grok Build Mode
 
-Status: in_progress
-Updated: 2026-06-03
+Status: in_progress — dogfood bootstrap + local toolkit restored
+Updated: 2026-06-24
 Branch: 
 
 ## Mission
@@ -9,6 +9,11 @@ Branch:
 ## Milestones
 
 ## Checkpoint Log
+
+### 2026-06-24 — Started vibe dogfood work (2026-06-24): restored broken root package.json after IaC demo overwrote it, wired correct pnpm scripts for vibe:doctor/lanes/graph/serve/continue + self:plan + check + infra, re-ran orient snapshots + lane inventory + self-plan check, executed self:plan, generated fresh handoffs, ran resume. All local toolkit dogfood entrypoints now operational.
+- pnpm run vibe:* and go/cmd/vibe now work for self-use
+- package.json is now valid JSON + complete
+- next slice: stabilize graph output paths or advance a declared lane (local_toolkit, vscode, language)
 
 ### 2026-06-03 — Dev server monitor healthy (cockpit 200s + recent POST/GET for agent on f32be7cb session visible in logs). Current poller (019e8eee-9afc..., 1179s+) processed latest 'checkpoint' (completed, real result with action=checkpoint, output=PROGRESS.md from updated handler). Multiple prior status/checkpoint cmds also completed via poller. Live remote C&C validated with codex-implemented features. vibe binary checkpoint.
 - Poller + dev server stable for ongoing remote testing. No claude. Parallel codex/grok for rec features.
