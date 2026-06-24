@@ -68,6 +68,8 @@ func run(ctx context.Context, args []string) error {
 		return runRemote(ctx, args[1:])
 	case "fanout":
 		return runFanout(ctx, args[1:])
+	case "iac-compile", "compile":
+		return runIacCompile(args[1:])
 	case "daemon":
 		return runDaemon(ctx, args[1:])
 	case "help", "-h", "--help":
@@ -86,6 +88,7 @@ func usage(out *os.File) {
 	fmt.Fprintln(out, "  doctor      Check local tool prerequisites")
 	fmt.Fprintln(out, "  lanes       Print self-plan lanes")
 	fmt.Fprintln(out, "  graph       Generate a Mermaid lane graph")
+	fmt.Fprintln(out, "  iac-compile Compile .vibe to CrewAI IaC artifacts (alias: compile)")
 	fmt.Fprintln(out, "  serve       Host the local Vibe admin dashboard and turn API")
 	fmt.Fprintln(out, "  verify      Run the repo verification command")
 	fmt.Fprintln(out, "  make-plan   Emit the bootstrap lane plan JSON")

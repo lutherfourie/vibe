@@ -225,6 +225,16 @@ New test (or `go test ./internal/crewai/...` once wired) that:
 
 ### P3: CLI / Go wire + IaC command
 
+**Status: ✅ DONE (2026-06-25)** — pushed to `origin/main` via isolated-worktree cherry-pick.
+
+Proof:
+- Files touched (path-scoped, Go-only): `go/cmd/vibe/iac-compile.go` (real impl, replaced the 10-line print stub), `go/cmd/vibe/main.go` (added a single `case "iac-compile", "compile"` to the `run()` switch + one usage line — `daemon`/`fanout`/`remote`/all other cases untouched), `go/cmd/vibe/main_test.go` (added `TestRunIacCompileWritesArtifacts` smoke, reusing the existing `captureStdout` + `repoFixture` helpers). No Go-internal, web, language/src, or autonomy files (`daemon.go`, `remote.go`) touched.
+- `runIacCompile` parses flags `--source <file.vibe>`, `--backend crewai` (unknown backends rejected loud), `--lane <name>`, `--out <dir>` (default `.vibe-out/crewai`), then invokes the **P1 TS compiler** by shelling `node --input-type=module -e <inline ESM>` that dynamic-imports the built `packages/language/dist/index.js` and calls `compileCrewAIFromSource(source, { laneName })`, unmarshals the `CrewAICompileResult` JSON, and writes `crew.py` (+ `tools.py`/`flow.py` when present) + `manifest.json` + `vibe-contract.md` to `--out`. Fails loud if `dist` is missing (points to `pnpm --filter @vibe/language build`) or `crewPy` is empty. Live crew runs remain **gated** (the P2 executor owns `human.before_runtime`); this command is pure offline codegen.
+- Verified in the worktree (on `origin/main`): `cd go && go build ./...` exit 0; `cd go && go test ./...` **all packages ok** (incl. `go/cmd/vibe` with the new smoke that actually shells node + the compiler); `go run ./cmd/vibe iac-compile --help` prints the flags. Two dry compiles produced artifacts: `examples/08-agent.vibe` → `crew.py` with `from crewai import Agent, Task, Crew` + `# Vibe IaC header` + PROGRESS reference; `examples/vibe-self.vibe --lane crewai_adapter_lane` (via the `compile` alias) → `crew.py` + **`flow.py`** (`from crewai.flow.flow import Flow, start, listen`, `@start`/`@listen`) + `human_feedback()`/`VIBE_GATE` HITL + `surface: crewai.local`. `--backend langgraph` rejected with exit 1.
+- Self-plan JSON source is deferred to **P4** (the P3 `--source` path supports `.vibe` files; self-plan ingestion is the P4 prove step).
+
+**Next: P4 — prove end-to-end on the existing self-plan surface + add a `crewai-smoke.vibe` example.**
+
 **Deliverable**  
 - Wire `vibe iac-compile` (or `vibe compile --layer iac --backend crewai`) in main.go + iac-compile.go
 - Flags: `--source <file.vibe|self-plan.json>`, `--backend crewai|langgraph`, `--lane <name>`, `--out <dir>`
