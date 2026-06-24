@@ -148,6 +148,13 @@ This plan is the build contract. Each phase has one primary deliverable, one acc
 
 ### P1: Compiler (pure .vibe/AST → CrewAI artifacts)
 
+**Status: ✅ DONE (2026-06-24)** — commit `198cbf3` on `origin/main` (FF push `688161b..198cbf3`).
+
+Proof:
+- Files created: `packages/language/src/crewai/{compiler,types,index}.ts` + `packages/language/test/crewai/compiler.test.ts`; one additive re-export line in `packages/language/src/index.ts`. No Go/CLI/web/examples changes (no `package.json` change — zero new deps).
+- `compileCrewAI(project, options?)` + `compileCrewAIFromSource(source, options?)` emit `CrewAICompileResult` via AST (`isPersona`) + `extractSelfPlan` (providers/routes/surfaces/lanes/gates/autonomousSessions). All mapping rules implemented (provider→LLM block, persona→`Agent(role,goal,backstory)`, crewai-targeting plugin→`@tool` stub, `surface crewai.local` selection, lanes/autonomous→`Flow` with `@start`/`@listen` + `VIBE_CHECKPOINT` plus `Crew`+`Task` fallback, `approval=human.*`/`_gate`→`human_feedback()` + `VIBE_GATE`, always-on Vibe IaC header w/ PROGRESS link). Manifest deterministic (no timestamps).
+- Verified in main tree: new crewai test green; `npx tsc -p tsconfig.json --noEmit` exit 0; full `@vibe/language` suite **278 passed / 1 failed** — the single failure (`hybrid-demo.vibe` canonical-project) is **pre-existing and unrelated** (malformed prose example in the dirty tree, fails identically at the P0 baseline); `self:plan` unchanged (exit 0).
+
 **Deliverable**  
 A new pure-TS compiler in `@vibe/language`:
 - Input: parsed `Project` (or `VibeSelfPlan` + autonomous session expansion) + target surface.
