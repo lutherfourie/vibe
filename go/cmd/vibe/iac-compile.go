@@ -14,6 +14,11 @@ func runIacCompile(args []string) error {
 	flags := flag.NewFlagSet("iac-compile", flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)
 	source := flags.String("source", "", "path to .vibe file (preferred for P3) or self-plan JSON")
+	// NOTE (P4): compileCrewAIFromSource / compileCrewAIFromNode only accepts raw .vibe text.
+	// It calls parseVibeSource (Langium) then extractSelfPlan. There is no JSON self-plan
+	// ingestion path in the compiler. --source docs/examples/vibe-self-plan.json is accepted
+	// by the flag per help text but will fail at parse time. JSON source support deferred to P5.
+	// Proven path for P4 is the dedicated .vibe example (examples/crewai-smoke.vibe).
 	backend := flags.String("backend", "crewai", "IaC backend (crewai supported now; langgraph not yet)")
 	lane := flags.String("lane", "", "optional laneName to pass to compiler")
 	outDir := flags.String("out", ".vibe-out/crewai", "output directory for artifacts (crew.py, manifest.json, vibe-contract.md, ...)")

@@ -1,0 +1,31 @@
+// Minimal but realistic autonomous-session exercising the full vibe->CrewAI IaC mapping.
+// This file must parse + validate with zero diagnostics (see canonical-project.test.ts).
+
+provider openai.gpt_5 { mode = api model = "gpt-5" }
+route resolver -> openai.gpt_5
+
+persona smoke_voice { description = "smoke test voice for end-to-end static CrewAI IaC prove" }
+
+surface crewai.local {
+  kind = framework
+  mode = python
+}
+
+plugin smoke_crewai_lane {
+  target   = surface.crewai.local
+  impl     = "./tools/smoke-crewai"
+  owns     = "examples/crewai-smoke.vibe"
+  reads    = ["examples/crewai-smoke.vibe"]
+  verify   = ["pnpm run check"]
+  approval = human.before_runtime
+  emits    = "static crewai smoke prove artifacts"
+}
+
+autonomous-session crewai_smoke {
+  name = "crewai_smoke"
+  description = "Minimal end-to-end static prove of .vibe autonomous-session to CrewAI Flow + gates + Vibe IaC contract"
+  lanes = [
+    { name = "prove", steps = [ { type = "checkpoint", id = "c1", name = "emit" }, { type = "self-review", id = "r1", criteria = ["static artifacts present", "human gate markers"] } ] }
+  ]
+  checkpoints = [ { id = "cp1", name = "post-prove", resumeStrategy = "last-checkpoint" } ]
+}
