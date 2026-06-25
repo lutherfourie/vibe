@@ -1,0 +1,19 @@
+{
+  "name": "get_session",
+  "description": "Load a previously captured Vision session by id. Returns the summary, frames metadata and absolute screenshot paths.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Vision session id (from capture_vision)."
+      }
+    },
+    "required": [
+      "id"
+    ],
+    "additionalProperties": false,
+    "$schema": "http://json-schema.org/draft-07/schema#"
+  }
+}

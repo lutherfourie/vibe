@@ -1,0 +1,24 @@
+{
+  "name": "query_state",
+  "description": "Launch the game briefly and return ONE structured GameStateSnapshot (schema + data), e.g. \"pawfall.v1\". Cheaper than a full vision capture when you only need current state.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "gameId": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Registered game id, e.g. \"pawfall\"."
+      },
+      "buildUrl": {
+        "type": "string",
+        "format": "uri",
+        "description": "URL of an already-served build; omit to let the pillar resolve one."
+      }
+    },
+    "required": [
+      "gameId"
+    ],
+    "additionalProperties": false,
+    "$schema": "http://json-schema.org/draft-07/schema#"
+  }
+}

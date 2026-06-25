@@ -1,0 +1,65 @@
+03:34:19 === vibe daemon starting ===
+03:34:19 pid=26648 os=windows arch=amd64 addr=127.0.0.1:3739
+03:34:19 remote session: 00000000-0000-0000-0000-000000000000
+03:34:19 git: 16fc9b1
+03:34:19 control server listening on http://127.0.0.1:3739
+03:34:19 remote poller active (interval 15s)
+03:34:27 === vibe daemon starting ===
+03:34:27 pid=38636 os=windows arch=amd64 addr=127.0.0.1:3740
+03:34:27 remote session: 00000000-0000-0000-0000-000000000000
+03:34:27 git: 16fc9b1
+03:34:27 control server listening on http://127.0.0.1:3740
+03:34:27 remote poller active (interval 15s)
+03:34:30 local control: loop:status
+03:37:11 === vibe daemon starting ===
+03:37:11 pid=21528 os=windows arch=amd64 addr=127.0.0.1:3741
+03:37:11 remote session: 00000000-0000-0000-0000-000000000000
+03:37:11 git: 16fc9b1
+03:37:11 control server listening on http://127.0.0.1:3741
+03:37:11 remote poller active (interval 15s)
+03:37:14 local control: loop:start
+03:37:14 === LOOP ITERATION START mode=start ===
+03:37:14 STATE -> running
+03:37:14 WORK: start
+03:59:13 === vibe daemon starting ===
+03:59:13 pid=24056 os=windows arch=amd64 addr=127.0.0.1:3737
+03:59:13 remote session: 80c2c39a-43ee-4fe2-b76e-7b53509d62ee
+03:59:13 git: 16fc9b1
+03:59:13 control server listening on http://127.0.0.1:3737
+03:59:13 remote poller active (interval 15s)
+03:59:38 === vibe daemon starting ===
+03:59:38 pid=38168 os=windows arch=amd64 addr=127.0.0.1:3737
+03:59:38 remote session: 80c2c39a-43ee-4fe2-b76e-7b53509d62ee
+03:59:38 git: 16fc9b1
+03:59:38 control server listening on http://127.0.0.1:3737
+03:59:38 remote poller active (interval 15s)
+03:59:43 local control: loop:start
+03:59:43 === LOOP ITERATION START mode=start ===
+03:59:43 STATE -> running
+03:59:43 WORK: start
+03:59:46 git pull note: exit status 1
+03:59:46 self:plan error: exit status 1
+03:59:46 === LOOP ITERATION COMPLETE in 3s ===
+03:59:46 STATE -> idle
+03:59:46 WORK: 
+04:00:10 === vibe daemon starting ===
+04:00:10 pid=11292 os=windows arch=amd64 addr=127.0.0.1:3737
+04:00:10 remote session: 80c2c39a-43ee-4fe2-b76e-7b53509d62ee
+04:00:10 git: 16fc9b1
+04:00:10 control server listening on http://127.0.0.1:3737
+04:00:10 remote poller active (interval 15s)
+04:00:33 === vibe daemon starting ===
+04:00:33 pid=36472 os=windows arch=amd64 addr=127.0.0.1:3737
+04:00:33 remote session: 80c2c39a-43ee-4fe2-b76e-7b53509d62ee
+04:00:33 git: 16fc9b1
+04:00:33 control server listening on http://127.0.0.1:3737
+04:00:33 remote poller active (interval 15s)
+04:00:36 local control: loop:start
+04:00:36 === LOOP ITERATION START mode=start ===
+04:00:36 STATE -> running
+04:00:36 WORK: start
+04:00:39 git pull note: exit status 1
+04:00:39 self:plan error: exit status 1
+04:00:39 === LOOP ITERATION COMPLETE in 3s ===
+04:00:39 STATE -> idle
+04:00:39 WORK: 

@@ -1,0 +1,1 @@
+F-0032 retcon smallest slice impl plan: narratology detect_contradiction (entity+coact+latent+validity), ContextPacket retcon_candidates, service injection, reuse apply_correction + close_validity + RETCON. Test + integration from researcher findings. Anti-heuristic, smallest.

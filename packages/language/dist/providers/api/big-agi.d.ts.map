@@ -1,0 +1,1 @@
+{"version":3,"file":"big-agi.d.ts","sourceRoot":"","sources":["../../../src/providers/api/big-agi.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAGV,eAAe,EAChB,MAAM,aAAa,CAAC;AAErB;;;;;;;;GAQG;AACH,MAAM,WAAW,qBAAqB;IACpC,EAAE,CAAC,EAAE,MAAM,CAAC;IACZ,mEAAmE;IACnE,QAAQ,CAAC,EAAE,eAAe,CAAC;CAC5B;AAED,wBAAgB,oBAAoB,CAAC,IAAI,GAAE,qBAA0B,GAAG,eAAe,CAkBtF"}

@@ -98,6 +98,8 @@ Vibe source
 5. Should CrewAI be a first-class `surface` only, or should Vibe later grow
    framework-specific adapter blocks?
 
+**P4 complete (2026-06-25):** static prove delivered (examples/crewai-smoke.vibe + language/go tests exercising compile + iac-compile + py_compile). Self-plan JSON source not supported by compiler (deferred P5).
+
 ## Sources
 
 - CrewAI docs index: https://docs.crewai.com/llms.txt

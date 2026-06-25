@@ -1,0 +1,44 @@
+{
+  "name": "spineflow-living-memory",
+  "repo": "C:/GameDev/spineflow",
+  "lanes": [
+    {
+      "name": "living-symbolic-memory",
+      "mode": "autonomous",
+      "branch": "feat/spineflow-living-memory",
+      "reads": [
+        "docs/2026-06-25-forward-plan.md",
+        "docs/architecture.md",
+        "spineflow.vibe",
+        "ops/features/**",
+        "src/spineflow/**",
+        "extensions/**",
+        "tools/**",
+        "PROGRESS.md"
+      ],
+      "writes": [
+        "PROGRESS.md",
+        "src/spineflow/**",
+        "extensions/**",
+        "ops/features/**",
+        "tests/**",
+        "docs/research/**",
+        "spineflow.vibe"
+      ],
+      "prompt": "Evolve Spineflow into a LIVING symbolic memory: (A) invert the arrow so the AI initiates (AI->user), not just reacts; (B) build an exquisite live Spineflow Editor that makes the symbolic memory graph tangible, inspectable and delightful, and doubles as the human's cockpit for supervising the autonomous AI. Work in small human-confirmable feature-card slices, defending the eval thesis (same base model better WITH the spine than without) every cycle. PREREQUISITE: current main is a FLAT MemoryRecord model; the symbolic substrate these features assume (compilation units, canonical graph, resolution table, deferred linker, Penman views, bitemporal claims) was LOST in the rebuild and MUST be resurrected first (F-0030 already shipped validity windows). Follow the epic ladder, laws, anti-heuristic reconciliation, and conversation-test protocol in grok-build-spineflow.md. Keep PROGRESS.md current via vibe checkpoint; resume, never restart; never push a git remote.",
+      "requires": [
+        "python -m pytest -q",
+        "python -m ruff check src tests",
+        "python -m spineflow.cli doctor",
+        "human.merge-review"
+      ],
+      "autonomous": {
+        "progress": "PROGRESS.md",
+        "horizon": "long",
+        "checkpointEvery": "after every feature-card slice, or 30-60 minutes",
+        "roles": ["architect", "researcher", "implementer", "designer", "tester", "reviewer"],
+        "research": "docs/research"
+      }
+    }
+  ]
+}

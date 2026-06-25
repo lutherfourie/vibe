@@ -1,0 +1,61 @@
+{
+  "name": "vibe",
+  "scopeName": "source.vibe",
+  "fileTypes": [
+    ".vibe"
+  ],
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "name": "keyword.control.vibe",
+      "match": "\\b(agent|autonomous-session|character|checkpoint|consistency-guard|corrected|director|eval|every|fallback|false|for|frame-review|harness|lane|memory|null|on|persona|plugin|policy|provider|research-step|route|rule|self-review|surface|template|then|tool|trigger|true|when|workflow)\\b"
+    },
+    {
+      "name": "string.quoted.double.vibe",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "include": "#string-character-escape"
+        }
+      ]
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "begin": "//",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.whitespace.comment.leading.vibe"
+            }
+          },
+          "end": "(?=$)",
+          "name": "comment.line.vibe"
+        },
+        {
+          "name": "comment.block.vibe",
+          "begin": "/\\*",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.vibe"
+            }
+          },
+          "end": "\\*/",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.vibe"
+            }
+          }
+        }
+      ]
+    },
+    "string-character-escape": {
+      "name": "constant.character.escape.vibe",
+      "match": "\\\\(x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4}|u\\{[0-9A-Fa-f]+\\}|[0-2][0-7]{0,2}|3[0-6][0-7]?|37[0-7]?|[4-7][0-7]?|.|$)"
+    }
+  }
+}

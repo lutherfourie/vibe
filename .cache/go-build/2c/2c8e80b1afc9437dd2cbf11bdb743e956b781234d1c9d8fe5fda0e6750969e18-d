@@ -1,0 +1,10 @@
+./doc.go
+./event.go
+./fake.go
+./loop.go
+./provider.go
+./remote.go
+./types.go
+./fake_test.go
+./loop_test.go
+./remote_test.go

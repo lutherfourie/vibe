@@ -1,0 +1,25 @@
+{
+  "name": "tail_telemetry",
+  "description": "Return the last N telemetry events captured in a Vision session, flattened across frames in chronological order.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "sessionId": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Vision session id."
+      },
+      "n": {
+        "type": "integer",
+        "exclusiveMinimum": 0,
+        "maximum": 1000,
+        "description": "How many most-recent events to return (default 50)."
+      }
+    },
+    "required": [
+      "sessionId"
+    ],
+    "additionalProperties": false,
+    "$schema": "http://json-schema.org/draft-07/schema#"
+  }
+}

@@ -224,7 +224,12 @@ func (r *RemoteControl) ProcessCommand(ctx context.Context, cmd remote.AgentComm
 		msg = "sync-infra auto-executed both (see output for details)"
 		_ = r.EmitEvent(ctx, "infra_sync_requested", result)
 	default:
-		msg = "unknown command, acked as no-op"
+		// Support friendly "vibe: ..." and "loop:..." aliases even from a generic poller
+		if strings.HasPrefix(command, "loop:") || strings.HasPrefix(command, "vibe:") || command == "start" || command == "start-loop" || command == "full-transpiler" {
+			msg = "loop-style command seen by generic ProcessCommand (no-op here; the vibe daemon wires real handlers)"
+		} else {
+			msg = "unknown command, acked as no-op"
+		}
 	}
 
 	// Telemetry for remote command processing (best effort). This is one of the core

@@ -65,6 +65,8 @@ CrewAI is now represented as a report-only backend surface in
 `examples/vibe-self.vibe`, with supporting notes in
 `docs/superpowers/research/2026-05-16-vibe-crewai-integration-notes.md`.
 
+**P4 complete (2026-06-25):** static end-to-end prove via examples/crewai-smoke.vibe + smoke-prove.test.ts + iac_compile_smoke_test.go (py_compile verified). JSON self-plan source deferred to P5.
+
 Keep this lane non-invasive until a human asks for runtime generation: no
 CrewAI install, no user-local MCP config edits, no credentials, and no runtime
 agent execution. The useful first product move is still the VS Code cockpit and

@@ -1,0 +1,28 @@
+{
+  "name": "build_game",
+  "description": "Produce (or reuse) a WebGL build for a game via the build pillar. Backend defaults to the unity-build server. Returns the BuildRef and a build id usable with get_build_logs.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "gameId": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Registered game id, e.g. \"pawfall\"."
+      },
+      "backend": {
+        "type": "string",
+        "enum": [
+          "unity-build-server",
+          "docker",
+          "local-unity"
+        ],
+        "description": "Build engine. Defaults to \"unity-build-server\"."
+      }
+    },
+    "required": [
+      "gameId"
+    ],
+    "additionalProperties": false,
+    "$schema": "http://json-schema.org/draft-07/schema#"
+  }
+}

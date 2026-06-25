@@ -1,0 +1,9 @@
+{
+  "name": "list_games",
+  "description": "List every game adapter registered in the devkit, with its capabilities (can build / launch headless / extract state), state schema and project path.",
+  "inputSchema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {}
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "name": "capture_vision",
+  "description": "Launch a game headless, drive it for a short run, and capture a Vision session: screenshots + state snapshots + telemetry + logs. Returns a session summary plus ABSOLUTE screenshot paths you can Read to see frames.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "gameId": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Registered game id, e.g. \"pawfall\"."
+      },
+      "durationMs": {
+        "type": "integer",
+        "exclusiveMinimum": 0,
+        "maximum": 300000,
+        "description": "How long to drive the run, ms (default decided by the vision pillar)."
+      },
+      "frameIntervalMs": {
+        "type": "integer",
+        "exclusiveMinimum": 0,
+        "description": "Screenshot cadence, ms."
+      },
+      "buildUrl": {
+        "type": "string",
+        "format": "uri",
+        "description": "URL of an already-served build (e.g. http://localhost:7072/play/<job>/). If omitted the pillar resolves one."
+      },
+      "options": {
+        "type": "object",
+        "additionalProperties": {},
+        "description": "Opaque per-game knobs forwarded to the adapter."
+      }
+    },
+    "required": [
+      "gameId"
+    ],
+    "additionalProperties": false,
+    "$schema": "http://json-schema.org/draft-07/schema#"
+  }
+}

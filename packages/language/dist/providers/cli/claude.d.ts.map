@@ -1,0 +1,1 @@
+{"version":3,"file":"claude.d.ts","sourceRoot":"","sources":["../../../src/providers/cli/claude.ts"],"names":[],"mappings":"AACA,OAAO,KAAK,EAAE,eAAe,EAAE,MAAM,aAAa,CAAC;AAWnD,MAAM,WAAW,gBAAgB;IAC/B,MAAM,EAAE,MAAM,CAAC;IACf,+DAA+D;IAC/D,EAAE,CAAC,EAAE,MAAM,CAAC;IACZ,2BAA2B;IAC3B,IAAI,CAAC,EAAE,MAAM,EAAE,CAAC;CACjB;AAED,wBAAgB,uBAAuB,CAAC,IAAI,EAAE,gBAAgB,GAAG,eAAe,CAO/E"}

@@ -267,3 +267,42 @@ func TestRunMakePlanWritesJSON(t *testing.T) {
 		t.Fatalf("generated plan missing lanes:\n%s", string(raw))
 	}
 }
+
+func TestRunIacCompileWritesArtifacts(t *testing.T) {
+	outDir := filepath.Join(t.TempDir(), "crewai-out")
+	src := repoFixture(t, "examples/08-agent.vibe")
+
+	out, err := captureStdout(t, func() error {
+		return runIacCompile([]string{"--source", src, "--backend", "crewai", "--out", outDir})
+	})
+	if err != nil {
+		t.Fatalf("runIacCompile returned error: %v", err)
+	}
+	if !strings.Contains(out, "wrote CrewAI IaC artifacts") {
+		t.Fatalf("iac-compile output missing success message:\n%s", out)
+	}
+
+	crew, err := os.ReadFile(filepath.Join(outDir, "crew.py"))
+	if err != nil {
+		t.Fatalf("read crew.py: %v", err)
+	}
+	crewS := string(crew)
+	if !strings.Contains(crewS, "from crewai import") {
+		t.Fatalf("crew.py missing 'from crewai import':\n%s", crewS)
+	}
+	if !strings.Contains(crewS, "Vibe IaC header") {
+		t.Fatalf("crew.py missing Vibe IaC header:\n%s", crewS)
+	}
+
+	contract, err := os.ReadFile(filepath.Join(outDir, "vibe-contract.md"))
+	if err != nil {
+		t.Fatalf("read vibe-contract.md: %v", err)
+	}
+	if !strings.Contains(string(contract), "Vibe IaC") {
+		t.Fatalf("vibe-contract.md missing contract header:\n%s", string(contract))
+	}
+
+	if _, err := os.Stat(filepath.Join(outDir, "manifest.json")); err != nil {
+		t.Fatalf("manifest.json not written: %v", err)
+	}
+}

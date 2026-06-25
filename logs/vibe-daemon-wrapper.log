@@ -1,0 +1,15 @@
+﻿[2026-06-24 03:59:13] === Vibe daemon wrapper starting in C:\vibe ===
+[2026-06-24 03:59:13] Launching daemon (session=80c2c39a-43ee-4fe2-b76e-7b53509d62ee) addr=127.0.0.1:3737
+[2026-06-24 03:59:13] stdout -> C:\vibe\logs\vibe-daemon-20260624-035913.out.log
+[2026-06-24 03:59:13] stderr -> C:\vibe\logs\vibe-daemon-20260624-035913.err.log
+[2026-06-24 03:59:13] Daemon pid=24056 started. Waiting for exit...
+[2026-06-24 03:59:38] === Vibe daemon wrapper starting in C:\vibe ===
+[2026-06-24 03:59:38] Launching daemon (session=80c2c39a-43ee-4fe2-b76e-7b53509d62ee) addr=127.0.0.1:3737
+[2026-06-24 03:59:38] stdout -> C:\vibe\logs\vibe-daemon-20260624-035938.out.log
+[2026-06-24 03:59:38] stderr -> C:\vibe\logs\vibe-daemon-20260624-035938.err.log
+[2026-06-24 03:59:38] Daemon pid=38168 started. Waiting for exit...
+[2026-06-24 04:00:10] === Vibe daemon wrapper starting in C:\vibe ===
+[2026-06-24 04:00:10] Launching daemon (session=80c2c39a-43ee-4fe2-b76e-7b53509d62ee) addr=127.0.0.1:3737
+[2026-06-24 04:00:10] stdout -> C:\vibe\logs\vibe-daemon-20260624-040010.out.log
+[2026-06-24 04:00:10] stderr -> C:\vibe\logs\vibe-daemon-20260624-040010.err.log
+[2026-06-24 04:00:10] Daemon pid=11292 started. Waiting for exit...

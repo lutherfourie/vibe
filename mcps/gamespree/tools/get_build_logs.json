@@ -1,0 +1,16 @@
+{
+  "name": "get_build_logs",
+  "description": "Fetch logs for a build id, or the most recent build when omitted. Use after build_game to inspect Unity/editor output.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "buildId": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Build id; omit for the latest build."
+      }
+    },
+    "additionalProperties": false,
+    "$schema": "http://json-schema.org/draft-07/schema#"
+  }
+}
