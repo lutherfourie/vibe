@@ -5,6 +5,7 @@ export interface CrewAICompileResult {
   manifest: Record<string, unknown>;
   vibeContractMd: string;
   diagnostics: string[];
+  requirements?: string;
 }
 
 export interface CrewAICompileOptions {

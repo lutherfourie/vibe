@@ -24,20 +24,34 @@ describe("CrewAI smoke prove (P4)", () => {
     expect(result.crewPy).toContain("goal=");
     expect(result.crewPy).toContain("backstory=");
 
+    // P5: Task human_input for gated (from approval on smoke lane)
+    expect(result.crewPy).toContain("human_input=True");
+
     // Vibe IaC header / contract link
     expect(result.crewPy).toContain("VIBE-CREWAI-BUILD-PROGRESS.md");
     expect(result.vibeContractMd).toContain("VIBE-CREWAI-BUILD-PROGRESS.md");
 
-    // Human gate markers (approval=human.before_runtime on the _lane plugin)
+    // Human gate markers (approval=human.before_runtime on the _lane plugin) + VIBE_GATE kept
     const combined = [result.crewPy, result.flowPy ?? "", result.vibeContractMd ?? ""].join("\n");
     expect(combined).toContain("human_feedback");
     expect(combined).toContain("VIBE_GATE");
 
+    // P5 manifest crewai pin + requirements
+    expect(result.manifest.crewai).toBeDefined();
+    // @ts-expect-error loose
+    expect((result.manifest.crewai as any).pinned).toContain("1.14.7");
+    expect(result.requirements).toBeDefined();
+    expect(result.requirements).toContain("crewai==1.14.7");
+
     // Flow (emitted because we have lanes via _lane plugin + autonomous session)
     if (result.flowPy) {
       expect(result.flowPy).toContain("from crewai.flow.flow import Flow, start, listen");
+      // P5 real HITL: must import the decorator from the human_feedback module (no undefined symbol)
+      expect(result.flowPy).toContain("from crewai.flow.human_feedback import human_feedback");
+      expect(result.flowPy).toContain("@human_feedback");
       expect(result.flowPy).toContain("@start()");
       expect(result.flowPy).not.toContain("_done");
+      expect(result.flowPy).not.toContain("def human_feedback()");
     }
 
     // Checkpoint marker injected for lanes/autonomous

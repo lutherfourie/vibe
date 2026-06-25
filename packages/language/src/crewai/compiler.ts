@@ -44,6 +44,23 @@ function stringValue(v: unknown): string | undefined {
   return typeof v === 'string' ? v : undefined;
 }
 
+function stringListValue(v: unknown): string[] {
+  if (Array.isArray(v)) return v.filter((x): x is string => typeof x === 'string');
+  return [];
+}
+
+function scopesOverlap(a: string[], b: string[]): boolean {
+  for (const wa of a) {
+    for (const wb of b) {
+      if (!wa || !wb) continue;
+      const na = wa.replace(/\/\*\*$/, '').replace(/\/$/, '');
+      const nb = wb.replace(/\/\*\*$/, '').replace(/\/$/, '');
+      if (na === nb || na.startsWith(nb + '/') || nb.startsWith(na + '/')) return true;
+    }
+  }
+  return false;
+}
+
 function readMetadataForAny(source: { fields: Field[] }): Record<string, unknown> {
   const metadata: Record<string, unknown> = {};
   for (const field of source.fields) {
@@ -138,7 +155,11 @@ ${varName} = Agent(
   return { agentsBlock, pyAgentNames, personaNames };
 }
 
-function buildTasksBlock(plan: VibeSelfPlan, pyAgentNames: string[]): { tasksBlock: string; taskNames: string[] } {
+function buildTasksBlock(
+  plan: VibeSelfPlan,
+  pyAgentNames: string[],
+  humanLanes: Set<string>
+): { tasksBlock: string; taskNames: string[] } {
   let tasksBlock = '';
   const taskNames: string[] = [];
   const agentRef = pyAgentNames[0] || 'orchestrator';
@@ -147,54 +168,44 @@ function buildTasksBlock(plan: VibeSelfPlan, pyAgentNames: string[]): { tasksBlo
     const tname = sanitizePyName(lane.name) + '_task';
     taskNames.push(tname);
     const targetInfo = lane.target ? ` (target=${lane.target})` : '';
+    const isHuman = humanLanes.has(lane.name);
+    const humanSuffix = isHuman ? ',\n    human_input=True' : '';
     tasksBlock += `
 ${tname} = Task(
     description="Execute Vibe lane ${lane.name}${targetInfo}. Follow declared reads, verify, and gates.",
     expected_output="Lane ${lane.name} completed per Vibe contract and PROGRESS.md",
-    agent=${agentRef}
+    agent=${agentRef}${humanSuffix}
 )
 `;
   }
   return { tasksBlock, taskNames };
 }
 
-function buildHumanGateBlock(hasHuman: boolean): string {
+function buildHumanGateComment(hasHuman: boolean): string {
   if (!hasHuman) return '';
   return `
-def human_feedback() -> str:
-    # Vibe injected human-in-the-loop placeholder
-    # VIBE_GATE: human approval required (see PROGRESS.md)
-    # In executor: pause, write gate file, resume on explicit signal (file/env)
-    print("VIBE_GATE: human approval required (see PROGRESS.md)")
-    return "approved"
+# Vibe gate comment block (real HITL; no fake stub)
+# VIBE_GATE: human approval required (see PROGRESS.md)
+#   Crew/Task: Task(..., human_input=True)
+#   Flow: @human_feedback(message=...) from crewai.flow.human_feedback
 `;
 }
 
 function buildCrewBlock(
   pyAgentNames: string[],
-  taskNames: string[],
-  hasHuman: boolean
+  taskNames: string[]
 ): string {
   const agentsList = pyAgentNames.length ? pyAgentNames.join(', ') : 'orchestrator';
   const tasksList = taskNames.length ? taskNames.join(', ') : '';
-  let block = `
+  return `
 crew = Crew(
     agents=[${agentsList}],
     tasks=[${tasksList}],
     verbose=True
 )
-`;
-  if (hasHuman) {
-    block += `
-# Gate call injected for human approval lanes
-# human_feedback()
-`;
-  }
-  block += `
 # Fallback sequential execution for CrewAI surface (Flow preferred when lanes present)
 # result = crew.kickoff()
 `;
-  return block;
 }
 
 function buildFlowPy(plan: VibeSelfPlan, hasHumanLanes: Set<string>): string {
@@ -210,22 +221,31 @@ function buildFlowPy(plan: VibeSelfPlan, hasHumanLanes: Set<string>): string {
   let methods = '';
   let first = true;
   let prevMethod = '';
+  const anyHuman = hasHumanLanes.size > 0;
   for (const ln of laneSources) {
     const safe = sanitizePyName(ln);
-    const gate = hasHumanLanes.has(ln) ? '\n        human_feedback()' : '';
     const decorator = first ? '@start()' : `@listen(${prevMethod})`;
+    const decorators: string[] = [`    ${decorator}`];
+    if (hasHumanLanes.has(ln)) {
+      decorators.push(`    @human_feedback(message="Vibe gate: human approval required for lane ${ln} (see PROGRESS.md)")`);
+    }
+    const decoBlock = decorators.join('\n');
     methods += `
-    ${decorator}
+${decoBlock}
     def ${safe}(self${first ? '' : ', _prev'}):
         # VIBE_CHECKPOINT: ${ln}
         # Vibe lane step (driven from self-plan lanes/autonomousSessions)
-        print("Vibe Flow step: ${ln}")${gate}
+        print("Vibe Flow step: ${ln}")
         return {"lane": "${ln}", "status": "done"}
 `;
     first = false;
     prevMethod = safe;
   }
-  return `from crewai.flow.flow import Flow, start, listen
+  let imports = 'from crewai.flow.flow import Flow, start, listen';
+  if (anyHuman) {
+    imports += '\nfrom crewai.flow.human_feedback import human_feedback';
+  }
+  return `${imports}
 
 class VibeCrewFlow(Flow):
 ${methods}
@@ -304,6 +324,39 @@ export function compileCrewAI(
   const humanGatesFromPlan = plan.gates.filter((g) => g.name.endsWith('_gate')).map((g) => g.name);
   const hasAnyHuman = humanLanes.size > 0 || humanGatesFromPlan.length > 0 || plan.gates.length > 0;
 
+  // (b) HARDEN diagnostics (P5)
+  // unknown provider referenced by route for crewai use
+  for (const [from, to] of Object.entries(plan.routes)) {
+    const prov = String(to || '');
+    if (prov && !plan.providers.some((p) => p.name === prov)) {
+      diagnostics.push(`unknown provider referenced by crewai route/agent: ${from} -> ${prov}`);
+    }
+  }
+  // persona missing a goal (CrewAI Agent requires role+goal)
+  const personaDeclsForDiag = project.declarations.filter(isPersona) as Persona[];
+  for (const pers of personaDeclsForDiag) {
+    const meta = readMetadataForAny(pers);
+    if (!stringValue(meta.goal)) {
+      diagnostics.push(`persona ${pers.name} is missing a goal (CrewAI Agent requires role+goal)`);
+    }
+  }
+  // overlapping write scopes across lanes (owns or metadata.writes)
+  const laneWriteScopes = activeLanes.map((l) => ({
+    name: l.name,
+    writes: (l.owns ? [l.owns] : []).concat(stringListValue((l.metadata as any)['writes'])),
+  }));
+  for (let i = 0; i < laneWriteScopes.length; i++) {
+    const left = laneWriteScopes[i]!;
+    for (let j = i + 1; j < laneWriteScopes.length; j++) {
+      const right = laneWriteScopes[j]!;
+      if (scopesOverlap(left.writes, right.writes)) {
+        diagnostics.push(
+          `overlapping write scopes across lanes: ${left.name} and ${right.name}`
+        );
+      }
+    }
+  }
+
   const gateCount =
     plan.gates.length + activeLanes.filter((l) => hasHumanApproval(l)).length;
 
@@ -320,21 +373,21 @@ export function compileCrewAI(
   // Tasks + crew fallback in crewPy
   const { tasksBlock, taskNames } = buildTasksBlock(
     { ...plan, lanes: activeLanes },
-    pyAgentNames
+    pyAgentNames,
+    humanLanes
   );
-  const humanBlock = buildHumanGateBlock(hasAnyHuman);
-  const crewBlock = buildCrewBlock(pyAgentNames, taskNames, hasAnyHuman);
+  const humanComment = buildHumanGateComment(hasAnyHuman);
+  const crewBlock = buildCrewBlock(pyAgentNames, taskNames);
 
-  // Start with required import line
+  // Start with required import line (Flow import handled in buildFlowPy with correct human_feedback when needed)
   const crewPy =
     'from crewai import Agent, Task, Crew\n' +
-    (hasAnyHuman ? '# human_feedback support via separate def\n' : '') +
     '\n' +
     vibeHeader +
     llmBlock +
     agentsBlock +
     tasksBlock +
-    humanBlock +
+    humanComment +
     crewBlock;
 
   // Flow (preferred for lanes/autonomous)
@@ -347,6 +400,7 @@ export function compileCrewAI(
     laneCount: (plan.lanes.length || 0) + plan.autonomousSessions.reduce((acc, s) => acc + (s.laneCount || 0), 0),
     toolCount,
     gateCount,
+    crewai: { pinned: 'crewai==1.14.7' },
   };
 
   // vibeContractMd mirrors header contract info
@@ -362,6 +416,7 @@ export function compileCrewAI(
     manifest,
     vibeContractMd,
     diagnostics,
+    requirements: 'crewai==1.14.7\n',
   };
 }
 

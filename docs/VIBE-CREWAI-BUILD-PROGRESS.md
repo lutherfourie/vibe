@@ -319,6 +319,19 @@ Proof:
 - `packages/language/test/validators/` additions if new rules
 - Possibly `go/internal/contract/` test updates
 
+### P5 status: ✅ DONE (2026-06-25) — vibe->CrewAI roadmap COMPLETE
+
+Implemented on a clean isolated worktree at `origin/main` (`ca6d242`, the canonical P1-P4 lineage), verified green, and pushed to `origin/main` via isolated-worktree cherry-pick (autonomy WIP untouched).
+
+- **(a) REAL HITL** — replaced the fake `human_feedback()` stub with the real CrewAI HITL API. Crew/Task path emits `Task(..., human_input=True)`; Flow path imports `from crewai.flow.human_feedback import human_feedback` and applies `@human_feedback(message=...)` on the gated step. The bare-call + fake `def human_feedback` + "# human_feedback support..." line are removed; the `VIBE_GATE` comment block is kept. **Import-shape bug fixed**: flow.py now imports what it uses (no undefined symbol). `crewai==1.14.7` pinned in the manifest + emitted `requirements.txt` + contract run notes.
+- **(b) DIAGNOSTICS** — compiler pushes clear diagnostics for unknown provider (by route), persona missing a goal (CrewAI Agent requires role+goal), and overlapping write scopes. 3 new bad-input tests.
+- **(c) PLUGGABLE-BACKEND seam PROOF** — `go/internal/adapters/langgraph/executor.go` + `_test.go`: `NewBackend()` satisfies the existing `crewai.TargetBackend` interface and returns a loud `"langgraph backend: not yet implemented (seam stub)"`. `vibe iac-compile --backend langgraph` routes through the seam and fails loud — proving CrewAI is **not** hardcoded. **The full LangGraph backend implementation remains a future follow-on (Luther's B2: "LangGraph as production target later").**
+- **(d) SCHEMA/VALIDATION** — `crewai: { pinned: "crewai==1.14.7" }` added to the manifest; `requirements` added to `CrewAICompileResult` (emitted as `requirements.txt`); smoke/golden + iac tests updated for the new import shape, `human_input`, and the requirements file.
+
+**Acceptance (verified):** `go build ./...` exit 0; `go test ./...` all green (23 pkgs); `pnpm -F @vibe/language build` exit 0; `pnpm -F @vibe/language test` 284 pass / 1 pre-existing unrelated fail (`hybrid-demo.vibe`); `iac-compile crewai-smoke.vibe` -> 5 artifacts + diagnostics, and generated `crew.py`/`flow.py` are **py_compile clean** with the corrected `human_feedback` import; `self:plan` unchanged.
+
+**Roadmap status: COMPLETE.** P0 (assess) -> P1 (compiler) -> P2 (executor + pluggable seam) -> P3 (CLI wire) -> P4 (static prove) -> P5 (harden) all DONE. Remaining future follow-on (out of scope for this roadmap): the full LangGraph production backend behind the now-proven `TargetBackend` seam; live CrewAI crew execution remains gated (no install, no real-LLM runs, no secret/MCP mutation in this build).
+
 ---
 
 ## Summary & Next Move After PHASE 0

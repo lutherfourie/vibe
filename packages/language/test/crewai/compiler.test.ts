@@ -32,6 +32,13 @@ plugin demo_lane { target = surface.crewai.local approval = human.before_runtime
     const combined = result.crewPy + "\n" + (result.flowPy ?? "") + "\n" + (result.vibeContractMd ?? "");
     expect(combined).toContain("human_feedback");
     expect(combined).toContain("VIBE_GATE");
+    // P5 real HITL
+    expect(result.crewPy).toContain("human_input=True");
+    if (result.flowPy) {
+      expect(result.flowPy).toContain("from crewai.flow.human_feedback import human_feedback");
+      expect(result.flowPy).toContain("@human_feedback");
+      expect(result.flowPy).not.toContain("def human_feedback()");
+    }
 
     // Manifest roundtrips key info (deterministic, personas from izsha_voice, lane >=1)
     const m = result.manifest;
@@ -77,5 +84,36 @@ plugin second_lane { target = surface.crewai.local }
     expect(flow).toContain("@listen(first_lane)");
     expect(flow).toContain("def second_lane(self, _prev):");
     expect(flow).not.toContain("_done");
+  });
+
+  it("emits diagnostic for unknown provider referenced by a crewai route", async () => {
+    const src = `
+provider realprov { model = "x" }
+route badroute -> unknown.prov
+surface crewai.local { kind = framework mode = python }
+plugin l_lane { target = surface.crewai.local }
+`;
+    const r = await compileCrewAIFromSource(src);
+    expect(r.diagnostics.some((d) => /unknown provider referenced by crewai route/.test(d))).toBe(true);
+  });
+
+  it("emits diagnostic for persona missing a goal (CrewAI needs role+goal)", async () => {
+    const src = `
+persona nogoal { description = "no goal field" }
+surface crewai.local { kind = framework mode = python }
+plugin l_lane { target = surface.crewai.local }
+`;
+    const r = await compileCrewAIFromSource(src);
+    expect(r.diagnostics.some((d) => /persona nogoal is missing a goal/.test(d))).toBe(true);
+  });
+
+  it("emits diagnostic for overlapping write scopes across lanes", async () => {
+    const src = `
+surface crewai.local { kind = framework mode = python }
+plugin lane_a_lane { target = surface.crewai.local owns = "docs" }
+plugin lane_b_lane { target = surface.crewai.local owns = "docs/sub" }
+`;
+    const r = await compileCrewAIFromSource(src);
+    expect(r.diagnostics.some((d) => /overlapping write scopes across lanes/.test(d))).toBe(true);
   });
 });

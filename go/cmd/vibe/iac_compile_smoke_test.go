@@ -60,6 +60,17 @@ func TestIacCompileSmokeProve(t *testing.T) {
 	if !strings.Contains(crewS, "VIBE-CREWAI-BUILD-PROGRESS.md") {
 		t.Fatalf("crew.py missing Vibe contract link:\n%s", crewS)
 	}
+	// P5 real HITL: human_input on Task for human-gated lane
+	if !strings.Contains(crewS, "human_input=True") {
+		t.Fatalf("crew.py missing human_input=True for gated Task:\n%s", crewS)
+	}
+
+	// requirements pin (P5)
+	reqPath := filepath.Join(outDir, "requirements.txt")
+	reqBytes, _ := os.ReadFile(reqPath)
+	if !strings.Contains(string(reqBytes), "crewai==1.14.7") {
+		t.Fatalf("requirements.txt missing crewai==1.14.7 pin:\n%s", string(reqBytes))
+	}
 
 	flowBytes, _ := os.ReadFile(filepath.Join(outDir, "flow.py"))
 	flowS := string(flowBytes)
@@ -72,6 +83,16 @@ func TestIacCompileSmokeProve(t *testing.T) {
 	}
 	if !strings.Contains(combined, "VIBE_CHECKPOINT") {
 		t.Fatalf("missing VIBE_CHECKPOINT marker")
+	}
+	// P5: correct import for real @human_feedback (no bare def, no undefined)
+	if !strings.Contains(flowS, "from crewai.flow.human_feedback import human_feedback") {
+		t.Fatalf("flow.py missing correct human_feedback import (from crewai.flow.human_feedback):\n%s", flowS)
+	}
+	if !strings.Contains(flowS, "@human_feedback") {
+		t.Fatalf("flow.py missing @human_feedback decorator:\n%s", flowS)
+	}
+	if strings.Contains(flowS, "def human_feedback()") {
+		t.Fatalf("flow.py must not contain fake def human_feedback stub:\n%s", flowS)
 	}
 
 	// flow.py (if present) must be well formed (no _done); we already asserted import/@start in combined checks above for simplicity

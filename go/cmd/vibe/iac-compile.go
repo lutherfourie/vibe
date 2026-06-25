@@ -8,6 +8,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	langgraphadapter "github.com/lutherfourie/vibe/go/internal/adapters/langgraph"
 )
 
 func runIacCompile(args []string) error {
@@ -19,11 +21,11 @@ func runIacCompile(args []string) error {
 	// ingestion path in the compiler. --source docs/examples/vibe-self-plan.json is accepted
 	// by the flag per help text but will fail at parse time. JSON source support deferred to P5.
 	// Proven path for P4 is the dedicated .vibe example (examples/crewai-smoke.vibe).
-	backend := flags.String("backend", "crewai", "IaC backend (crewai supported now; langgraph not yet)")
+	backend := flags.String("backend", "crewai", "IaC backend (crewai; langgraph seam stub only)")
 	lane := flags.String("lane", "", "optional laneName to pass to compiler")
 	outDir := flags.String("out", ".vibe-out/crewai", "output directory for artifacts (crew.py, manifest.json, vibe-contract.md, ...)")
 	flags.Usage = func() {
-		fmt.Fprintln(flags.Output(), "Usage: vibe iac-compile --source <file.vibe> [--backend crewai] [--lane name] [--out dir]")
+		fmt.Fprintln(flags.Output(), "Usage: vibe iac-compile --source <file.vibe> [--backend crewai|langgraph] [--lane name] [--out dir]")
 		fmt.Fprintln(flags.Output(), "  alias: compile")
 		fmt.Fprintln(flags.Output(), "Flags:")
 		flags.PrintDefaults()
@@ -38,8 +40,14 @@ func runIacCompile(args []string) error {
 		flags.Usage()
 		return fmt.Errorf("--source is required")
 	}
+	if *backend == "langgraph" {
+		// Route to the pluggable seam stub (proves TargetBackend not hardcoded to CrewAI).
+		// Full LangGraph impl later; compile produces no artifacts.
+		_ = langgraphadapter.NewBackend()
+		return fmt.Errorf("langgraph backend: not yet implemented (seam stub)")
+	}
 	if *backend != "crewai" {
-		return fmt.Errorf("unknown backend %q (only crewai supported in P3)", *backend)
+		return fmt.Errorf("unknown backend %q (only crewai supported; langgraph is seam stub only)", *backend)
 	}
 
 	root := repoRoot()
@@ -64,6 +72,9 @@ func runIacCompile(args []string) error {
 	if result.FlowPy != "" {
 		_ = os.WriteFile(filepath.Join(outPath, "flow.py"), []byte(result.FlowPy), 0o644)
 	}
+	if result.Requirements != "" {
+		_ = os.WriteFile(filepath.Join(outPath, "requirements.txt"), []byte(result.Requirements), 0o644)
+	}
 	manBytes, _ := json.MarshalIndent(result.Manifest, "", "  ")
 	manBytes = append(manBytes, '\n')
 	_ = os.WriteFile(filepath.Join(outPath, "manifest.json"), manBytes, 0o644)
@@ -76,6 +87,9 @@ func runIacCompile(args []string) error {
 	}
 	if result.FlowPy != "" {
 		fmt.Fprintln(os.Stdout, "  flow.py")
+	}
+	if result.Requirements != "" {
+		fmt.Fprintln(os.Stdout, "  requirements.txt")
 	}
 	fmt.Fprintln(os.Stdout, "  manifest.json")
 	fmt.Fprintln(os.Stdout, "  vibe-contract.md")
@@ -92,6 +106,7 @@ type crewAICompileResult struct {
 	Manifest       map[string]any `json:"manifest"`
 	VibeContractMd string         `json:"vibeContractMd"`
 	Diagnostics    []string       `json:"diagnostics"`
+	Requirements   string         `json:"requirements,omitempty"`
 }
 
 func compileCrewAIFromNode(repoRoot, sourceAbs, laneName string) (crewAICompileResult, error) {
