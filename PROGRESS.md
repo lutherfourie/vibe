@@ -160,7 +160,7 @@ Branch:
 
 ## Resume
 
-### 2026-06-04 — Fixed Vercel and Supabase auth for remote infra + MCP surfaces.
+### 2026-06-04 ï¿½ Fixed Vercel and Supabase auth for remote infra + MCP surfaces.
 - Declared supabase + vercel MCP servers at project root via .mcp.json (for Grok compat loader) and .grok/config.toml (native). Enables MCP tools for the backing services (DB C&C, deploys, logs) with OAuth handled by host on connect.
 - Hardened Go remote infra execution (go/agent/remote.go): runPnpmInfra now forces chdir to repo root (fixes pnpm script resolution when poller started from go/ per docs), pre-runs supabase link --project-ref when SUPABASE_ACCESS_TOKEN in env, and for deploy-vercel uses explicit npx ... --token when VERCEL_TOKEN present. Makes auto 'sync-infra' from remote C&C reliable without requiring prior CLI logins on the runner machine.
 - Updated web/.env.local (hosted section) + .env.local.example with current project keys (legacy JWTs from supabase projects api-keys) and docs for SUPABASE_ACCESS_TOKEN / VERCEL_TOKEN required by runners doing infra.
@@ -170,3 +170,11 @@ Branch:
 - go build + targeted agent tests green. (Note: one pre-existing telemetry loop test is timing sensitive in this env.)
 
 - vibe binary checkpoint.
+
+**WIND DOWN (user "wind down"):** Spineflow autonomous subagent loop (F-0030/32/33-35 + editor/graft) stopped. Schedulers: 0 (confirmed). All reports harvested to ../spineflow/PROGRESS.md (concise HARVEST + final WIND DOWN block). No spawns, no verifs this step, no git push/commit. Vibe control plane clean (lane plan + grok-build-spineflow.md remain for future directed use). Per contract + Claude.md/Agents.md: preserve dirty, report-only. State green. End.
+
+Late arrival harvested: F-0032 packet closer subagent 019efef4-ab5f-7d90-8d1d-17ab1a0060c9 (12p green, doctor, ruff, uncond polish + real judge). No action beyond append.
+
+Additional late F-0032 harvest: 019efef4-6766-7100-820d-ea71f9f40008 (uncond spread-eval polish, real judge, 12p/doctor/ruff green). Harvest only.
+
+Late F-0032 closer: 019efef4-cf6f-7ab1-81ec-9c1fe01d1808 (12p, doctor ready, ruff clean; uncond surf/keep/judge + real ContradictionJudgment). No new activity.
