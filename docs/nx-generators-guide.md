@@ -1,23 +1,20 @@
 # Nx Workspace Generators for Vibe
 
-## Why perfect for Vibe
-Nx generators allow `nx g @vibe/lane my-feature` to instantly scaffold a new autonomous lane: .vibe file, schema update, example, docs, test, Go adapter stub, etc. This supercharges self-improvement and agent scaffolding.
+## Why Generators Rock for Vibe
+- Auto-create new autonomous lanes with boilerplate (.vibe files, docs, tests, Go stubs, TS packages)
+- Enforce conventions across agentic components
+- Agents can call `nx g` via tools
 
 ## Setup
-1. After adding Nx (`pnpm add nx ...`)
-2. Create generators in `tools/generators/` or use built-in.
-3. Register in `nx.json` or plugins.
+1. `nx g @nx/plugin:plugin vibe-generators` or manual
+2. Extend with your templates.
 
-## Example Commands to Implement
-- `nx g vibe:primitive provider`
-- `nx g vibe:skill checkpoint`
-- `nx g vibe:lane production-kuma-review`
+## Example Commands
+`nx g @vibe/lane --name=research-agent --autonomous=true`
 
-## Starter Implementation Steps
-1. Use `nx g @nx/js:library tools/generators --buildable`
-2. Implement generator in TS with schema.json for prompts.
-3. `nx g` will use templates from `files/` dir.
+This will create:
+- packages/lanes/research-agent/...
+- examples/research.vibe
+- docs/autonomous/research-agent.md
 
-This turns vibe into a generator-powered DSL factory.
-
-Next action: Create actual generator skeleton?
+Full implementation coming or add now?
